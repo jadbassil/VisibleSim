@@ -1,0 +1,31 @@
+set multiplot layout 1,3 title "Number of additional cuts" font ",14"
+
+set yrange [0:*]
+set xrange [0:*]
+set style data histogram
+set style histogram cluster gap 1
+set boxwidth 0.9
+set style fill solid border -1
+
+unset key
+set xtics rotate
+set bmargin screen 0.22
+set key at screen 0.55,screen 0.1
+
+#set terminal pdfcairo
+
+set xlabel "nb Of modules"
+set ylabel "additional cuts"
+
+
+set title "cubic shape"
+#set output "cubeAdd.pdf"
+plot "cube25252525.txt" using 4:xtic(1) title "25% in each cluster", "cube10203040.txt" using 4:xtic(1) title "10% 20% 30% 40%", "cube10x10.txt" using 4:xtic(1) title "10% in each cluster", "cube4x5-3x10-2x15-1x20.txt" using 4:xtic(1) title "4x5% 3x10% 2x15% 1x20%" 
+
+set title "mug shape"
+#set output "mugAdd.pdf"
+plot "mug25252525.txt" using 4:xtic(1) title "25% in each cluster", "mug10203040.txt" using 4:xtic(1) title "10% 20% 30% 40%", "mug10x10.txt" using 4:xtic(1) title "10% in each cluster", "mug4x5-3x10-2x15-1x20.txt" using 4:xtic(1) title "4x5% 3x10% 2x15% 1x20%" 
+
+set title "humanoid shape"
+#set output "humAdd.pdf"
+plot "hum25252525.txt" using 4:xtic(1) title "25% in each cluster", "hum10203040.txt" using 4:xtic(1) title "10% 20% 30% 40%", "hum10x10.txt" using 4:xtic(1) title "10% in each cluster", "hum4x5-3x10-2x15-1x20.txt" using 4:xtic(1) title "4x5% 3x10% 2x15% 1x20%" 

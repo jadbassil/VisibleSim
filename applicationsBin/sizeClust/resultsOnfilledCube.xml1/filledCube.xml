@@ -1,0 +1,12 @@
+<?xml version="1.0" ?><!-- <world gridSize="200, 200, 200"> --><world gridSize="40, 40, 40">
+  <!-- <clusters sizes="0.1,0.2,0.3"/> -->
+	<clusters sizes="0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1"/> 
+    <!-- <clusters sizes="0.05,0.05,0.05,0.05,0.1,0.1,0.1,0.15,0.15"/>  -->
+   <!-- <clusters sizes="0.25,0.24,0.25"/> for Fig -->
+  <!-- <camera target="50,50,10" directionSpherical="-20,30,100"
+          angle="45" near="0.1" far="2000.0" /> -->
+  
+  <blockList color="128,128,128" blocksize="10,10,10">
+    <csg offset="false" boundingBox="false" content="scale([1.2,1.2,1.2]){             cube([50,50,50], true);         }              "/>
+  </blockList>
+</world>

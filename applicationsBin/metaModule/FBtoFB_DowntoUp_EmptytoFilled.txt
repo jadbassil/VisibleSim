@@ -1,0 +1,58 @@
+{LRKey(Cell3DPosition(1,-1,3), Cell3DPosition(1,-1,3)), LRValue(Cell3DPosition(1,-1,4), MOVING)},
+{LRKey(Cell3DPosition(1,-1,3), Cell3DPosition(1,-1,4)), LRValue(Cell3DPosition(0,-1,4), IN_POSITION)},
+
+{LRKey(Cell3DPosition(0,-1,3), Cell3DPosition(0,-1,3)), LRValue(Cell3DPosition(1,-1,4), IN_POSITION)},
+
+{LRKey(Cell3DPosition(2,0,2), Cell3DPosition(2,0,2)), LRValue(Cell3DPosition(1,-1,3), MOVING)},
+{LRKey(Cell3DPosition(2,0,2), Cell3DPosition(1,-1,3)), LRValue(Cell3DPosition(2,-1,4), MOVING)},
+{LRKey(Cell3DPosition(2,0,2), Cell3DPosition(2,-1,4)), LRValue(Cell3DPosition(1,-1,5), IN_POSITION)},
+
+{LRKey(Cell3DPosition(-1,0,3), Cell3DPosition(-1,0,3)), LRValue(Cell3DPosition(-1,0,4), MOVING)},
+{LRKey(Cell3DPosition(-1,0,3), Cell3DPosition(-1,0,4)), LRValue(Cell3DPosition(-1,-1,5), MOVING)},
+{LRKey(Cell3DPosition(-1,0,3), Cell3DPosition(-1,-1,5)), LRValue(Cell3DPosition(-1,-2,5), IN_POSITION)},
+
+
+{LRKey(Cell3DPosition(0,0,3), Cell3DPosition(0,0,3)), LRValue(Cell3DPosition(-1,0,3), MOVING)},
+{LRKey(Cell3DPosition(0,0,3), Cell3DPosition(-1,0,3)), LRValue(Cell3DPosition(-1,0,4), MOVING)},
+{LRKey(Cell3DPosition(0,0,3), Cell3DPosition(-1,0,4)), LRValue(Cell3DPosition(-1,-1,5), MOVING)},
+{LRKey(Cell3DPosition(0,0,3), Cell3DPosition(-1,-1,5)), LRValue(Cell3DPosition(0,-1,5), MOVING)},
+{LRKey(Cell3DPosition(0,0,3), Cell3DPosition(0,-1,5)), LRValue(Cell3DPosition(1,-1,6), MOVING)},
+{LRKey(Cell3DPosition(0,0,3), Cell3DPosition(1,-1,6)), LRValue(Cell3DPosition(2,-1,6), MOVING)},
+{LRKey(Cell3DPosition(0,0,3), Cell3DPosition(2,-1,6)), LRValue(Cell3DPosition(2,0,6), IN_POSITION)},
+
+{LRKey(Cell3DPosition(1,-1,1), Cell3DPosition(1,-1,1)), LRValue(Cell3DPosition(1,-1,2), MOVING)},
+{LRKey(Cell3DPosition(1,-1,1), Cell3DPosition(1,-1,2)), LRValue(Cell3DPosition(0,-1,2), MOVING)},
+{LRKey(Cell3DPosition(1,-1,1), Cell3DPosition(0,-1,2)), LRValue(Cell3DPosition(-1,-2,3), MOVING)},
+{LRKey(Cell3DPosition(1,-1,1), Cell3DPosition(-1,-2,3)), LRValue(Cell3DPosition(0,-2,4), MOVING)},
+{LRKey(Cell3DPosition(1,-1,1), Cell3DPosition(0,-2,4)), LRValue(Cell3DPosition(-1,-3,5), MOVING)},
+{LRKey(Cell3DPosition(1,-1,1), Cell3DPosition(-1,-3,5)), LRValue(Cell3DPosition(-1,-2,6), IN_POSITION)},
+
+{LRKey(Cell3DPosition(0,-1,1), Cell3DPosition(0,-1,1)), LRValue(Cell3DPosition(0,-1,2), MOVING)},
+{LRKey(Cell3DPosition(0,-1,1), Cell3DPosition(0,-1,2)), LRValue(Cell3DPosition(-1,-2,3), MOVING)},
+{LRKey(Cell3DPosition(0,-1,1), Cell3DPosition(-1,-2,3)), LRValue(Cell3DPosition(0,-2,4), MOVING)},
+{LRKey(Cell3DPosition(0,-1,1), Cell3DPosition(0,-2,4)), LRValue(Cell3DPosition(-1,-3,5), MOVING)},
+{LRKey(Cell3DPosition(0,-1,1), Cell3DPosition(-1,-3,5)), LRValue(Cell3DPosition(0,-2,6), MOVING)},
+{LRKey(Cell3DPosition(0,-1,1), Cell3DPosition(0,-2,6)), LRValue(Cell3DPosition(-1,-2,7), IN_POSITION)},
+
+{LRKey(Cell3DPosition(-1,0,2), Cell3DPosition(-1,0,2)), LRValue(Cell3DPosition(-1,0,3), MOVING)},
+{LRKey(Cell3DPosition(-1,0,2), Cell3DPosition(-1,0,3)), LRValue(Cell3DPosition(-1,0,4), MOVING)},
+{LRKey(Cell3DPosition(-1,0,2), Cell3DPosition(-1,0,4)), LRValue(Cell3DPosition(-1,-1,5), MOVING)},
+{LRKey(Cell3DPosition(-1,0,2), Cell3DPosition(-1,-1,5)), LRValue(Cell3DPosition(0,-1,5), MOVING)},
+{LRKey(Cell3DPosition(-1,0,2), Cell3DPosition(0,-1,5)),, LRValue(Cell3DPosition(1,0,6), MOVING)},
+{LRKey(Cell3DPosition(-1,0,2), Cell3DPosition(1,0,6)), LRValue(Cell3DPosition(1,-1,7), IN_POSITION)},
+
+{LRKey(Cell3DPosition(-1,0,1), Cell3DPosition(-1,0,1)), LRValue(Cell3DPosition(-1,0,2), MOVING)},
+{LRKey(Cell3DPosition(-1,0,1), Cell3DPosition(-1,0,2)), LRValue(Cell3DPosition(-1,0,3), MOVING)},
+{LRKey(Cell3DPosition(-1,0,1), Cell3DPosition(-1,0,3)), LRValue(Cell3DPosition(-1,0,4), MOVING)},
+{LRKey(Cell3DPosition(-1,0,1), Cell3DPosition(-1,0,4)), LRValue(Cell3DPosition(-1,-1,5), MOVING)},
+{LRKey(Cell3DPosition(-1,0,1), Cell3DPosition(-1,-1,5)),, LRValue(Cell3DPosition(-1,-1,6), MOVING)},
+{LRKey(Cell3DPosition(-1,0,1), Cell3DPosition(-1,-1,6)), LRValue(Cell3DPosition(-1,-1,7), MOVING)},
+{LRKey(Cell3DPosition(-1,0,1), Cell3DPosition(-1,-1,7)), LRValue(Cell3DPosition(0,-1,8), IN_POSITION)},
+
+{LRKey(Cell3DPosition(0,0,1), Cell3DPosition(0,0,1)), LRValue(Cell3DPosition(1,0,2), MOVING)},
+{LRKey(Cell3DPosition(0,0,1), Cell3DPosition(1,0,2)), LRValue(Cell3DPosition(1,-1,3), MOVING)},
+{LRKey(Cell3DPosition(0,0,1), Cell3DPosition(1,-1,3)), LRValue(Cell3DPosition(2,-1,4), MOVING)},
+{LRKey(Cell3DPosition(0,0,1), Cell3DPosition(2,-1,4)), LRValue(Cell3DPosition(1,-2,5), MOVING)},
+{LRKey(Cell3DPosition(0,0,1), Cell3DPosition(1,-2,5)), LRValue(Cell3DPosition(1,-1,6), MOVING)},
+{LRKey(Cell3DPosition(0,0,1), Cell3DPosition(1,-1,6)), LRValue(Cell3DPosition(1,-2,7), MOVING)},
+{LRKey(Cell3DPosition(0,0,1), Cell3DPosition(1,-2,7)), LRValue(Cell3DPosition(1,-1,8), IN_POSITION)},

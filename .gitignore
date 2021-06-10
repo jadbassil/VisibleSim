@@ -69,18 +69,18 @@ doc/html/
 applicationsBin/*/*.xml
 
 # Screenshot and video exports
-applicationsBin/*/*.ppm
-applicationsBin/*/*.png
-applicationsBin/*/*.jpg
-applicationsBin/*/*.png
-applicationsBin/*/*.jpeg
-applicationsBin/*/*.mkv
-applicationsBin/*/*.mp4
-applicationsBin/*/*.mpeg
-applicationsBin/*/*.dat
-applicationsBin/*/*.pdf
-applicationsBin/*/animation_*/
-applicationsBin/*/Screenshots/
+# applicationsBin/*/*.ppm
+# applicationsBin/*/*.png
+# applicationsBin/*/*.jpg
+# applicationsBin/*/*.png
+# applicationsBin/*/*.jpeg
+# applicationsBin/*/*.mkv
+# applicationsBin/*/*.mp4
+# applicationsBin/*/*.mpeg
+# applicationsBin/*/*.dat
+# applicationsBin/*/*.pdf
+# applicationsBin/*/animation_*/
+# applicationsBin/*/Screenshots/
 
 # User-generated files
 applicationsBin/*/*.m
