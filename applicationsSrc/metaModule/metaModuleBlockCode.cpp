@@ -3,6 +3,7 @@
 #include "messages.hpp"
 #include <fstream>
 #include "robots/catoms3D/catoms3DMotionEngine.h"
+#include "maxFlow.hpp"
 
 using namespace Catoms3D;
 
@@ -39,7 +40,7 @@ MetaModuleBlockCode::MetaModuleBlockCode(Catoms3DBlock *host) : Catoms3DBlockCod
 void MetaModuleBlockCode::startup() {
     console << "start\n";
     //operation = new Operation();
-    if(module->blockId == 1) {
+    if(not Init::initialMapBuildDone) {
       
         initialized = false;
         MMPosition = Cell3DPosition(0,0,0);
@@ -60,50 +61,53 @@ void MetaModuleBlockCode::startup() {
         //         module->getInterface(nearestPositionTo(coordinatorPos)),
         //         100, 200);
 
-        MetaModuleBlockCode *block19 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(19)->blockCode
-        );
-       // block19->operation = BF_Dismantle_Left;
-        block19->nextOperation = FB_Transfer_Left;
-        //operation = new Operation(Direction::LEFT, BACKFRONT);
-        block19->operation = new Dismantle_Operation(Direction::LEFT, BACKFRONT);
-        block19->setCoordinator(BF_Dismantle_Left);
-        Cell3DPosition targetModule = block19->seedPosition + (*block19->operation->localRules)[0].currentPosition;
-        console << "targetModule: " << nearestPositionTo(targetModule) << "\n"; 
-        block19->sendMessage("Coordinate Msg1", new MessageOf<Coordinate>(
-            COORDINATE_MSG_ID, Coordinate(block19->operation, targetModule, block19->module->position, block19->mvt_it)),
-            block19->module->getInterface(block19->nearestPositionTo(targetModule)), 100, 200
-        );
+       
+        // Cell3DPosition targetModule = block19->seedPosition + (*block19->operation->localRules)[0].currentPosition;
+        // console << "targetModule: " << nearestPositionTo(targetModule) << "\n"; 
+        // block19->sendMessage("Coordinate Msg1", new MessageOf<Coordinate>(
+        //     COORDINATE_MSG_ID, Coordinate(block19->operation, targetModule, block19->module->position, block19->mvt_it)),
+        //     block19->module->getInterface(block19->nearestPositionTo(targetModule)), 100, 200
+        // );
 
-        MetaModuleBlockCode *block4 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(4)->blockCode
-        );
-        //block4->operation = FB_Transfer_Left;
-        block4->nextOperation = BF_Transfer_Left;
-        block4->operation = new Transfer_Operation(Direction::LEFT, FRONTBACK);
-        //block4->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
-        //block4->operation = FB_Fill_Left;
-        block4->isCoordinator = true;
+        // MetaModuleBlockCode *block4 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(4)->blockCode
+        // );
+        // //block4->operation = FB_Transfer_Left;
+        // block4->nextOperation = BF_Transfer_Left;
+        // block4->operation = new Transfer_Operation(Direction::LEFT, FRONTBACK);
+        // //block4->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
+        // //block4->operation = FB_Fill_Left;
+        // block4->isCoordinator = true;
         
 
-        MetaModuleBlockCode *block24 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(24)->blockCode
-        );
-        //block24->operation = BF_Transfer_Left;
-        block24->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT, true);
-        block24->nextOperation = FB_Fill_Left;
-        block24->isCoordinator = true;
+        // MetaModuleBlockCode *block24 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(24)->blockCode
+        // );
+        // //block24->operation = BF_Transfer_Left;
+        // block24->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT, true);
+        // block24->nextOperation = FB_Fill_Left;
+        // block24->isCoordinator = true;
 
-        MetaModuleBlockCode *block34 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(34)->blockCode
-        );
-        //block34->operation = FB_Fill_Left;
-        block34->nextOperation = NO_OPERATION;
+        // MetaModuleBlockCode *block34 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(34)->blockCode
+        // );
+        // //block34->operation = FB_Fill_Left;
+        // block34->nextOperation = NO_OPERATION;
 
-        block34->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
-        block34->isCoordinator = true;
+        // block34->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
+        // block34->isCoordinator = true;
 
         Init::initialMapBuildDone = true;
+    }
+    if(module->blockId == 19) {
+       // block19->operation = BF_Dismantle_Left;
+        nextOperation = FB_Transfer_Left;
+        //operation = new Operation(Direction::LEFT, BACKFRONT);
+        operation = new Dismantle_Operation(Direction::LEFT, BACKFRONT);
+        setCoordinator(BF_Dismantle_Left);
+        MaxFlow max(this);
+        max.initGraph();
+        max.printGraph();
     }
     initialized = true;
 }

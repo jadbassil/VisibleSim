@@ -3,6 +3,7 @@
 
 #include "robots/catoms3D/catoms3DWorld.h"
 #include "robots/catoms3D/catoms3DBlockCode.h"
+#include "motion/teleportationEvents.h"
 #include "operations.hpp"
 
 static const int SETCOORDINATOR_MSG_ID = 1000;
@@ -53,12 +54,12 @@ static const int initialMap[][4] = {
     {0, 0, 0, 0},
     {1, 0, 0, 0},
     {-1, 0, 0, 0},
-    {-2,0,0,0}
+    {-2,0,0,0},
     // {0,-1,0,1}, {0,-1,1,1},
     //{0, 0, 1, 0},
-    // {1, 0, 1, 0},
+    {1, 0, 1, 0},
     //{0, 1, 0, 1}, {0,1,1,1}
-    // {1, 1, 0, 1},
+    {1, 1, 0, 1},
     // //  {0,-1,0,1}, {1,1,-1,1},
     //{0, 0, -1, 1},
     // {0, 1, 1, 1},
