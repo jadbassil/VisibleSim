@@ -105,10 +105,24 @@ void MetaModuleBlockCode::startup() {
         //operation = new Operation(Direction::LEFT, BACKFRONT);
         operation = new Dismantle_Operation(Direction::LEFT, BACKFRONT);
         setCoordinator(BF_Dismantle_Left);
-        MaxFlow max(this);
-        max.initGraph();
-        max.printGraph();
-        cerr << "maxFlow: " << max.graph.DinicMaxflow(Cell3DPosition(16,9,12), Cell3DPosition(13,10,12)) << endl;
+//         path: (13,10,12) (13,9,13) (14,9,13) (15,9,12) (16,9,12)
+// path: (13,10,12) (14,10,12) (14,10,11) (15,10,11) (16,9,11) (16,9,12)
+        vector<Cell3DPosition> path1 = {
+            Cell3DPosition(13,10,12), Cell3DPosition(13,9,13), Cell3DPosition(14,9,13), Cell3DPosition(15,9,12), Cell3DPosition(16,9,12)
+        };
+        vector<Cell3DPosition> path2 = {
+            Cell3DPosition(13,10,12), Cell3DPosition(14,10,12), Cell3DPosition(14,10,11), Cell3DPosition(15,10,11), Cell3DPosition(16,9,11), Cell3DPosition(16,9,12)        
+        };
+        for(auto p1: path1) {
+            BaseSimulator::getWorld()->lattice->highlightCell(p1, Color(MAGENTA));
+        }
+        for(auto p2: path2) {
+            BaseSimulator::getWorld()->lattice->highlightCell(p2, Color(YELLOW));
+        }
+        // MaxFlow max(this);
+        // max.initGraph();
+        // max.printGraph();
+        // cerr << max.graph.DinicMaxflow(Cell3DPosition(16,9,12), Cell3DPosition(13,10,12)) << endl;
         // getScheduler()->schedule(
         //         new InterruptionEvent(getScheduler()->now() +
         //                               5000000,

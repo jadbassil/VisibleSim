@@ -82,7 +82,7 @@ void MaxFlow::fillGraph(Cell3DPosition &initPos, Cell3DPosition targetPos) {
     BaseSimulator::getWorld()->deleteBlock(block->module);
     if(reachablePositions.size() > 0) {
         // graph[blockPosition] = reachablePositions;
-
+        
         for(auto pos: reachablePositions) {
             graph.addEdge(block->module->position, pos, 1);
             fillGraph(pos, Cell3DPosition(13,10,12));
@@ -107,6 +107,12 @@ void MaxFlow::printGraph() {
     //     cerr << endl;
     // }
     for(auto x: graph.adj) {
+        cerr << x.first << ": ";
+        for(auto y: x.second) 
+            cerr << y.v << "; ";
+        cerr << endl;
+    }
+    for(auto x: graph.rev) {
         cerr << x.first << ": ";
         for(auto y: x.second) 
             cerr << y.v << "; ";

@@ -23,6 +23,7 @@ struct Edge
 
 	Edge(Cell3DPosition _v, int _flow, int _C)
 		:v(_v), flow(_flow), C(_C), rev(nullptr) {};
+
 };
 
 // Residual Graph
@@ -58,11 +59,14 @@ public :
 
         adj[u].push_back(a);
         rev[v].push_back(b);
+
+		adj[u].rbegin()->rev = &rev[v][rev[v].size()];
+		rev[v].rbegin()->rev = &adj[u][adj[u].size()];
 		
 	}
 
 	bool BFS(Cell3DPosition s, Cell3DPosition t);
-	int sendFlow(Cell3DPosition u, int flow, Cell3DPosition t, map<Cell3DPosition,int> start);
+	int sendFlow(Cell3DPosition u, int flow, Cell3DPosition t, map<Cell3DPosition,int> start, vector<Cell3DPosition> &parents);
 	int DinicMaxflow(Cell3DPosition s, Cell3DPosition t);
 };
 
@@ -89,11 +93,14 @@ bool Graph::BFS(Cell3DPosition s, Cell3DPosition t)
 	{
 		Cell3DPosition u = q.front();
 		q.pop_front();
+		//cerr << "u: " << u << endl;
 		for (i = adj[u].begin(); i != adj[u].end(); i++)
 		{
 			Edge &e = *i;
+			//cerr << e.v << "; " << level[e.v] << " " << e.flow << " " << e.C << endl; 
 			if (level[e.v] < 0 && e.flow < e.C)
 			{
+				//cerr << e.v	<< endl;			
 				// Level of current vertex is,
 				// level of parent + 1
 				level[e.v] = level[u] + 1;
@@ -101,6 +108,7 @@ bool Graph::BFS(Cell3DPosition s, Cell3DPosition t)
 				q.push_back(e.v);
 			}
 		}
+		
 	}
 
 	// IF we can not reach to the sink we
@@ -118,28 +126,32 @@ bool Graph::BFS(Cell3DPosition s, Cell3DPosition t)
 //		 from i.
 // u : Current vertex
 // t : Sink
-int Graph::sendFlow(Cell3DPosition u, int flow, Cell3DPosition t, map<Cell3DPosition,int> start)
+int Graph::sendFlow(Cell3DPosition u, int flow, Cell3DPosition t, map<Cell3DPosition,int> start, vector<Cell3DPosition> &parents)
 {
 	// Sink reached
 	if (u == t)
 		return flow;
-
+	
 	// Traverse all adjacent edges one -by - one.
 	for ( ; start[u] < adj[u].size(); start[u]++)
 	{
 		// Pick next edge from adjacency list of u
 		Edge &e = adj[u][start[u]];
-									
+		vector<Cell3DPosition> path;			
 		if (level[e.v] == level[u]+1 && e.flow < e.C)
 		{
+			path.push_back(e.v);
+			
 			// find minimum flow from u to t
 			int curr_flow = min(flow, e.C - e.flow);
 
-			int temp_flow = sendFlow(e.v, curr_flow, t, start);
-
+			int temp_flow = sendFlow(e.v, curr_flow, t, start, parents);
+			
 			// flow is greater than zero
 			if (temp_flow > 0)
 			{
+				for(auto p:path) parents.push_back(p);
+
 				// add flow to current edge
 				e.flow += temp_flow;
 
@@ -148,6 +160,7 @@ int Graph::sendFlow(Cell3DPosition u, int flow, Cell3DPosition t, map<Cell3DPosi
                 // adj[e.v][e.rev].flow -= temp_flow;
 				// adj[e.v).at(e.rev).flow -= temp_flow;
                 e.rev->flow -= temp_flow;
+				
 				return temp_flow;
 			}
 		}
@@ -163,12 +176,39 @@ int Graph::DinicMaxflow(Cell3DPosition s, Cell3DPosition t)
 	if (s == t)
 		return -1;
 
+	for(auto r: rev) {
+		
+		if(adj.find(r.first) == adj.end())
+			adj[r.first] = r.second;
+		else {
+			for(auto a: adj) {
+				if(a.first == r.first) {
+					bool found = false;
+					for(auto x: r.second) {
+						for(auto y: a.second) {
+							if(x.v == y.v) {
+								found = true;
+							}
+								
+						}
+						if(!found) {
+							adj[r.first].push_back(x);
+						}
+					}
+					break;
+				}
+			}
+		}
+	}
+
 	int total = 0; // Initialize result
 
 	// Augment the flow while there is path
 	// from source to sink
+	vector<Cell3DPosition> parents;
 	while (BFS(s, t) == true)
 	{
+		
 		// store how many edges are visited
 		// from V { 0 to V }
 		//int *start = new int[V+1] {0};
@@ -178,10 +218,20 @@ int Graph::DinicMaxflow(Cell3DPosition s, Cell3DPosition t)
         }
 
 		// while flow is not zero in graph from S to D
-		while (int flow = sendFlow(s, INT_MAX, t, start))
+		while (int flow = sendFlow(s, INT_MAX, t, start, parents)) {
+//			cerr << "sendFlow\n";VS_ASSERT(false);
 
 			// Add path flow to overall flow
 			total += flow;
+			cerr << "path: ";
+			for(auto p: parents) {
+				cerr << p << " ";
+			}
+			cerr << s;
+			cerr << endl;
+			parents.clear();
+
+		}
 	}
 
 	// return maximum flow
