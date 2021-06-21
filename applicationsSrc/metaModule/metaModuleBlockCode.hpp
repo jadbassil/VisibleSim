@@ -83,7 +83,7 @@ static Catoms3DBlock *seed;
 
 class MetaModuleBlockCode : public Catoms3DBlockCode
 {
-private:
+private:  
 
     
 public:

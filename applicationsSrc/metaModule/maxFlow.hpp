@@ -2,6 +2,8 @@
 #define MAXFLOW_HPP_
 
 #include "metaModuleBlockCode.hpp"
+#include "Dinic.hpp"
+
 
 class MaxFlow {
 private:
@@ -10,7 +12,8 @@ private:
 
     
 public:
-map<Cell3DPosition, vector<Cell3DPosition>> graph;
+    //map<Cell3DPosition, vector<Cell3DPosition>> graph;
+    Graph graph;
     MaxFlow(/* args */);
     MaxFlow(MetaModuleBlockCode* _coordinator);
     ~MaxFlow();
@@ -48,7 +51,9 @@ void MaxFlow::initGraph() {
         vector<Cell3DPosition> reachablePositions = 
             Catoms3DMotionEngine::getAllReachablePositions(block->module);
         if(reachablePositions.size() > 0) {
-            graph[block->module->position] = reachablePositions;
+            //graph[block->module->position] = reachablePositions;
+            for(auto rp: reachablePositions)
+                graph.addEdge(block->module->position, rp, 1);
             for(auto pos: reachablePositions) {
                 fillGraph(pos, Cell3DPosition(13,10,12));
             }
@@ -58,11 +63,14 @@ void MaxFlow::initGraph() {
 }
 
 void MaxFlow::fillGraph(Cell3DPosition &initPos, Cell3DPosition targetPos) {
-    if(graph.find(initPos) != graph.end()
+    // if(graph.find(initPos) != graph.end()
+    //     or initPos == targetPos or !neighInMM(initPos)) {
+    //     return;
+    // }
+    if(graph.adj.find(initPos) != graph.adj.end()
         or initPos == targetPos or !neighInMM(initPos)) {
         return;
     }
-    
     BaseSimulator::getWorld()->addBlock(0, MetaModuleBlockCode::buildNewBlockCode, initPos, Color(GREY));
     MetaModuleBlockCode *block = static_cast<MetaModuleBlockCode*>(
         BaseSimulator::getWorld()->getBlockByPosition(initPos)->blockCode
@@ -70,10 +78,13 @@ void MaxFlow::fillGraph(Cell3DPosition &initPos, Cell3DPosition targetPos) {
     vector<Cell3DPosition> reachablePositions = 
             Catoms3DMotionEngine::getAllReachablePositions(block->module);
     Cell3DPosition blockPosition = block->module->position;
+    BaseSimulator::getWorld()->lattice->highlightCell(blockPosition);
     BaseSimulator::getWorld()->deleteBlock(block->module);
     if(reachablePositions.size() > 0) {
-        graph[blockPosition] = reachablePositions;
+        // graph[blockPosition] = reachablePositions;
+
         for(auto pos: reachablePositions) {
+            graph.addEdge(block->module->position, pos, 1);
             fillGraph(pos, Cell3DPosition(13,10,12));
         }
     } 
@@ -89,10 +100,16 @@ bool MaxFlow::neighInMM(Cell3DPosition &pos) {
 }
 
 void MaxFlow::printGraph() {
-    for(auto x: graph) {
+    // for(auto x: graph) {
+    //     cerr << x.first << ": ";
+    //     for(auto y: x.second) 
+    //         cerr << y << "; ";
+    //     cerr << endl;
+    // }
+    for(auto x: graph.adj) {
         cerr << x.first << ": ";
         for(auto y: x.second) 
-            cerr << y << "; ";
+            cerr << y.v << "; ";
         cerr << endl;
     }
 }

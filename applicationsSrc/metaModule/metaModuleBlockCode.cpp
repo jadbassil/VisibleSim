@@ -108,6 +108,11 @@ void MetaModuleBlockCode::startup() {
         MaxFlow max(this);
         max.initGraph();
         max.printGraph();
+        cerr << "maxFlow: " << max.graph.DinicMaxflow(Cell3DPosition(16,9,12), Cell3DPosition(13,10,12)) << endl;
+        // getScheduler()->schedule(
+        //         new InterruptionEvent(getScheduler()->now() +
+        //                               5000000,
+        //                               module, 8));
     }
     initialized = true;
 }
@@ -641,34 +646,34 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
         case EVENT_ROTATION3D_END: {
             break;
         }
-        case EVENT_ADD_NEIGHBOR: {
-            // Do something when a neighbor is added to an interface of the module
-            VS_ASSERT(operation); 
-            uint64_t face = Catoms3DWorld::getWorld()->lattice->
-                getOppositeDirection((std::static_pointer_cast<AddNeighborEvent>(pev))
-                                    ->face);
-            Cell3DPosition& pos = module->getNeighborBlock(face)->position;
-            if(not rotating and !isInMM(pos)) {
-                setGreenLight(false);
-            }            
-            operation->handleAddNeighborEvent(this, pos);             
-            break;
-        }
+        // case EVENT_ADD_NEIGHBOR: {
+        //     // Do something when a neighbor is added to an interface of the module
+        //     VS_ASSERT(operation); 
+        //     uint64_t face = Catoms3DWorld::getWorld()->lattice->
+        //         getOppositeDirection((std::static_pointer_cast<AddNeighborEvent>(pev))
+        //                             ->face);
+        //     Cell3DPosition& pos = module->getNeighborBlock(face)->position;
+        //     if(not rotating and !isInMM(pos)) {
+        //         setGreenLight(false);
+        //     }            
+        //     operation->handleAddNeighborEvent(this, pos);             
+        //     break;
+        // }
 
-        case EVENT_REMOVE_NEIGHBOR: {
-            // Do something when a neighbor is removed from an interface of the module
-            if(not rotating and movingState != MOVING) {
-                 uint64_t face = Catoms3DWorld::getWorld()->
-                    lattice->getOppositeDirection((std::static_pointer_cast<RemoveNeighborEvent>(pev))->face);
+        // case EVENT_REMOVE_NEIGHBOR: {
+        //     // Do something when a neighbor is removed from an interface of the module
+        //     if(not rotating and movingState != MOVING) {
+        //          uint64_t face = Catoms3DWorld::getWorld()->
+        //             lattice->getOppositeDirection((std::static_pointer_cast<RemoveNeighborEvent>(pev))->face);
 
-                    Cell3DPosition pos;
-                    if (module->getNeighborPos(face, pos) and (module->getState() == BuildingBlock::State::ALIVE)) {
-                        setGreenLight(true);
-                    }
+        //             Cell3DPosition pos;
+        //             if (module->getNeighborPos(face, pos) and (module->getState() == BuildingBlock::State::ALIVE)) {
+        //                 setGreenLight(true);
+        //             }
                
-            }
-            break;
-        }
+        //     }
+        //     break;
+        // }
         case EVENT_INTERRUPTION: {
             std::shared_ptr<InterruptionEvent> itev =
                 std::static_pointer_cast<InterruptionEvent>(pev);
