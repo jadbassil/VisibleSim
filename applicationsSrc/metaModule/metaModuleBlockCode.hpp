@@ -5,12 +5,15 @@
 #include "robots/catoms3D/catoms3DBlockCode.h"
 #include "motion/teleportationEvents.h"
 #include "operations.hpp"
+#include <deque>
+#include "maxFlow.hpp"
 
 static const int SETCOORDINATOR_MSG_ID = 1000;
 static const int COORDINATE_MSG_ID = 1003;
 static const int COORDINATEBACK_MSG_ID = 1004;
 
 static const int IT_MODE_FINDING_PIVOT = 2000;
+static const int IT_MODE_TELEPORTING = 2001;
 
 static const int PLS_MSG_ID = 1005;
 static const int GLO_MSG_ID = 1006;
@@ -79,6 +82,31 @@ static const int initialMap[][4] = {
 //     {1,-1,1,0}, {1,0,1,0}, {1,1,1,0}
 // };
 
+// static int initialMap[][4] = {
+//     {0,0,0,1}, {1,0,0,1}, {-1,0,0,1},
+//     {0,-1,0,1}, {0,1,0,1}, {0,0,-1,1}, {0,0,1,1},
+//     {-1,-1,-1,1}, {-1,0,-1,1}, {-1,1,-1,1},
+//     {0,-1,-1,1}, {0,1,-1,1},
+//     {-1,-1,1,1}, {-1,0,1,1}, {-1,1,1,1},
+//     // {-1,-1,2,0}, {-1,0,2,0}, {-1,1,2,0},
+//     {-1,-1,0,1}, {-1,1,0,1},
+//     {1,-1,-1,1},  {1,0,-1,1},  {1,1,-1,1},
+//     {1,-1,0,1}, {1,1,0,1},
+//     {0,-1,1,1}, {0,1,1,1},
+//     {1,-1,1,1}, {1,0,1,1}, {1,1,1,1}
+// };
+
+
+// static int initialMap[][4] = {
+//    {0,0,0,0},
+//    {-1,0,0,0},
+//    {1,0,0,0},
+//    {0,-1,0,0},
+//    {0,1,0,0},
+//    {0,0,-1,0},
+//    {0,0,1,0}
+// };
+
 static Catoms3DBlock *seed;
 
 class MetaModuleBlockCode : public Catoms3DBlockCode
@@ -87,6 +115,11 @@ private:
 
     
 public:
+    bool teleporting{false};
+    MaxFlow max;
+    Cell3DPosition targetPosition;
+    deque<Cell3DPosition> teleportingPositions;
+
     MMShape shapeState;
     Cell3DPosition MMPosition;
     Cell3DPosition seedPosition;

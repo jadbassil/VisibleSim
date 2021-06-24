@@ -186,9 +186,9 @@ void BlockCode::processLocalEvent(EventPtr pev) {
             int face = (std::static_pointer_cast<TapEvent>(pev))->tappedFace;
             onTap(face);
         } break;
-        case EVENT_TELEPORTATION_END: {
-            onMotionEnd();
-        } break;
+        // case EVENT_TELEPORTATION_END: {
+        //     onMotionEnd();
+        // } break;
     }
 }
 

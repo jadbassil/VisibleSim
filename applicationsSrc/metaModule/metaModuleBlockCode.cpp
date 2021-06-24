@@ -3,7 +3,7 @@
 #include "messages.hpp"
 #include <fstream>
 #include "robots/catoms3D/catoms3DMotionEngine.h"
-#include "maxFlow.hpp"
+
 
 using namespace Catoms3D;
 
@@ -100,33 +100,33 @@ void MetaModuleBlockCode::startup() {
         Init::initialMapBuildDone = true;
     }
     if(module->blockId == 19) {
-       // block19->operation = BF_Dismantle_Left;
-        nextOperation = FB_Transfer_Left;
-        //operation = new Operation(Direction::LEFT, BACKFRONT);
-        operation = new Dismantle_Operation(Direction::LEFT, BACKFRONT);
-        setCoordinator(BF_Dismantle_Left);
-//         path: (13,10,12) (13,9,13) (14,9,13) (15,9,12) (16,9,12)
-// path: (13,10,12) (14,10,12) (14,10,11) (15,10,11) (16,9,11) (16,9,12)
-        vector<Cell3DPosition> path1 = {
-            Cell3DPosition(13,10,12), Cell3DPosition(13,9,13), Cell3DPosition(14,9,13), Cell3DPosition(15,9,12), Cell3DPosition(16,9,12)
-        };
-        vector<Cell3DPosition> path2 = {
-            Cell3DPosition(13,10,12), Cell3DPosition(14,10,12), Cell3DPosition(14,10,11), Cell3DPosition(15,10,11), Cell3DPosition(16,9,11), Cell3DPosition(16,9,12)        
-        };
-        for(auto p1: path1) {
-            BaseSimulator::getWorld()->lattice->highlightCell(p1, Color(MAGENTA));
-        }
-        for(auto p2: path2) {
-            BaseSimulator::getWorld()->lattice->highlightCell(p2, Color(YELLOW));
-        }
-        // MaxFlow max(this);
-        // max.initGraph();
-        // max.printGraph();
-        // cerr << max.graph.DinicMaxflow(Cell3DPosition(16,9,12), Cell3DPosition(13,10,12)) << endl;
-        // getScheduler()->schedule(
-        //         new InterruptionEvent(getScheduler()->now() +
-        //                               5000000,
-        //                               module, 8));
+//        // block19->operation = BF_Dismantle_Left;
+//         nextOperation = FB_Transfer_Left;
+//         //operation = new Operation(Direction::LEFT, BACKFRONT);
+//         operation = new Dismantle_Operation(Direction::LEFT, BACKFRONT);
+//         setCoordinator(BF_Dismantle_Left);
+// //         path: (13,10,12) (13,9,13) (14,9,13) (15,9,12) (16,9,12)
+// // path: (13,10,12) (14,10,12) (14,10,11) (15,10,11) (16,9,11) (16,9,12)
+//         // vector<Cell3DPosition> path1 = {
+//         //     Cell3DPosition(13,10,12), Cell3DPosition(13,9,13), Cell3DPosition(14,9,13), Cell3DPosition(15,9,12), Cell3DPosition(16,9,12)
+//         // };
+//         // vector<Cell3DPosition> path2 = {
+//         //     Cell3DPosition(13,10,12), Cell3DPosition(14,10,12), Cell3DPosition(14,10,11), Cell3DPosition(15,10,11), Cell3DPosition(16,9,11), Cell3DPosition(16,9,12)        
+//         // };
+//         // for(auto p1: path1) {
+//         //     BaseSimulator::getWorld()->lattice->highlightCell(p1, Color(MAGENTA));
+//         // }
+//         // for(auto p2: path2) {
+//         //     BaseSimulator::getWorld()->lattice->highlightCell(p2, Color(YELLOW));
+//         // }
+        max = MaxFlow(this->module);
+        max.initGraph();
+//         //max.printGraph();
+//         // cerr << max.graph.DinicMaxflow(Cell3DPosition(16,9,12), Cell3DPosition(13,10,12)) << endl;
+//         // getScheduler()->schedule(
+//         //         new InterruptionEvent(getScheduler()->now() +
+//         //                               5000000,
+//         //                               module, 8));
     }
     initialized = true;
 }
@@ -693,13 +693,89 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                 std::static_pointer_cast<InterruptionEvent>(pev);
 
             switch(itev->mode) {
-                case IT_MODE_FINDING_PIVOT:
+                case IT_MODE_FINDING_PIVOT: {
                     if(!rotating) return;
                     // VS_ASSERT(++notFindingPivotCount < 10);
                     VS_ASSERT(operation->localRules.get());
                     probeGreenLight(); // the seed starts the algorithm
                     module->setColor(MAGENTA);
                     break;
+                }
+                case IT_MODE_TELEPORTING: {
+                    if(!teleportingPositions.empty()) {
+                        Cell3DPosition nextPos = teleportingPositions.front();
+                        teleportingPositions.pop_front();
+                        getScheduler()->schedule(new TeleportationStartEvent(getScheduler()->now(), module, nextPos));
+                    }else {
+                        VS_ASSERT(false);
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+        case EVENT_TELEPORTATION_END: {
+            if(module->position == Cell3DPosition(1,1,1)) {
+                break;
+            }
+            MetaModuleBlockCode* coordinator = static_cast<MetaModuleBlockCode*>(
+                BaseSimulator::getWorld()->getBlockByPosition(coordinatorPosition)->blockCode);
+
+            //  if(coordinator->max.graph.adj.find(module->position) !=
+            //  coordinator->max.graph.adj.end()
+            //         or module->position == targetPosition or
+            //         !coordinator->max.neighInMM(module->position)) {
+            //         if(!teleportingPositions.empty()) {
+            //             Cell3DPosition nextTeleportingPosition = teleportingPositions.front();
+            //             teleportingPositions.pop();
+            //             getScheduler()->schedule(new
+            //             TeleportationStartEvent(getScheduler()->now() + 100, module,
+            //             nextTeleportingPosition));
+            //         }
+            // }
+
+            vector<Cell3DPosition> nextPositions;
+            for (auto freePos :
+                 BaseSimulator::getWorld()->lattice->getFreeNeighborCells(module->position)) {
+                if (module->canMoveTo(freePos)) nextPositions.push_back(freePos);
+            }
+            if (nextPositions.size() > 0) {
+                // graph[blockPosition] = reachablePositions;
+                //coordinator->max.graphMap[module->position] = nextPositions;
+                for (auto pos : nextPositions) {
+                    
+                        coordinator->max.graphMap[module->position].push_back(pos);
+                        coordinator->max.graph.addEdge(module->position, pos, 1);
+                        if (coordinator->max.graph.adj.find(pos) == coordinator->max.graph.adj.end()
+                            // and coordinator->max.graph.rev.find(pos) ==
+                            // coordinator->max.graph.rev.end()
+                            and module->position !=  targetPosition and
+                            coordinator->max.neighInMM(pos)) {
+                            if (find(teleportingPositions.begin(), teleportingPositions.end(),
+                                     pos) == teleportingPositions.end())
+                                teleportingPositions.push_back(pos);
+                        }
+                    // coordinator->max.fillGraph(pos, Cell3DPosition(13,10,12));
+                }
+            }
+            if (!teleportingPositions.empty()) {
+                Cell3DPosition nextTeleportingPosition = teleportingPositions.front();
+                teleportingPositions.pop_front();
+                teleporting = true;
+                getScheduler()->schedule(new TeleportationStartEvent(getScheduler()->now(), module,
+                                                                     nextTeleportingPosition));
+            } else {
+                cerr << "GRAPH: " << endl;
+                coordinator->max.printGraph();
+                cerr << endl;
+                // cerr << coordinator->max.graph.DinicMaxflow(Cell3DPosition(16, 9, 12),
+                //                                Cell3DPosition(13, 10, 12))
+                //      << endl;
+                Cell3DPosition s = Cell3DPosition(16, 9, 12);
+                Cell3DPosition t = Cell3DPosition(13, 10, 12);
+                cerr << coordinator->max.fordFulkerson(s, t);
+                getScheduler()->schedule(new TeleportationStartEvent(getScheduler()->now(), module,
+                                                                     Cell3DPosition(1,1,1)));
             }
         }
     }

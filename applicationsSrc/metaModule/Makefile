@@ -16,7 +16,7 @@ APPDIR = ../../applicationsBin/$(current_dir)
 #
 # SRCS contains all the sources of your codeBlocks
 # SRCS contains all the sources of your codeBlocks
-SRCS = metaModule.cpp metaModuleBlockCode.cpp init.cpp operations.cpp
+SRCS = metaModule.cpp metaModuleBlockCode.cpp init.cpp operations.cpp maxFlow.cpp Dinic.cpp
 #
 # OUT is the output binary, where APPDIR is its enclosing directory
 OUT = $(APPDIR)/metaModule

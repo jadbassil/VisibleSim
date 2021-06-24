@@ -9,6 +9,16 @@ Init::~Init() {
  
 bool Init::initialMapBuildDone = false;
 
+Color Init::getMMColor(MMShape shape, Cell3DPosition &MMPosition) {
+    if(MMPosition.pt[2] % 2 == 0) {
+        if(shape == FRONTBACK) return Color(GREEN);
+        else return Color(ORANGE);
+    } else {
+        if(shape == BACKFRONT) return Color(GREEN);
+        else return Color(ORANGE);
+    }
+}
+
 void Init::buildInitialMap(Cell3DPosition firstSeedPos) {
     if(initialMapBuildDone) {
         cerr << "Initial map already built!!" << endl;
@@ -28,13 +38,15 @@ void Init::buildInitialMap(Cell3DPosition firstSeedPos) {
         );
       
         newSeed->MMPosition = Cell3DPosition(initialMap[i][0],initialMap[i][1],initialMap[i][2]);
+        
         if( (newSeed->MMPosition.pt[0]+newSeed->MMPosition.pt[1]) % 2 == 0)
             newSeed->shapeState = FRONTBACK;
         else
             newSeed->shapeState = BACKFRONT;
         newSeed->seedPosition = newSeed->module->position;
-
-        buildMM(newSeed->module, newSeed->shapeState, Colors[i % NB_COLORS]);
+        newSeed->module->setColor(getMMColor(newSeed->shapeState, newSeed->MMPosition));
+        //buildMM(newSeed->module, newSeed->shapeState, Colors[i % NB_COLORS]);
+        buildMM(newSeed->module, newSeed->shapeState, getMMColor(newSeed->shapeState, newSeed->MMPosition));
         if(initialMap[i][3] == 1)
             fillMM(newSeed->module);
     }

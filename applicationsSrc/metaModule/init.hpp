@@ -16,6 +16,7 @@ public:
     static void buildInitialMap(Cell3DPosition firstSeedPos);
     static void getNeighborMMSeedPos(const Cell3DPosition &seedPos, const Cell3DPosition &MMPos, Direction pos, Cell3DPosition &newSeed);
     static void fillMM(Catoms3DBlock *s);
+    static Color getMMColor(MMShape, Cell3DPosition&);
 };
 
 #endif
