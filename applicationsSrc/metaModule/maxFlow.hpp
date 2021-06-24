@@ -6,22 +6,22 @@
 class MaxFlow {
    private:
     Catoms3DBlock* coordinator;
-
+    
+    void setSources();
    public:
     map<Cell3DPosition, vector<Cell3DPosition>> graphMap;
     Graph graph;
+    vector<Cell3DPosition> sources; // all modules that can move in MM
+    vector<Cell3DPosition> sinks = {Cell3DPosition(13,10,12), Cell3DPosition(13,9,13)};
+
+    static  Cell3DPosition const VirtualSource, VirtualSink;
+
     MaxFlow(/* args */);
     MaxFlow(Catoms3DBlock* _coordinator);
     ~MaxFlow();
 
     void initGraph();
     bool neighInMM(Cell3DPosition&);
-    /**
-     * Recursively fill the graph
-     * @param pos: starting position
-     * @param dst: target position
-     **/
-    void fillGraph(Cell3DPosition& pos, Cell3DPosition dst);
     void printGraph();
 
     bool BFS(map<Cell3DPosition, map<Cell3DPosition, int>>& rGraph, Cell3DPosition& s,

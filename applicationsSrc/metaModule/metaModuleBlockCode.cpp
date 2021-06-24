@@ -737,7 +737,12 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
             vector<Cell3DPosition> nextPositions;
             for (auto freePos :
                  BaseSimulator::getWorld()->lattice->getFreeNeighborCells(module->position)) {
-                if (module->canMoveTo(freePos)) nextPositions.push_back(freePos);
+                if (module->canMoveTo(freePos) and
+                    find(coordinator->max.sources.begin(), coordinator->max.sources.end(),
+                         Catoms3DMotionEngine::findMotionPivot(module, freePos)->position) ==
+                        coordinator->max.sources.end()) {
+                    nextPositions.push_back(freePos);
+                }
             }
             if (nextPositions.size() > 0) {
                 // graph[blockPosition] = reachablePositions;
@@ -749,7 +754,7 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                         if (coordinator->max.graph.adj.find(pos) == coordinator->max.graph.adj.end()
                             // and coordinator->max.graph.rev.find(pos) ==
                             // coordinator->max.graph.rev.end()
-                            and module->position !=  targetPosition and
+                            /**and odule->position !=  targetPosition **/and
                             coordinator->max.neighInMM(pos)) {
                             if (find(teleportingPositions.begin(), teleportingPositions.end(),
                                      pos) == teleportingPositions.end())
@@ -771,8 +776,8 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                 // cerr << coordinator->max.graph.DinicMaxflow(Cell3DPosition(16, 9, 12),
                 //                                Cell3DPosition(13, 10, 12))
                 //      << endl;
-                Cell3DPosition s = Cell3DPosition(16, 9, 12);
-                Cell3DPosition t = Cell3DPosition(13, 10, 12);
+                Cell3DPosition s = Cell3DPosition(-2, -2, -2);
+                Cell3DPosition t = Cell3DPosition(-3, -3, -3);
                 cerr << coordinator->max.fordFulkerson(s, t);
                 getScheduler()->schedule(new TeleportationStartEvent(getScheduler()->now(), module,
                                                                      Cell3DPosition(1,1,1)));
