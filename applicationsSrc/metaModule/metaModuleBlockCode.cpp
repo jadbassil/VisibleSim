@@ -717,8 +717,8 @@ void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     );
 
     ofstream file;
-    file.open("BB_Transfer_Left.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(6,10,10);
+    file.open("FB_build_up.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(2,10,10);
     if(!file.is_open()) return;
 
     if(c == 'o') {
