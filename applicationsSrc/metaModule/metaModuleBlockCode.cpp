@@ -750,8 +750,8 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                 for (auto pos : nextPositions) {
                     
                         coordinator->max.graphMap[module->position].push_back(pos);
-                        coordinator->max.graph.addEdge(module->position, pos, 1);
-                        if (coordinator->max.graph.adj.find(pos) == coordinator->max.graph.adj.end()
+                       
+                        if (coordinator->max.graphMap.find(pos) == coordinator->max.graphMap.end()
                             // and coordinator->max.graph.rev.find(pos) ==
                             // coordinator->max.graph.rev.end()
                             /**and odule->position !=  targetPosition **/and
@@ -778,7 +778,16 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                 //      << endl;
                 Cell3DPosition s = Cell3DPosition(-2, -2, -2);
                 Cell3DPosition t = Cell3DPosition(-3, -3, -3);
-                cerr << coordinator->max.fordFulkerson(s, t);
+                deque<deque<Cell3DPosition>> paths;
+                cerr << "nb of paths: " << coordinator->max.fordFulkerson(s, t, paths) << endl;
+                
+                for(auto path : paths) {
+                   cerr << "path: " << endl; 
+                   for(auto step : path) {
+                       cerr << step << " ";
+                   }
+                   cerr << endl;
+                }
                 getScheduler()->schedule(new TeleportationStartEvent(getScheduler()->now(), module,
                                                                      Cell3DPosition(1,1,1)));
             }

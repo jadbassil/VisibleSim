@@ -1,23 +1,22 @@
-
+#include <climits>
+#include <queue>
+#include <stack>
 
 #include "metaModuleBlockCode.hpp"
-#include "maxFlow.hpp"
 #include "robots/catoms3D/catoms3DMotionEngine.h"
 
-MaxFlow::MaxFlow(/* args */) {
-    graph = Graph();
-}
+#include "maxFlow.hpp"
 
-MaxFlow::MaxFlow(Catoms3DBlock *_coordinator) : coordinator(_coordinator) {
-    graph = Graph();
-}
+MaxFlow::MaxFlow(/* args */) {}
+
+MaxFlow::MaxFlow(Catoms3DBlock *_coordinator) : coordinator(_coordinator) {}
 
 MaxFlow::~MaxFlow() {}
 
 const Cell3DPosition MaxFlow::VirtualSource = Cell3DPosition(-2,-2,-2); 
 const Cell3DPosition MaxFlow::VirtualSink = Cell3DPosition(-3,-3,-3);
 
-void MaxFlow::setSources() {
+void MaxFlow::setSources() { // TODO: choose sources in a way to avoid meta-module disconnection
     if(not coordinator)
         return;
     sources.clear();
@@ -79,7 +78,6 @@ void MaxFlow::initGraph() {
         if (nextPositions.size() > 0) {
             graphMap[block->position] = nextPositions;
             for (auto rp : nextPositions) {
-                graph.addEdge(block->position, rp, 1);
                 if (find(virtualBlock->teleportingPositions.begin(),
                          virtualBlock->teleportingPositions.end(),
                          rp) == virtualBlock->teleportingPositions.end())
@@ -131,11 +129,31 @@ bool MaxFlow::BFS(map<Cell3DPosition, map<Cell3DPosition, int>>& rGraph, Cell3DP
         visited[i.first] = false;
     }
 
-    queue<Cell3DPosition> q;
+    // queue<Cell3DPosition> q;
+    // q.push(s);
+    // visited[s] = true;
+    // while(not q.empty()) {
+    //     Cell3DPosition u = q.front();
+    //     q.pop();
+    //     for(auto v: rGraph[u]) {
+    //         if(visited[v.first] == false and v.second > 0) {
+    //             //cerr << v.first << " ";
+    //             if(v.first == t) {
+    //                 parent[v.first] = u;
+    //                 return true;
+    //             }
+    //             q.push(v.first);
+    //             parent[v.first] = u;
+    //             visited[v.first] = true;
+    //         }
+    //     }
+    // }
+    stack<Cell3DPosition> q;
     q.push(s);
     visited[s] = true;
     while(not q.empty()) {
-        Cell3DPosition u = q.front();
+        // Cell3DPosition u = q.front();
+        Cell3DPosition u = q.top();
         q.pop();
         for(auto v: rGraph[u]) {
             if(visited[v.first] == false and v.second > 0) {
@@ -154,7 +172,7 @@ bool MaxFlow::BFS(map<Cell3DPosition, map<Cell3DPosition, int>>& rGraph, Cell3DP
     return false;
 }
 
- int MaxFlow::fordFulkerson(Cell3DPosition& s, Cell3DPosition& t) {
+ int MaxFlow::fordFulkerson(Cell3DPosition& s, Cell3DPosition& t, deque<deque<Cell3DPosition>> &paths) {
     Cell3DPosition u, v;
 
     map<Cell3DPosition, map<Cell3DPosition,int>> rGraph;
@@ -175,16 +193,20 @@ bool MaxFlow::BFS(map<Cell3DPosition, map<Cell3DPosition, int>>& rGraph, Cell3DP
             u = parent[v];
             path_flow = min(path_flow, rGraph[u][v]);
         }
-        cerr << "path: " << endl;
+        //cerr << "path: " << endl;
         //cerr << t << " ";
+        paths.push_back(deque<Cell3DPosition>());
         for (v = t; v != s; v = parent[v]) {
             u = parent[v];
-            if(u != MaxFlow::VirtualSource) cerr << u << " ";
+            if(u != MaxFlow::VirtualSource){
+                //cerr << u << " ";
+                paths.back().push_front(u);
+            } 
             BaseSimulator::getWorld()->lattice->highlightCell(u);
             rGraph[u][v] -= path_flow;
             rGraph[v][u] += path_flow; 
         }
-        cerr << endl;
+        //cerr << endl;
         max_flow += path_flow;
     }
     return max_flow;

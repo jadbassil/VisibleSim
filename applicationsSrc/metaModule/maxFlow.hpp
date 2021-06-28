@@ -1,8 +1,6 @@
 #ifndef MAXFLOW_HPP_
 #define MAXFLOW_HPP_
 
-#include "Dinic.hpp"
-
 class MaxFlow {
    private:
     Catoms3DBlock* coordinator;
@@ -10,7 +8,6 @@ class MaxFlow {
     void setSources();
    public:
     map<Cell3DPosition, vector<Cell3DPosition>> graphMap;
-    Graph graph;
     vector<Cell3DPosition> sources; // all modules that can move in MM
     vector<Cell3DPosition> sinks = {Cell3DPosition(13,10,12), Cell3DPosition(13,9,13)};
 
@@ -26,7 +23,7 @@ class MaxFlow {
 
     bool BFS(map<Cell3DPosition, map<Cell3DPosition, int>>& rGraph, Cell3DPosition& s,
              Cell3DPosition& t, map<Cell3DPosition, Cell3DPosition>& parent);
-    int fordFulkerson(Cell3DPosition& s, Cell3DPosition& t);
+    int fordFulkerson(Cell3DPosition& s, Cell3DPosition& t, deque<deque<Cell3DPosition>> &paths);
 };
 
 #endif
