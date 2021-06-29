@@ -91,7 +91,7 @@ void MetaModuleBlockCode::startup() {
         );
         //block24->operation = BF_Transfer_Left;
         block24->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT, true);
-        block24->operation->nextOperation = FB_Fill_Left;
+        block24->operation->nextOperation = FB_Build_Up;
         block24->isCoordinator = true;
 
         MetaModuleBlockCode *block34 = static_cast<MetaModuleBlockCode*>(
@@ -100,11 +100,11 @@ void MetaModuleBlockCode::startup() {
         //block34->operation = FB_Fill_Left;
         block34->operation->nextOperation = NO_OPERATION;
 
-        block34->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
-        block34->isCoordinator = true;
-
-        // block34->operation = new Build_Operation(Direction::UP, FRONTBACK);
+        // block34->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
         // block34->isCoordinator = true;
+
+        block34->operation = new Build_Operation(Direction::UP, FRONTBACK);
+        block34->isCoordinator = true;
 
 
         Init::initialMapBuildDone = true;
@@ -602,6 +602,10 @@ void MetaModuleBlockCode::onMotionEnd() {
             or (operation->isTransfer() 
                 and (operation->getDirection() == Direction::LEFT or operation->getDirection() == Direction::RIGHT)
                 and mvt_it >= 16
+                )
+            or (operation->isBuild()
+                and (operation->getDirection() == Direction::UP)
+                and mvt_it == 53
                 )
         ) {
             sendMessage("CoordinateBack Msg", 

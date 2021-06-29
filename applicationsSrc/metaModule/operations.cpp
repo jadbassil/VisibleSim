@@ -275,34 +275,37 @@ Build_Operation::Build_Operation (Direction _direction, MMShape _mmShape)
 
 Build_Operation::~Build_Operation () {}
 
-void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const Cell3DPosition& pos) {
+void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
+                                             const Cell3DPosition& pos) {
     MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
-    if(mmbc->isCoordinator 
-        and abs(pos.pt[1] - mmbc->module->position.pt[1]) == 1
-        and mmbc->mvt_it < localRules->size()) {
-        Cell3DPosition targetModule = mmbc->seedPosition + (*localRules)[mmbc->mvt_it].currentPosition;
-        while(targetModule != mmbc->module->position.offsetY(-1)) {
+    if (mmbc->isCoordinator and abs(pos.pt[1] - mmbc->module->position.pt[1]) == 1 and
+        mmbc->mvt_it < localRules->size() and mmbc->mvt_it < 51) {
+        Cell3DPosition targetModule =
+            mmbc->seedPosition + (*localRules)[mmbc->mvt_it].currentPosition;
+        while (targetModule != mmbc->module->position.offsetY(-1)) {
             // mmbc->sendMessage("Coordinate Msg", new MessageOf<Coordinate>(
-            //     COORDINATE_MSG_ID, Coordinate(mmbc->operation, targetModule, mmbc->module->position, mmbc->mvt_it)),
+            //     COORDINATE_MSG_ID, Coordinate(mmbc->operation, targetModule,
+            //     mmbc->module->position, mmbc->mvt_it)),
             //     mmbc->module->getInterface(mmbc->nearestPositionTo(targetModule)), 100, 200
             // );
             mmbc->mvt_it++;
             targetModule = mmbc->seedPosition + (*localRules)[mmbc->mvt_it].currentPosition;
         }
-        mmbc->sendMessage("Coordinate Msg", new MessageOf<Coordinate>(
-            COORDINATE_MSG_ID, Coordinate(mmbc->operation, targetModule,  mmbc->module->position,  mmbc->mvt_it)),
-            mmbc->module->getInterface( mmbc->nearestPositionTo(targetModule)), 100, 200
-        );
-        int i=0;
-        int j= mmbc->mvt_it;
-        while((*localRules)[j].state == MOVING) {
+        mmbc->sendMessage(
+            "Coordinate Msg",
+            new MessageOf<Coordinate>(
+                COORDINATE_MSG_ID,
+                Coordinate(mmbc->operation, targetModule, mmbc->module->position, mmbc->mvt_it)),
+            mmbc->module->getInterface(mmbc->nearestPositionTo(targetModule)), 100, 200);
+        int i = 0;
+        int j = mmbc->mvt_it;
+        while ((*localRules)[j].state == MOVING) {
             i++;
             j++;
         }
-         mmbc->mvt_it += i+1;
-        //console << "mvt_it: " << mvt_it << "\n";
+        mmbc->mvt_it += i + 1;
+        mmbc->console << "mvt_it: " << mmbc->mvt_it << "\n";
     }
-
 }
 
 void Build_Operation::updateState(BaseSimulator::BlockCode* bc) {
