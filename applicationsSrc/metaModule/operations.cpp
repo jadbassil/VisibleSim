@@ -31,6 +31,8 @@ Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape
             op = BF_Dismantle_Left;
             //localRules = &LocalRules_BF_Dismantle_Left;
         } else if(mmShape == FRONTBACK) {
+            localRules.reset(&LocalRules_FB_Dismantle_Left);
+            op = FB_Dismantle_Left;
             //localRules = &LocalRules_FB_Dismantle_Left
         }
         break;
@@ -55,6 +57,12 @@ void Dismantle_Operation::updateState(BaseSimulator::BlockCode* bc) {
         mmbc->MMPosition = mmbc->MMPosition.offsetX(-1);
         mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
         break;
+    }
+    case Direction::LEFT and FRONTBACK: {
+        mmbc->shapeState = BACKFRONT;
+        Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::LEFT, mmbc->seedPosition);
+        mmbc->MMPosition = mmbc->MMPosition.offsetX(-1);
+        mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
     }
     
     default:
