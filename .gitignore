@@ -79,7 +79,7 @@ applicationsBin/*/*.xml
 # applicationsBin/*/*.mpeg
 # applicationsBin/*/*.dat
 # applicationsBin/*/*.pdf
-# applicationsBin/*/animation_*/
+applicationsBin/*/animation_*/
 # applicationsBin/*/Screenshots/
 
 # User-generated files
