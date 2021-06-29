@@ -249,3 +249,75 @@ bool Transfer_Operation::handleBridgeMovements(BaseSimulator::BlockCode* bc) {
     
     return false;
 }
+
+/************************************************************************
+ ***************************  BUILD OPERATION  ***********************
+ ***********************************************************************/
+
+Build_Operation::Build_Operation (Direction _direction, MMShape _mmShape)
+    :Operation(_direction, _mmShape) {
+    
+    switch (direction) {
+    case Direction::UP:
+        if(mmShape == BACKFRONT) {
+            // localRules.reset(&LocalRules_BF_Dismantle_Left);
+            // op = BF_Dismantle_Left;
+            //localRules = &LocalRules_BF_Dismantle_Left;
+        } else if(mmShape == FRONTBACK) {
+            localRules.reset(&LocalRules_FB_Build_Up);
+        }
+        break;
+    
+    default:
+        break;
+    }
+}
+
+Build_Operation::~Build_Operation () {}
+
+void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const Cell3DPosition& pos) {
+    MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
+    if(mmbc->isCoordinator 
+        and abs(pos.pt[1] - mmbc->module->position.pt[1]) == 1
+        and mmbc->mvt_it < localRules->size()) {
+        Cell3DPosition targetModule = mmbc->seedPosition + (*localRules)[mmbc->mvt_it].currentPosition;
+        while(targetModule != mmbc->module->position.offsetY(-1)) {
+            // mmbc->sendMessage("Coordinate Msg", new MessageOf<Coordinate>(
+            //     COORDINATE_MSG_ID, Coordinate(mmbc->operation, targetModule, mmbc->module->position, mmbc->mvt_it)),
+            //     mmbc->module->getInterface(mmbc->nearestPositionTo(targetModule)), 100, 200
+            // );
+            mmbc->mvt_it++;
+            targetModule = mmbc->seedPosition + (*localRules)[mmbc->mvt_it].currentPosition;
+        }
+        mmbc->sendMessage("Coordinate Msg", new MessageOf<Coordinate>(
+            COORDINATE_MSG_ID, Coordinate(mmbc->operation, targetModule,  mmbc->module->position,  mmbc->mvt_it)),
+            mmbc->module->getInterface( mmbc->nearestPositionTo(targetModule)), 100, 200
+        );
+        int i=0;
+        int j= mmbc->mvt_it;
+        while((*localRules)[j].state == MOVING) {
+            i++;
+            j++;
+        }
+         mmbc->mvt_it += i+1;
+        //console << "mvt_it: " << mvt_it << "\n";
+    }
+
+}
+
+void Build_Operation::updateState(BaseSimulator::BlockCode* bc) {
+    MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
+    switch (direction and mmShape) {
+    case Direction::UP and FRONTBACK: {
+        mmbc->shapeState = FRONTBACK;
+        Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::UP, mmbc->seedPosition);
+        mmbc->MMPosition = mmbc->MMPosition.offsetZ(1);
+        mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
+        break;
+    }
+    
+    default:
+        break;
+    }
+}
+

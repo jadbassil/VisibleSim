@@ -17,6 +17,7 @@ protected:
     Direction direction;
     MMShape mmShape;
    
+   
 public:
     Operation(/* args */);
     Operation(Direction _direction, MMShape _mmshape);
@@ -24,6 +25,7 @@ public:
 
     std::shared_ptr<vector<LocalMovement>> localRules;
     MMOperation op;
+    MMOperation nextOperation;
 
     virtual void handleAddNeighborEvent(BaseSimulator::BlockCode*,const Cell3DPosition&) {};
     virtual void updateState(BaseSimulator::BlockCode*) {};
@@ -31,6 +33,7 @@ public:
     virtual bool isFill() const {return false;};
     virtual bool isTransfer() const  {return false;};
     virtual bool isConstruct() const {return false;};
+    virtual bool isBuild() const {return false;};
     Direction getDirection() const {return direction;};
 };
 
@@ -72,6 +75,17 @@ public:
      * @brief Special operation for bride on Coordinate message reception
     **/
     bool handleBridgeMovements(BaseSimulator::BlockCode*);
+};
+
+class Build_Operation: public Operation {
+
+public:
+    Build_Operation(Direction _direction, MMShape _mmShape);
+    ~Build_Operation ();
+
+    void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
+    void updateState(BaseSimulator::BlockCode*) override;
+    bool isBuild() const override {return true;};
 };
 
 #endif

@@ -64,7 +64,7 @@ void MetaModuleBlockCode::startup() {
             BaseSimulator::getWorld()->getBlockById(19)->blockCode
         );
        // block19->operation = BF_Dismantle_Left;
-        block19->nextOperation = FB_Transfer_Left;
+        block19->operation->nextOperation = FB_Transfer_Left;
         //operation = new Operation(Direction::LEFT, BACKFRONT);
         block19->operation = new Dismantle_Operation(Direction::LEFT, BACKFRONT);
         block19->setCoordinator(BF_Dismantle_Left);
@@ -79,7 +79,7 @@ void MetaModuleBlockCode::startup() {
             BaseSimulator::getWorld()->getBlockById(4)->blockCode
         );
         //block4->operation = FB_Transfer_Left;
-        block4->nextOperation = BF_Transfer_Left;
+        block4->operation->nextOperation = BF_Transfer_Left;
         block4->operation = new Transfer_Operation(Direction::LEFT, FRONTBACK);
         //block4->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
         //block4->operation = FB_Fill_Left;
@@ -91,17 +91,21 @@ void MetaModuleBlockCode::startup() {
         );
         //block24->operation = BF_Transfer_Left;
         block24->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT, true);
-        block24->nextOperation = FB_Fill_Left;
+        block24->operation->nextOperation = FB_Fill_Left;
         block24->isCoordinator = true;
 
         MetaModuleBlockCode *block34 = static_cast<MetaModuleBlockCode*>(
             BaseSimulator::getWorld()->getBlockById(34)->blockCode
         );
         //block34->operation = FB_Fill_Left;
-        block34->nextOperation = NO_OPERATION;
+        block34->operation->nextOperation = NO_OPERATION;
 
         block34->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
         block34->isCoordinator = true;
+
+        // block34->operation = new Build_Operation(Direction::UP, FRONTBACK);
+        // block34->isCoordinator = true;
+
 
         Init::initialMapBuildDone = true;
     }
@@ -135,7 +139,7 @@ void MetaModuleBlockCode::handleCoordinateMessage(std::shared_ptr<Message> _msg,
     MessageOf<Coordinate>* msg = static_cast<MessageOf<Coordinate>*>(_msg.get());
     Coordinate *coordinateData = msg->getData();
     console << "Received Coordinate Msg from: " << sender->getConnectedBlockId() 
-        << " " << coordinateData->position  << "\n";
+        << " " << coordinateData->coordinatorPosition  << "\n";
     
     if(module->position  == coordinateData->position) {
         console << "Can start moving\n";
@@ -145,8 +149,10 @@ void MetaModuleBlockCode::handleCoordinateMessage(std::shared_ptr<Message> _msg,
         if(operation->isTransfer()) {
             bridgeStop = static_cast<Transfer_Operation*>(operation)->handleBridgeMovements(this); 
         }      
-        if(bridgeStop) return;
-        
+        if(bridgeStop) {
+            console << "BridgeStop\n";
+            return;
+        }
         coordinatorPosition = coordinateData->coordinatorPosition;
         operation = coordinateData->operation; 
         rotating = true;
@@ -447,7 +453,8 @@ void MetaModuleBlockCode::updateState() {
     console << "Update State!!\n";
     operation->updateState(this);
     currentMovement = NO_MOVEMENT;
-    operation =new  Operation();
+    operation =new Operation();
+    operation->nextOperation = NO_OPERATION;
     mvt_it = 0;
     isCoordinator = false;
     localRules = nullptr;
@@ -564,7 +571,7 @@ Cell3DPosition MetaModuleBlockCode::nextInBorder(P2PNetworkInterface* sender = n
     //     localRules = &LocalRules_BF_Dismantle_Left;
     //     Cell3DPosition targetModule = seedPosition + (*localRules)[0].currentPosition;
     //     sendMessage("Coordinate Msg", new MessageOf<Coordinate>(
-    //         COORDINATE_MSG_ID, Coordinate(operation, nextOperation,  targetModule, module->position, mvt_it)),
+    //         COORDINATE_MSG_ID, Coordinate(operation, operation->nextOperation,  targetModule, module->position, mvt_it)),
     //         module->getInterface(nearestPositionTo(targetModule)), 100, 200
     //     ); 
     //     break;
@@ -594,7 +601,7 @@ void MetaModuleBlockCode::onMotionEnd() {
         if((!isCoordinator and operation->isDismantle()) 
             or (operation->isTransfer() 
                 and (operation->getDirection() == Direction::LEFT or operation->getDirection() == Direction::RIGHT)
-                and mvt_it >= 16 
+                and mvt_it >= 16
                 )
         ) {
             sendMessage("CoordinateBack Msg", 
@@ -644,7 +651,7 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                 getOppositeDirection((std::static_pointer_cast<AddNeighborEvent>(pev))
                                     ->face);
             Cell3DPosition& pos = module->getNeighborBlock(face)->position;
-            if(not rotating and !isInMM(pos)) {
+            if(not rotating and !isInMM(pos) and movingState != IN_POSITION) {
                 setGreenLight(false);
             }            
             operation->handleAddNeighborEvent(this, pos);             
