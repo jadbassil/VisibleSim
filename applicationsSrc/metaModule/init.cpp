@@ -28,10 +28,16 @@ void Init::buildInitialMap(Cell3DPosition firstSeedPos) {
         );
       
         newSeed->MMPosition = Cell3DPosition(initialMap[i][0],initialMap[i][1],initialMap[i][2]);
-        if( (newSeed->MMPosition.pt[0]+newSeed->MMPosition.pt[1]) % 2 == 0)
-            newSeed->shapeState = FRONTBACK;
-        else
-            newSeed->shapeState = BACKFRONT;
+       // if(newSeed->MMPosition.pt[2] % 2 == 0)
+            if( (newSeed->MMPosition.pt[0]+newSeed->MMPosition.pt[1]) % 2 == 0)
+                newSeed->shapeState = FRONTBACK;
+            else
+                newSeed->shapeState = BACKFRONT;
+        // else
+        //     if( (newSeed->MMPosition.pt[0]+newSeed->MMPosition.pt[1]) % 2 == 0)
+        //         newSeed->shapeState = BACKFRONT;
+        //     else
+        //         newSeed->shapeState = FRONTBACK;
         newSeed->seedPosition = newSeed->module->position;
 
         buildMM(newSeed->module, newSeed->shapeState, Colors[i % NB_COLORS]);
