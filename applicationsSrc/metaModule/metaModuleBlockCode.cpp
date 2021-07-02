@@ -98,36 +98,36 @@ void MetaModuleBlockCode::startup() {
         // //block14->operation = FB_Fill_Left;
         // block14->isCoordinator = true;
 
-        MetaModuleBlockCode *block4 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(4)->blockCode
+        MetaModuleBlockCode *block3 = static_cast<MetaModuleBlockCode*>(
+            BaseSimulator::getWorld()->getBlockById(3)->blockCode
         );
-        //block4->operation = FB_Transfer_Left;
-        block4->operation->nextOperation = BF_Transfer_Left;
-        block4->operation = new Transfer_Operation(Direction::LEFT, FRONTBACK);
-        //block4->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
-        //block4->operation = FB_Fill_Left;
-        block4->isCoordinator = true;
+        //block3->operation = FB_Transfer_Left;
+        block3->operation->nextOperation = BF_Transfer_Left;
+        block3->operation = new Transfer_Operation(Direction::LEFT, FRONTBACK);
+        //block3->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
+        //block3->operation = FB_Fill_Left;
+        block3->isCoordinator = true;
         
 
-        MetaModuleBlockCode *block24 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(24)->blockCode
+        MetaModuleBlockCode *block23 = static_cast<MetaModuleBlockCode*>(
+            BaseSimulator::getWorld()->getBlockById(23)->blockCode
         );
-        //block24->operation = BF_Transfer_Left;
-        block24->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT, true);
-        block24->operation->nextOperation = FB_Build_Up;
-        block24->isCoordinator = true;
+        //block23->operation = BF_Transfer_Left;
+        block23->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT, true);
+        block23->operation->nextOperation = FB_Build_Up;
+        block23->isCoordinator = true;
 
-        MetaModuleBlockCode *block34 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(34)->blockCode
+        MetaModuleBlockCode *block33 = static_cast<MetaModuleBlockCode*>(
+            BaseSimulator::getWorld()->getBlockById(33)->blockCode
         );
-        //block34->operation = FB_Fill_Left;
-        block34->operation->nextOperation = NO_OPERATION;
+        // //block33->operation = FB_Fill_Left;
+        block33->operation->nextOperation = NO_OPERATION;
 
-        // block34->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
-        // block34->isCoordinator = true;
+        // // block33->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
+        // // block33->isCoordinator = true;
 
-        block34->operation = new Build_Operation(Direction::UP, FRONTBACK);
-        block34->isCoordinator = true;
+        block33->operation = new Build_Operation(Direction::UP, FRONTBACK);
+        block33->isCoordinator = true;
 
 
         Init::initialMapBuildDone = true;
@@ -613,18 +613,19 @@ void MetaModuleBlockCode::onMotionEnd() {
     console << lmvt.nextPosition << "\n";
     movingState = lmvt.state;
     movingSteps++;
-
+  
     if(movingState == MOVING) {        
         mvt_it++;
         probeGreenLight();
     } else if(movingState == WAITING or movingState == IN_POSITION) {
+          
         rotating = false;
         transferCount = 0;
         setGreenLight(true);
         if((!isCoordinator and operation->isDismantle()) 
             or (operation->isTransfer() 
                 and (operation->getDirection() == Direction::LEFT or operation->getDirection() == Direction::RIGHT)
-                and mvt_it >= 16
+                and mvt_it >= 14
                 )
             or (operation->isBuild()
                 and (operation->getDirection() == Direction::UP)
@@ -646,6 +647,7 @@ void MetaModuleBlockCode::onMotionEnd() {
                 cout << module->blockId << ": Op done!!\n";
             }
             updateState();
+            
         }
     }
 }
@@ -751,8 +753,8 @@ void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     );
 
     ofstream file;
-    file.open("FB_Dismantle_Left.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(28,20,10);
+    file.open("BF_Transfer_Left.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(6,10,10);
     if(!file.is_open()) return;
 
     if(c == 'o') {
