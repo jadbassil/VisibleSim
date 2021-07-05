@@ -64,11 +64,12 @@ static const int initialMap[][4] = {
     {1, 0, -1, 0},
     {-1, 0, -1, 0},
     {-2,0,-1,0},
-    {0, 1, 0, 1},
+    // {0, 1, 0, 1},
     // {1, 1, 0, 0},
     // {-1, 1, 0, 0},
     // {-2,1,0,0},
     //{2,1,0,0},
+    
   
 };
 
@@ -118,6 +119,7 @@ public:
     Cell3DPosition pivotPosition;
     Cell3DPosition awaitingModulePos;
     P2PNetworkInterface* awaitingModuleProbeItf{NULL};
+    P2PNetworkInterface *coordinateItf{NULL};
     bool initialized{false};
     int *fillingPos[3];
 
@@ -144,6 +146,7 @@ public:
     //void setLocalRules(Movement movement);
     void setCoordinator(MMOperation op) ;
     Cell3DPosition nextInBorder(P2PNetworkInterface* sender);
+    P2PNetworkInterface *interfaceTo(Cell3DPosition& dstPos, P2PNetworkInterface *sender = nullptr);
 
     void probeGreenLight();
     bool isAdjacentToPosition(const Cell3DPosition& pos) const;

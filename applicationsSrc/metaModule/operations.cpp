@@ -17,6 +17,15 @@ Operation:: Operation(Direction _direction, MMShape _mmshape)
 }
 Operation::~Operation() {}
 
+Cell3DPosition Operation::getNextSeed(BaseSimulator::BlockCode* bc) {
+    MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
+    Cell3DPosition nextSeed;
+    if(localRules) {
+        Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, getDirection(),nextSeed);
+    }
+    return nextSeed;
+}
+
 /************************************************************************
  *************************  DISMANTLE OPERATION  ************************
  ***********************************************************************/
@@ -185,19 +194,19 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
             }
         }
     } 
-    // else if (mmbc->movingState == WAITING) {
-    //     mmbc->transferCount++;
-    //     mmbc->scheduler->trace("transferCount: " + to_string(mmbc->transferCount),
-    //         mmbc->module->blockId, Color(CYAN));
-    //     if (mmbc->transferCount == 33) {  // when all modules passed the bridge
-    //         mmbc->sendMessage(
-    //             "CoordinateBack Msg",
-    //             new MessageOf<CoordinateBack>(COORDINATEBACK_MSG_ID,
-    //                                           CoordinateBack(0, mmbc->coordinatorPosition)),
-    //             mmbc->module->getInterface(mmbc->nearestPositionTo(mmbc->coordinatorPosition)), 100,
-    //             200);
-    //     }
-    // }
+    else if (mmbc->movingState == WAITING) {
+        mmbc->transferCount++;
+        mmbc->scheduler->trace("transferCount: " + to_string(mmbc->transferCount),
+            mmbc->module->blockId, Color(CYAN));
+        if (mmbc->transferCount == 33) {  // when all modules passed the bridge
+            mmbc->sendMessage(
+                "CoordinateBack Msg",
+                new MessageOf<CoordinateBack>(COORDINATEBACK_MSG_ID,
+                                              CoordinateBack(0, mmbc->coordinatorPosition)),
+                mmbc->module->getInterface(mmbc->nearestPositionTo(mmbc->coordinatorPosition)), 100,
+                200);
+        }
+    }
 }
 
 void Transfer_Operation::updateState(BaseSimulator::BlockCode *bc) {
@@ -292,7 +301,7 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
                                              const Cell3DPosition& pos) {
     MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
     if (mmbc->isCoordinator and abs(pos.pt[1] - mmbc->module->position.pt[1]) == 1 and
-        mmbc->mvt_it < localRules->size() and mmbc->mvt_it < 51) {
+        mmbc->mvt_it < localRules->size()) {
         Cell3DPosition targetModule =
             mmbc->seedPosition + (*localRules)[mmbc->mvt_it].currentPosition;
         while (targetModule != mmbc->module->position.offsetY(-1)) {

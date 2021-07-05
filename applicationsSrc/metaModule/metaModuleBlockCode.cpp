@@ -40,7 +40,7 @@ void MetaModuleBlockCode::startup() {
     console << "start\n";
     //operation = new Operation();
     if(module->blockId == 1) {
-      
+        
         initialized = false;
         MMPosition = Cell3DPosition(0,0,0);
         shapeState = FRONTBACK;
@@ -167,26 +167,17 @@ void MetaModuleBlockCode::handleCoordinateMessage(std::shared_ptr<Message> _msg,
     if(module->position  == coordinateData->position) {
         console << "Can start moving\n";
         mvt_it = coordinateData->it; 
-        //Not so Dummy solution for bridging modules movements
-        bool bridgeStop = false;
-        if(operation->isTransfer()) {
-            bridgeStop = static_cast<Transfer_Operation*>(operation)->handleBridgeMovements(this); 
-        }      
-        if(bridgeStop) {
-            console << "BridgeStop\n";
-            return;
-        }
         coordinatorPosition = coordinateData->coordinatorPosition;
         operation = coordinateData->operation; 
         rotating = true;
         probeGreenLight();
     } else {        
         if(module->getInterface(nearestPositionTo(coordinateData->position, sender))->isConnected()) {
-            sendMessage("Coordinate Msg",
+            sendMessage("Coordinate Msg1",
                      new MessageOf<Coordinate>(COORDINATE_MSG_ID, *coordinateData),
                      module->getInterface(nearestPositionTo(coordinateData->position, sender)), 100, 200);
         } else {
-            sendMessage("Coordinate Msg",
+            sendMessage("Coordinate Msg2",
                      new MessageOf<Coordinate>(COORDINATE_MSG_ID, *coordinateData),
                      sender, 100, 200);
         }
@@ -227,6 +218,10 @@ void MetaModuleBlockCode::handleCoordinateBackMessage(std::shared_ptr<Message> _
                 COORDINATE_MSG_ID, Coordinate(operation, targetModule, module->position, mvt_it)),
                 module->getInterface(nearestPositionTo(targetModule)), 100, 200
         );
+        //  sendMessage("Coordinate Msg", new MessageOf<Coordinate>(
+        //         COORDINATE_MSG_ID, Coordinate(operation, targetModule, module->position, mvt_it)),
+        //        interfaceTo(targetModule), 100, 200
+        //);
     } else {
         // if(isCoordinator and operation == FB_Fill_Left) return;
         sendMessage("CoordinateBack Msg1", 
@@ -488,20 +483,20 @@ void MetaModuleBlockCode::updateState() {
 
 bool MetaModuleBlockCode::isInMM(Cell3DPosition &neighborPosition) {
     Cell3DPosition position = (neighborPosition - seedPosition);
-    bool isInOpened = (find(OpenedPositions.begin(), OpenedPositions.end(), position) != OpenedPositions.end());
-    if(isInOpened)
-        return true;
+    // bool isInOpened = (find(OpenedPositions.begin(), OpenedPositions.end(), position) != OpenedPositions.end());
+    // if(isInOpened)
+    //     return true;
     if(shapeState == FRONTBACK) {
         bool inBorder = (find(FrontBackMM.begin(), FrontBackMM.end(), position) != FrontBackMM.end());
         bool inFill = 
             (find(FillingPositions_FrontBack.begin(), FillingPositions_FrontBack.end(), position) != FillingPositions_FrontBack.end());
-        if(inBorder or inFill)
+        if(inBorder)
             return true;
     }else if(shapeState == BACKFRONT) {
         bool inBorder = (find(BackFrontMM.begin(), BackFrontMM.end(), position) != BackFrontMM.end());
         bool inFill = 
             (find(FillingPositions_BackFront.begin(), FillingPositions_BackFront.end(), position) != FillingPositions_BackFront.end());
-        if(inBorder or inFill)
+        if(inBorder )
             return true;
     } else {
         
@@ -509,22 +504,36 @@ bool MetaModuleBlockCode::isInMM(Cell3DPosition &neighborPosition) {
     return false;
 }
 
-Cell3DPosition MetaModuleBlockCode::nearestPositionTo(Cell3DPosition &targetPosition, P2PNetworkInterface *except) {
-    double distance = DBL_MAX;
+Cell3DPosition MetaModuleBlockCode::nearestPositionTo(Cell3DPosition& targetPosition,
+                                                      P2PNetworkInterface* except) {
+    int distance = INT32_MAX;
     Cell3DPosition nearest;
-    for(auto neighPos: lattice->getActiveNeighborCells(module->position)) {
-        if(except != nullptr) {
-            if(module->getInterface(neighPos) == except) {
+    // MetaModuleBlockCode* dstBlock = static_cast<MetaModuleBlockCode*>(
+    //     BaseSimulator::getWorld()->getBlockByPosition(targetPosition)->blockCode);
+    for (auto neighPos : lattice->getActiveNeighborCells(module->position)) {
+    MetaModuleBlockCode* neighBlock = static_cast<MetaModuleBlockCode*>(
+        BaseSimulator::getWorld()->getBlockByPosition(neighPos)->blockCode);
+        if (except != nullptr) {
+            if (module->getInterface(neighPos) == except) {
+                console << neighPos << "\n";
                 continue;
             }
+                
         }
-        double d = neighPos.dist_euclid(targetPosition);
-        if(d < distance) {
-            distance = d; 
+        // if( isInMM(module->position) and targetPosition != neighPos and !isInMM(neighPos)  and !neighBlock->isInMM(targetPosition)
+        //     and not BaseSimulator::getWorld()->lattice->cellsAreAdjacent(neighPos, targetPosition)
+        // ) {
+        //     console << "SKip: " << neighPos << "\n";
+        //     continue;
+        // }
+        int d = BaseSimulator::getWorld()->lattice->getCellDistance(neighPos, targetPosition);
+        //int d = neighPos.dist_euclid(targetPosition); 
+        if (d < distance ) {
+            distance = d;
             nearest = neighPos;
         }
     }
-    if(distance == DBL_MAX) {
+    if (distance == INT32_MAX) {
         module->getNeighborPos(module->getInterfaceId(except), nearest);
         return nearest;
     }
@@ -581,6 +590,13 @@ Cell3DPosition MetaModuleBlockCode::nextInBorder(P2PNetworkInterface* sender = n
                 return next;
         }
     return possibleNexts[0];
+}
+
+P2PNetworkInterface * MetaModuleBlockCode::interfaceTo(Cell3DPosition& dstPos, P2PNetworkInterface *sender) {
+    if(sender)
+        return module->getInterface(nearestPositionTo(dstPos, sender));
+    else 
+        return module->getInterface(nearestPositionTo(dstPos));
 }
 
  void MetaModuleBlockCode::setCoordinator(MMOperation op) {
@@ -641,13 +657,13 @@ void MetaModuleBlockCode::onMotionEnd() {
         P2PNetworkInterface* pivotItf = module->getInterface(pivotPosition);
         VS_ASSERT(pivotItf and pivotItf->isConnected());
         sendMessageToAllNeighbors("FTR msg",new MessageOf<Cell3DPosition>(FTR_MSG_ID, module->position), 100, 0, 0);
+     
         if(movingState == IN_POSITION) {
             console << "mvt_it in pos: " << mvt_it << "\n";
             if(mvt_it == operation->localRules->size()-1) {
                 cout << module->blockId << ": Op done!!\n";
             }
             updateState();
-            
         }
     }
 }
@@ -680,7 +696,7 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                 getOppositeDirection((std::static_pointer_cast<AddNeighborEvent>(pev))
                                     ->face);
             Cell3DPosition& pos = module->getNeighborBlock(face)->position;
-            if(not rotating and !isInMM(pos) and movingState != IN_POSITION) {
+            if(not rotating and !isInMM(pos) and movingState != IN_POSITION and movingState != WAITING) {
                 setGreenLight(false);
             }            
             operation->handleAddNeighborEvent(this, pos);             
@@ -740,6 +756,7 @@ void MetaModuleBlockCode::onBlockSelected() {
     cerr << "mvt_it: " << mvt_it << endl;
     cerr << "operation: " << operation->op << endl;
     cerr << "MovingState: " << movingState << endl;
+    cerr << BaseSimulator::getWorld()->lattice->getCellDistance(seed->position, module->position) << endl;
 }
 
 void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
