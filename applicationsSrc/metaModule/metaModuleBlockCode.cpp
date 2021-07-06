@@ -50,33 +50,11 @@ void MetaModuleBlockCode::startup() {
         if(initialMap[0][3] == 1) {
             Init::fillMM(seed);
         }
-       
-        Init::buildInitialMap(seed->position);
+        Init::buildInitialMap(seed->position, initialMap);
          setGreenLight(true);
          rotating = false;
         seedPosition = module->position;
         //Start movement
-        // currentMovement = BFtoFB_RtoL_EtoE;
-        // Cell3DPosition coordinatorPos = seedPosition + Cell3DPosition(2,1,2);
-        //     sendMessage("SetCoordinator Msg", new MessageOf<SetCoordinator>( SETCOORDINATOR_MSG_ID,
-        //         SetCoordinator(coordinatorPos, currentMovement)),
-        //         module->getInterface(nearestPositionTo(coordinatorPos)),
-        //         100, 200);
-
-        // MetaModuleBlockCode *block49 = static_cast<MetaModuleBlockCode*>(
-        //     BaseSimulator::getWorld()->getBlockById(49)->blockCode
-        // );
-       // block49->operation = BF_Dismantle_Left;
-        // block49->operation->nextOperation = BF_Transfer_Left;
-        // //operation = new Operation(Direction::LEFT, BACKFRONT);
-        // block49->operation = new Dismantle_Operation(Direction::LEFT, FRONTBACK);
-        // block49->setCoordinator(FB_Dismantle_Left);
-        // Cell3DPosition targetModule = block49->seedPosition + (*block49->operation->localRules)[0].currentPosition;
-        // block49->console << "targetModule: " << block49->nearestPositionTo(targetModule) << "\n"; 
-        // block49->sendMessage("Coordinate Msg1", new MessageOf<Coordinate>(
-        //     COORDINATE_MSG_ID, Coordinate(block49->operation, targetModule, block49->module->position, block49->mvt_it)),
-        //     block49->module->getInterface(block49->nearestPositionTo(targetModule)), 100, 200
-        // );
          MetaModuleBlockCode *block19 = static_cast<MetaModuleBlockCode*>(
             BaseSimulator::getWorld()->getBlockById(19)->blockCode
         );
@@ -91,15 +69,6 @@ void MetaModuleBlockCode::startup() {
             block19->module->getInterface(block19->nearestPositionTo(targetModule)), 100, 200
         );
 
-        // MetaModuleBlockCode *block14 = static_cast<MetaModuleBlockCode*>(
-        //     BaseSimulator::getWorld()->getBlockById(14)->blockCode
-        // );
-        // //block14->operation = FB_Transfer_Left;
-        // block14->operation->nextOperation = FB_Transfer_Left;
-        // block14->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT);
-        // //block14->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
-        // //block14->operation = FB_Fill_Left;
-        // block14->isCoordinator = true;
 
         MetaModuleBlockCode *block3 = static_cast<MetaModuleBlockCode*>(
             BaseSimulator::getWorld()->getBlockById(3)->blockCode
@@ -234,7 +203,7 @@ void MetaModuleBlockCode::handleCoordinateBackMessage(std::shared_ptr<Message> _
 /************************************************************************
  ************************* MOTION COORDINATION **************************
  ***********************************************************************/
-// TODO: FIX PLS propagation
+
 void MetaModuleBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
                                                P2PNetworkInterface* sender) {
     MessageOf<PLS>* msg = static_cast<MessageOf<PLS>*>(_msg.get());
@@ -830,6 +799,47 @@ bool MetaModuleBlockCode::parseUserCommandLineArgument(int &argc, char **argv[])
     }
 
     return false;
+}
+
+void MetaModuleBlockCode::parseUserElements(TiXmlDocument *config) {
+    TiXmlElement *worldElement = 
+        config->RootElement();
+    TiXmlElement *MMblocksElement = worldElement->FirstChildElement()->NextSiblingElement();
+    TiXmlElement *blockElement = MMblocksElement->FirstChildElement();
+    cerr << "Parsing MM positions\n";
+    for(; blockElement != NULL; blockElement = blockElement->NextSiblingElement()) {
+       
+        string pos = blockElement->Attribute("position");
+       
+        int start = 0;
+        int end = pos.find(",");
+        int i = 0;
+        array<int,4> coord = {0};
+        while(end != -1) {
+            
+            coord[i] = stoi(pos.substr(start, end-start));
+            //cerr << i << ": " << coord[i] << endl;
+            i++;
+            
+            start = end + 1;
+            end = pos.find(",", start);
+            
+        }
+        coord[i] = stoi(pos.substr(start, end-start));
+        
+
+        const char* filled = blockElement->Attribute("filled");
+        //string filled =  blockElement->Attribute("filled");
+        if(filled) {
+            if(filled == string("true")) {
+                coord[3] = 1;
+            }
+            
+       }
+        initialMap.push_back(coord);
+    }
+
+    
 }
 
 string MetaModuleBlockCode::onInterfaceDraw() {

@@ -49,29 +49,44 @@ static vector<Cell3DPosition> FillingPositions_BackFront = {
 static vector<Cell3DPosition> OpenedPositions = {
     Cell3DPosition(-1, 0, 0), Cell3DPosition(-1, 0, 4), Cell3DPosition(2, 0, 0), Cell3DPosition(2, 0, 4)};
 
-static const int initialMap[][4] = {
-    {0, 0, 0, 0},
-    {1, 0, 0, 0},
-    {-1, 0, 0, 0},
-    {-2,0,0,0},
-    // {2,0,0,0},
-    // {0, 0, 1, 0},
-    // {1, 0, 1, 0},
-    // {-1, 0, 1, 0},
-    // {2,0,1,0},
-    // {2,0,-1,0},
-    {0, 0, -1, 0},
-    {1, 0, -1, 0},
-    {-1, 0, -1, 0},
-    {-2,0,-1,0},
-    // {0, 1, 0, 1},
-    // {1, 1, 0, 0},
-    // {-1, 1, 0, 0},
-    // {-2,1,0,0},
-    //{2,1,0,0},
-    
-  
-};
+static vector<array<int,4>> initialMap;
+
+// static const int initialMap[][4] = {
+//     {0, 0, 0, 0},
+//     {1, 0, 0, 0},
+//     {-1, 0, 0, 0},
+//     {-2, 0, 0, 0},
+//     // {2,0,0,0},
+//     // {0, 0, 1, 0},
+//     // {1, 0, 1, 0},
+//     // {-1, 0, 1, 0},
+//     // {2,0,1,0},
+//     // {2,0,-1,0},
+//     {0, 0, -1, 0},
+//     {1, 0, -1, 0},
+//     {-1, 0, -1, 0},
+//     {-2, 0, -1, 1},
+
+//     {0, 1, 0, 1},
+//     {1, 1, 0, 1},
+//     {-1, 1, 0, 1},
+//     {-2, 1, 0, 1},
+
+//     {0, -1, 0, 1},
+//     {1, -1, 0, 1},
+//     {-1, -1, 0, 1},
+//     {-2, -1, 0, 1},
+
+//     {0, 0, 1, 1},
+//     {1, 0, 1, 0},
+//     {-1, 0, 1, 1},
+//     // {0, 1, 0, 1},
+//     // {1, 1, 0, 0},
+//     // {-1, 1, 0, 0},
+//     // {-2,1,0,0},
+//     //{2,1,0,0},
+
+// };
 
 // static int initialMap[][4] = {
 //     {0,0,0,0}, {1,0,0,0}, {-1,0,0,0},
@@ -201,7 +216,7 @@ public:
      *
      * Called from BuildingBlock constructor, only once.
      */
-    void parseUserElements(TiXmlDocument *config) override {};
+    void parseUserElements(TiXmlDocument *config) override;
 
     /**
      * @brief Provides the user with a pointer to the configuration file parser, which can be used to read additional user information from each block config. Has to be overriden in the child class.
