@@ -3,6 +3,7 @@
 #include "lattice.h"
 #include "../utils/utils.h"
 #include "../utils/trace.h"
+#include <queue>
 
 using namespace BaseSimulator;
 using namespace utils;
@@ -122,7 +123,32 @@ bool Lattice::isInGrid(const Cell3DPosition &p) const {
 
 unsigned int
 Lattice::getCellDistance(const Cell3DPosition &p1, const Cell3DPosition &p2) const {
-    throw NotImplementedException("distance function for current lattice type");
+    //throw NotImplementedException("distance function for current lattice type");
+    map<Cell3DPosition, bool> visited;
+    map<Cell3DPosition, int> distance;
+    
+    queue<Cell3DPosition> Q;
+    distance[p1] = 0;
+
+    Q.push(p1);
+    visited[p1] = true;
+    while(not Q.empty()) {
+        Cell3DPosition x = Q.front();
+        Q.pop();
+        for(auto pos: getActiveNeighborCells(x)) {
+            if(visited[pos]) continue;
+            if(distance.find(pos) == distance.end())
+                distance[pos] = 0;
+            if(visited.find(pos) == visited.end())
+                visited[pos] = false;
+            
+            distance[pos] = distance[x] + 1;
+            Q.push(pos);
+            visited[pos] = true;
+        } 
+    }
+    return distance[p2];
+
 }
 
 vector<Cell3DPosition> Lattice::getActiveNeighborCells(const Cell3DPosition &pos) const {

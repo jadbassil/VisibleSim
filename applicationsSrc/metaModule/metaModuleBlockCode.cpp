@@ -39,8 +39,8 @@ MetaModuleBlockCode::MetaModuleBlockCode(Catoms3DBlock *host) : Catoms3DBlockCod
 void MetaModuleBlockCode::startup() {
     console << "start\n";
     //operation = new Operation();
-    if(module->blockId == 1) {
-      
+    if(not Init::initialMapBuildDone) {
+        
         initialized = false;
         MMPosition = Cell3DPosition(0,0,0);
         shapeState = FRONTBACK;
@@ -50,30 +50,11 @@ void MetaModuleBlockCode::startup() {
         if(initialMap[0][3] == 1) {
             Init::fillMM(seed);
         }
-        Init::buildInitialMap(seed->position);
+        Init::buildInitialMap(seed->position, initialMap);
+         setGreenLight(true);
+         rotating = false;
         seedPosition = module->position;
         //Start movement
-        // currentMovement = BFtoFB_RtoL_EtoE;
-        // Cell3DPosition coordinatorPos = seedPosition + Cell3DPosition(2,1,2);
-        //     sendMessage("SetCoordinator Msg", new MessageOf<SetCoordinator>( SETCOORDINATOR_MSG_ID,
-        //         SetCoordinator(coordinatorPos, currentMovement)),
-        //         module->getInterface(nearestPositionTo(coordinatorPos)),
-        //         100, 200);
-
-        // MetaModuleBlockCode *block49 = static_cast<MetaModuleBlockCode*>(
-        //     BaseSimulator::getWorld()->getBlockById(49)->blockCode
-        // );
-       // block49->operation = BF_Dismantle_Left;
-        // block49->operation->nextOperation = BF_Transfer_Left;
-        // //operation = new Operation(Direction::LEFT, BACKFRONT);
-        // block49->operation = new Dismantle_Operation(Direction::LEFT, FRONTBACK);
-        // block49->setCoordinator(FB_Dismantle_Left);
-        // Cell3DPosition targetModule = block49->seedPosition + (*block49->operation->localRules)[0].currentPosition;
-        // block49->console << "targetModule: " << block49->nearestPositionTo(targetModule) << "\n"; 
-        // block49->sendMessage("Coordinate Msg1", new MessageOf<Coordinate>(
-        //     COORDINATE_MSG_ID, Coordinate(block49->operation, targetModule, block49->module->position, block49->mvt_it)),
-        //     block49->module->getInterface(block49->nearestPositionTo(targetModule)), 100, 200
-        // );
          MetaModuleBlockCode *block19 = static_cast<MetaModuleBlockCode*>(
             BaseSimulator::getWorld()->getBlockById(19)->blockCode
         );
@@ -88,46 +69,37 @@ void MetaModuleBlockCode::startup() {
             block19->module->getInterface(block19->nearestPositionTo(targetModule)), 100, 200
         );
 
-        // MetaModuleBlockCode *block14 = static_cast<MetaModuleBlockCode*>(
-        //     BaseSimulator::getWorld()->getBlockById(14)->blockCode
-        // );
-        // //block14->operation = FB_Transfer_Left;
-        // block14->operation->nextOperation = FB_Transfer_Left;
-        // block14->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT);
-        // //block14->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
-        // //block14->operation = FB_Fill_Left;
-        // block14->isCoordinator = true;
 
-        MetaModuleBlockCode *block4 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(4)->blockCode
+        MetaModuleBlockCode *block3 = static_cast<MetaModuleBlockCode*>(
+            BaseSimulator::getWorld()->getBlockById(3)->blockCode
         );
-        //block4->operation = FB_Transfer_Left;
-        block4->operation->nextOperation = BF_Transfer_Left;
-        block4->operation = new Transfer_Operation(Direction::LEFT, FRONTBACK);
-        //block4->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
-        //block4->operation = FB_Fill_Left;
-        block4->isCoordinator = true;
+        //block3->operation = FB_Transfer_Left;
+        block3->operation->nextOperation = BF_Transfer_Left;
+        block3->operation = new Transfer_Operation(Direction::LEFT, FRONTBACK);
+        //block3->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
+        //block3->operation = FB_Fill_Left;
+        block3->isCoordinator = true;
         
 
-        MetaModuleBlockCode *block24 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(24)->blockCode
+        MetaModuleBlockCode *block23 = static_cast<MetaModuleBlockCode*>(
+            BaseSimulator::getWorld()->getBlockById(23)->blockCode
         );
-        //block24->operation = BF_Transfer_Left;
-        block24->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT, true);
-        block24->operation->nextOperation = FB_Build_Up;
-        block24->isCoordinator = true;
+        //block23->operation = BF_Transfer_Left;
+        block23->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT, true);
+        block23->operation->nextOperation = FB_Build_Up;
+        block23->isCoordinator = true;
 
-        MetaModuleBlockCode *block34 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(34)->blockCode
+        MetaModuleBlockCode *block33 = static_cast<MetaModuleBlockCode*>(
+            BaseSimulator::getWorld()->getBlockById(33)->blockCode
         );
-        //block34->operation = FB_Fill_Left;
-        block34->operation->nextOperation = NO_OPERATION;
+        // //block33->operation = FB_Fill_Left;
+        block33->operation->nextOperation = NO_OPERATION;
 
-        // block34->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
-        // block34->isCoordinator = true;
+        // // block33->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
+        // // block33->isCoordinator = true;
 
-        block34->operation = new Build_Operation(Direction::UP, FRONTBACK);
-        block34->isCoordinator = true;
+        block33->operation = new Build_Operation(Direction::UP, FRONTBACK);
+        block33->isCoordinator = true;
 
 
         Init::initialMapBuildDone = true;
@@ -167,26 +139,16 @@ void MetaModuleBlockCode::handleCoordinateMessage(std::shared_ptr<Message> _msg,
     if(module->position  == coordinateData->position) {
         console << "Can start moving\n";
         mvt_it = coordinateData->it; 
-        //Not so Dummy solution for bridging modules movements
-        bool bridgeStop = false;
-        if(operation->isTransfer()) {
-            bridgeStop = static_cast<Transfer_Operation*>(operation)->handleBridgeMovements(this); 
-        }      
-        if(bridgeStop) {
-            console << "BridgeStop\n";
-            return;
-        }
         coordinatorPosition = coordinateData->coordinatorPosition;
         operation = coordinateData->operation; 
-        rotating = true;
         probeGreenLight();
     } else {        
         if(module->getInterface(nearestPositionTo(coordinateData->position, sender))->isConnected()) {
-            sendMessage("Coordinate Msg",
+            sendMessage("Coordinate Msg1",
                      new MessageOf<Coordinate>(COORDINATE_MSG_ID, *coordinateData),
                      module->getInterface(nearestPositionTo(coordinateData->position, sender)), 100, 200);
         } else {
-            sendMessage("Coordinate Msg",
+            sendMessage("Coordinate Msg2",
                      new MessageOf<Coordinate>(COORDINATE_MSG_ID, *coordinateData),
                      sender, 100, 200);
         }
@@ -209,9 +171,7 @@ void MetaModuleBlockCode::handleCoordinateBackMessage(std::shared_ptr<Message> _
             return;
         }
         if((*operation->localRules)[mvt_it].currentPosition + seedPosition == module->position) {
-            rotating = true;
             LocalMovement lmvt = (*operation->localRules)[mvt_it];
-            rotating = true;
             probeGreenLight();
             // console << lmvt.nextPosition << "\n";
             // movingState = lmvt.state;
@@ -227,6 +187,10 @@ void MetaModuleBlockCode::handleCoordinateBackMessage(std::shared_ptr<Message> _
                 COORDINATE_MSG_ID, Coordinate(operation, targetModule, module->position, mvt_it)),
                 module->getInterface(nearestPositionTo(targetModule)), 100, 200
         );
+        //  sendMessage("Coordinate Msg", new MessageOf<Coordinate>(
+        //         COORDINATE_MSG_ID, Coordinate(operation, targetModule, module->position, mvt_it)),
+        //        interfaceTo(targetModule), 100, 200
+        //);
     } else {
         // if(isCoordinator and operation == FB_Fill_Left) return;
         sendMessage("CoordinateBack Msg1", 
@@ -239,12 +203,13 @@ void MetaModuleBlockCode::handleCoordinateBackMessage(std::shared_ptr<Message> _
 /************************************************************************
  ************************* MOTION COORDINATION **************************
  ***********************************************************************/
+
 void MetaModuleBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
                                                P2PNetworkInterface* sender) {
     MessageOf<PLS>* msg = static_cast<MessageOf<PLS>*>(_msg.get());
     Cell3DPosition srcPos = msg->getData()->srcPos;
     Cell3DPosition targetPos = msg->getData()->targetPos;
-
+    console << "Received PLS from: " << sender->getConnectedBlockId() << "\n";
     if(movingState != MOVING) {
         bool nextToSender = isAdjacentToPosition(srcPos);
         bool nextToTarget = isAdjacentToPosition(targetPos);
@@ -335,14 +300,14 @@ void MetaModuleBlockCode::handleGLOMessage(std::shared_ptr<Message> _msg,
         sendMessage("GLO Msg", new MessageOf<PLS>(GLO_MSG_ID, PLS(srcPos, targetPos)), itf, 100, 0);
     } else if(module->position == targetPos){
         VS_ASSERT(module->position == targetPos);
-        rotating = true;
+        //rotating = true;
         // LocalMovement lmvt = (*localRules)[mvt_it];
         // console << lmvt.nextPosition << "\n";
         // movingState = lmvt.state;
         // movingSteps++;
         // Sender should be pivot to be used for next motion
-        Catoms3DBlock* pivot = static_cast<Catoms3DBlock*>(msg->sourceInterface->hostBlock);
-        VS_ASSERT(pivot and pivot !=module);
+        //Catoms3DBlock* pivot = static_cast<Catoms3DBlock*>(msg->sourceInterface->hostBlock);
+        //VS_ASSERT(pivot and pivot !=module);
         //scheduleRotationTo(mabc.stepTargetPos, pivot);
         //operation->localRules.reset(&LocalRules_BF_Dismantle_Left);
         //cout << (*operation->localRules.get())[0] << endl;
@@ -488,20 +453,20 @@ void MetaModuleBlockCode::updateState() {
 
 bool MetaModuleBlockCode::isInMM(Cell3DPosition &neighborPosition) {
     Cell3DPosition position = (neighborPosition - seedPosition);
-    bool isInOpened = (find(OpenedPositions.begin(), OpenedPositions.end(), position) != OpenedPositions.end());
-    if(isInOpened)
-        return true;
+    // bool isInOpened = (find(OpenedPositions.begin(), OpenedPositions.end(), position) != OpenedPositions.end());
+    // if(isInOpened)
+    //     return true;
     if(shapeState == FRONTBACK) {
         bool inBorder = (find(FrontBackMM.begin(), FrontBackMM.end(), position) != FrontBackMM.end());
         bool inFill = 
             (find(FillingPositions_FrontBack.begin(), FillingPositions_FrontBack.end(), position) != FillingPositions_FrontBack.end());
-        if(inBorder or inFill)
+        if(inBorder)
             return true;
     }else if(shapeState == BACKFRONT) {
         bool inBorder = (find(BackFrontMM.begin(), BackFrontMM.end(), position) != BackFrontMM.end());
         bool inFill = 
             (find(FillingPositions_BackFront.begin(), FillingPositions_BackFront.end(), position) != FillingPositions_BackFront.end());
-        if(inBorder or inFill)
+        if(inBorder )
             return true;
     } else {
         
@@ -509,22 +474,30 @@ bool MetaModuleBlockCode::isInMM(Cell3DPosition &neighborPosition) {
     return false;
 }
 
-Cell3DPosition MetaModuleBlockCode::nearestPositionTo(Cell3DPosition &targetPosition, P2PNetworkInterface *except) {
-    double distance = DBL_MAX;
+Cell3DPosition MetaModuleBlockCode::nearestPositionTo(Cell3DPosition& targetPosition,
+                                                      P2PNetworkInterface* except) {
+    int distance = INT32_MAX;
     Cell3DPosition nearest;
-    for(auto neighPos: lattice->getActiveNeighborCells(module->position)) {
-        if(except != nullptr) {
-            if(module->getInterface(neighPos) == except) {
+    // MetaModuleBlockCode* dstBlock = static_cast<MetaModuleBlockCode*>(
+    //     BaseSimulator::getWorld()->getBlockByPosition(targetPosition)->blockCode);
+    for (auto neighPos : lattice->getActiveNeighborCells(module->position)) {
+    MetaModuleBlockCode* neighBlock = static_cast<MetaModuleBlockCode*>(
+        BaseSimulator::getWorld()->getBlockByPosition(neighPos)->blockCode);
+        if (except != nullptr) {
+            if (module->getInterface(neighPos) == except) {
+                console << neighPos << "\n";
                 continue;
             }
+                
         }
-        double d = neighPos.dist_euclid(targetPosition);
-        if(d < distance) {
-            distance = d; 
+        int d = BaseSimulator::getWorld()->lattice->getCellDistance(neighPos, targetPosition);
+        //int d = neighPos.dist_euclid(targetPosition); 
+        if (d < distance ) {
+            distance = d;
             nearest = neighPos;
         }
     }
-    if(distance == DBL_MAX) {
+    if (distance == INT32_MAX) {
         module->getNeighborPos(module->getInterfaceId(except), nearest);
         return nearest;
     }
@@ -583,6 +556,13 @@ Cell3DPosition MetaModuleBlockCode::nextInBorder(P2PNetworkInterface* sender = n
     return possibleNexts[0];
 }
 
+P2PNetworkInterface * MetaModuleBlockCode::interfaceTo(Cell3DPosition& dstPos, P2PNetworkInterface *sender) {
+    if(sender)
+        return module->getInterface(nearestPositionTo(dstPos, sender));
+    else 
+        return module->getInterface(nearestPositionTo(dstPos));
+}
+
  void MetaModuleBlockCode::setCoordinator(MMOperation op) {
     isCoordinator = true;
     // mvt_it = 0;
@@ -613,18 +593,19 @@ void MetaModuleBlockCode::onMotionEnd() {
     console << lmvt.nextPosition << "\n";
     movingState = lmvt.state;
     movingSteps++;
-
+  
     if(movingState == MOVING) {        
         mvt_it++;
         probeGreenLight();
     } else if(movingState == WAITING or movingState == IN_POSITION) {
-        rotating = false;
+          
         transferCount = 0;
-        setGreenLight(true);
+        //setGreenLight(true);
+        rotating = false;
         if((!isCoordinator and operation->isDismantle()) 
             or (operation->isTransfer() 
                 and (operation->getDirection() == Direction::LEFT or operation->getDirection() == Direction::RIGHT)
-                and mvt_it >= 16
+                and mvt_it >= 14
                 )
             or (operation->isBuild()
                 and (operation->getDirection() == Direction::UP)
@@ -639,7 +620,10 @@ void MetaModuleBlockCode::onMotionEnd() {
         movingSteps = 0;
         P2PNetworkInterface* pivotItf = module->getInterface(pivotPosition);
         VS_ASSERT(pivotItf and pivotItf->isConnected());
-        sendMessageToAllNeighbors("FTR msg",new MessageOf<Cell3DPosition>(FTR_MSG_ID, module->position), 100, 0, 0);
+        //sendMessageToAllNeighbors("FTR msg",new MessageOf<Cell3DPosition>(FTR_MSG_ID, module->position), 100, 0, 0);
+        sendMessage("FTR msg", new MessageOf<Cell3DPosition>(FTR_MSG_ID, module->position),
+                    module->getInterface(pivotPosition), 100, 200);
+
         if(movingState == IN_POSITION) {
             console << "mvt_it in pos: " << mvt_it << "\n";
             if(mvt_it == operation->localRules->size()-1) {
@@ -673,12 +657,17 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
         }
         case EVENT_ADD_NEIGHBOR: {
             // Do something when a neighbor is added to an interface of the module
+            
             VS_ASSERT(operation); 
             uint64_t face = Catoms3DWorld::getWorld()->lattice->
                 getOppositeDirection((std::static_pointer_cast<AddNeighborEvent>(pev))
                                     ->face);
             Cell3DPosition& pos = module->getNeighborBlock(face)->position;
-            if(not rotating and !isInMM(pos) and movingState != IN_POSITION) {
+            MetaModuleBlockCode *posBlock = static_cast<MetaModuleBlockCode*>(
+                BaseSimulator::getWorld()->getBlockByPosition(pos)->blockCode
+            );
+            console << "ADD NEIGHBOR: " << pos << "\n";
+            if(not rotating and posBlock->rotating or (!posBlock->rotating and isCoordinator) or module->blockId == 22) {
                 setGreenLight(false);
             }            
             operation->handleAddNeighborEvent(this, pos);             
@@ -693,6 +682,7 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
 
                     Cell3DPosition pos;
                     if (module->getNeighborPos(face, pos) and (module->getState() == BuildingBlock::State::ALIVE)) {
+                         console << "REMOVE NEIGHBOR: " << pos << "\n";
                         setGreenLight(true);
                     }
                
@@ -738,6 +728,7 @@ void MetaModuleBlockCode::onBlockSelected() {
     cerr << "mvt_it: " << mvt_it << endl;
     cerr << "operation: " << operation->op << endl;
     cerr << "MovingState: " << movingState << endl;
+    cerr << BaseSimulator::getWorld()->lattice->getCellDistance(seed->position, module->position) << endl;
 }
 
 void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
@@ -751,8 +742,8 @@ void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     );
 
     ofstream file;
-    file.open("FB_Dismantle_Left.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(28,20,10);
+    file.open("BF_Transfer_Left.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(6,10,10);
     if(!file.is_open()) return;
 
     if(c == 'o') {
@@ -808,6 +799,47 @@ bool MetaModuleBlockCode::parseUserCommandLineArgument(int &argc, char **argv[])
     }
 
     return false;
+}
+
+void MetaModuleBlockCode::parseUserElements(TiXmlDocument *config) {
+    TiXmlElement *worldElement = 
+        config->RootElement();
+    TiXmlElement *MMblocksElement = worldElement->FirstChildElement()->NextSiblingElement();
+    TiXmlElement *blockElement = MMblocksElement->FirstChildElement();
+    cerr << "Parsing MM positions\n";
+    for(; blockElement != NULL; blockElement = blockElement->NextSiblingElement()) {
+       
+        string pos = blockElement->Attribute("position");
+       
+        int start = 0;
+        int end = pos.find(",");
+        int i = 0;
+        array<int,4> coord = {0};
+        while(end != -1) {
+            
+            coord[i] = stoi(pos.substr(start, end-start));
+            //cerr << i << ": " << coord[i] << endl;
+            i++;
+            
+            start = end + 1;
+            end = pos.find(",", start);
+            
+        }
+        coord[i] = stoi(pos.substr(start, end-start));
+        
+
+        const char* filled = blockElement->Attribute("filled");
+        //string filled =  blockElement->Attribute("filled");
+        if(filled) {
+            if(filled == string("true")) {
+                coord[3] = 1;
+            }
+            
+       }
+        initialMap.push_back(coord);
+    }
+
+    
 }
 
 string MetaModuleBlockCode::onInterfaceDraw() {

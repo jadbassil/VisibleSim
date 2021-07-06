@@ -16,6 +16,7 @@ protected:
     //vector<LocalMovement> *localRules;
     Direction direction;
     MMShape mmShape;
+    Cell3DPosition nextSeed;
    
    
 public:
@@ -28,6 +29,7 @@ public:
     MMOperation nextOperation;
 
     virtual void handleAddNeighborEvent(BaseSimulator::BlockCode*,const Cell3DPosition&) {};
+    Cell3DPosition getNextSeed(BaseSimulator::BlockCode*);
     virtual void updateState(BaseSimulator::BlockCode*) {};
     virtual bool isDismantle() const {return false;};
     virtual bool isFill() const {return false;};

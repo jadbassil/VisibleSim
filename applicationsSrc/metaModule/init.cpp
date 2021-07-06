@@ -9,17 +9,19 @@ Init::~Init() {
  
 bool Init::initialMapBuildDone = false;
 
-void Init::buildInitialMap(Cell3DPosition firstSeedPos) {
+void Init::buildInitialMap(Cell3DPosition firstSeedPos, vector<array<int,4>> &map) {
     if(initialMapBuildDone) {
         cerr << "Initial map already built!!" << endl;
         return;
     }
-    for(int i=1; i<(int)sizeof(initialMap)/(int)sizeof(initialMap[0]); i++) {
+     cerr << map.size()<< endl;
+    for(int i=1; i< map.size(); i++) {
+       
         int x,y,z;
-        x = firstSeedPos.pt[0] + 4*initialMap[i][0];
-        y = firstSeedPos.pt[1] + 3*initialMap[i][1];
-        z = firstSeedPos.pt[2] + 4*initialMap[i][2];
-        if(initialMap[i][2] % 2 != 0) {
+        x = firstSeedPos.pt[0] + 4*map[i][0];
+        y = firstSeedPos.pt[1] + 3*map[i][1];
+        z = firstSeedPos.pt[2] + 4*map[i][2];
+        if(map[i][2] % 2 != 0) {
             y -= 1;
         }
         BaseSimulator::getWorld()->addBlock(0, MetaModuleBlockCode::buildNewBlockCode, Cell3DPosition(x,y,z),  Colors[i % NB_COLORS] );
@@ -27,7 +29,7 @@ void Init::buildInitialMap(Cell3DPosition firstSeedPos) {
             BaseSimulator::getWorld()->getBlockByPosition(Cell3DPosition(x,y,z))->blockCode
         );
       
-        newSeed->MMPosition = Cell3DPosition(initialMap[i][0],initialMap[i][1],initialMap[i][2]);
+        newSeed->MMPosition = Cell3DPosition(map[i][0],map[i][1],map[i][2]);
        // if(newSeed->MMPosition.pt[2] % 2 == 0)
             if( (newSeed->MMPosition.pt[0]+newSeed->MMPosition.pt[1]) % 2 == 0)
                 newSeed->shapeState = FRONTBACK;
@@ -41,7 +43,7 @@ void Init::buildInitialMap(Cell3DPosition firstSeedPos) {
         newSeed->seedPosition = newSeed->module->position;
 
         buildMM(newSeed->module, newSeed->shapeState, Colors[i % NB_COLORS]);
-        if(initialMap[i][3] == 1)
+        if(map[i][3] == 1)
             fillMM(newSeed->module);
     }
     initialMapBuildDone = true;
