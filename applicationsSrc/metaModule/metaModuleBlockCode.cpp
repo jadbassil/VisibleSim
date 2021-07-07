@@ -667,7 +667,7 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                 BaseSimulator::getWorld()->getBlockByPosition(pos)->blockCode
             );
             console << "ADD NEIGHBOR: " << pos << "\n";
-            if(not rotating and posBlock->rotating or (!posBlock->rotating and isCoordinator) or module->blockId == 22) {
+            if(not rotating and posBlock->rotating or (!posBlock->rotating and isCoordinator)) {
                 setGreenLight(false);
             }            
             operation->handleAddNeighborEvent(this, pos);             
