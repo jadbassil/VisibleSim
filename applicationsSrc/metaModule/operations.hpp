@@ -65,9 +65,9 @@ public:
 
 class Transfer_Operation: public Operation {
 private:
-    bool isLastTransferOperation;
+    bool isFirstTransferOperation;
 public:
-    Transfer_Operation(Direction _direction, MMShape _mmShape, bool _isLastTransferOperation = false);
+    Transfer_Operation(Direction _direction, MMShape _mmShape, bool _isFirstransferOperation = false);
     ~Transfer_Operation();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;

@@ -75,7 +75,7 @@ void MetaModuleBlockCode::startup() {
         );
         //block3->operation = FB_Transfer_Left;
         block3->operation->nextOperation = BF_Transfer_Left;
-        block3->operation = new Transfer_Operation(Direction::LEFT, FRONTBACK);
+        block3->operation = new Transfer_Operation(Direction::LEFT, FRONTBACK, true);
         //block3->operation = new Fill_Operation(Direction::LEFT, FRONTBACK);
         //block3->operation = FB_Fill_Left;
         block3->isCoordinator = true;
@@ -85,7 +85,7 @@ void MetaModuleBlockCode::startup() {
             BaseSimulator::getWorld()->getBlockById(23)->blockCode
         );
         //block23->operation = BF_Transfer_Left;
-        block23->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT, true);
+        block23->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT);
         block23->operation->nextOperation = FB_Build_Up;
         block23->isCoordinator = true;
 
@@ -140,7 +140,12 @@ void MetaModuleBlockCode::handleCoordinateMessage(std::shared_ptr<Message> _msg,
         console << "Can start moving\n";
         mvt_it = coordinateData->it; 
         coordinatorPosition = coordinateData->coordinatorPosition;
-        operation = coordinateData->operation; 
+        operation = coordinateData->operation;
+        bool bridgeStop = false;
+        if(operation->isTransfer()) {
+            bridgeStop = static_cast<Transfer_Operation*>(operation)->handleBridgeMovements(this);
+        } 
+        if(bridgeStop) return;
         probeGreenLight();
     } else {        
         if(module->getInterface(nearestPositionTo(coordinateData->position, sender))->isConnected()) {
@@ -209,7 +214,7 @@ void MetaModuleBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
     MessageOf<PLS>* msg = static_cast<MessageOf<PLS>*>(_msg.get());
     Cell3DPosition srcPos = msg->getData()->srcPos;
     Cell3DPosition targetPos = msg->getData()->targetPos;
-    console << "Received PLS from: " << sender->getConnectedBlockId() << "\n";
+    console << "Received PLS from: " << sender->getConnectedBlockId() << srcPos <<',' << targetPos << "\n";
     if(movingState != MOVING) {
         bool nextToSender = isAdjacentToPosition(srcPos);
         bool nextToTarget = isAdjacentToPosition(targetPos);
@@ -233,7 +238,7 @@ void MetaModuleBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
         console << "targetNextToSrc: " << targetNextToSrc << "\n";
         if (targetLightNeighbor
             and targetLightNeighbor->position != srcPos and !targetNextToSrc) { // neighbor is target light
-            console << "Neighbor is target light\n";
+            console << "Neighbor is target light: " << targetLightNeighbor->position << "\n";
             console << "target light pos: " << targetLightNeighbor->position << "\n";
             P2PNetworkInterface* tlitf = module->getInterface(
                 targetLightNeighbor->position);
@@ -251,6 +256,7 @@ void MetaModuleBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
                 VS_ASSERT(itf and itf->isConnected());
                 sendMessage("GLO Msg", new MessageOf<PLS>(GLO_MSG_ID, PLS(targetPos, srcPos)),itf, 100, 0);
             } else {
+                getScheduler()->trace("light turned orange", module->blockId, ORANGE);
                 moduleAwaitingGo = true;
                 awaitingModulePos = srcPos;
                 awaitingModuleProbeItf = sender;
@@ -441,8 +447,11 @@ void MetaModuleBlockCode::updateState() {
     console << "Update State!!\n";
     operation->updateState(this);
     currentMovement = NO_MOVEMENT;
-    operation =new Operation();
-    operation->nextOperation = NO_OPERATION;
+    if(not operation->isTransfer()) {
+        operation =new Operation();
+        operation->nextOperation = NO_OPERATION;
+    }
+   
     mvt_it = 0;
     isCoordinator = false;
     localRules = nullptr;
@@ -607,10 +616,10 @@ void MetaModuleBlockCode::onMotionEnd() {
                 and (operation->getDirection() == Direction::LEFT or operation->getDirection() == Direction::RIGHT)
                 and mvt_it >= 14
                 )
-            or (operation->isBuild()
-                and (operation->getDirection() == Direction::UP)
-                and mvt_it == 53
-                )
+            // or (operation->isBuild()
+            //     and (operation->getDirection() == Direction::UP)
+            //     and mvt_it >= 51
+            //     )
         ) {
             sendMessage("CoordinateBack Msg", 
                 new MessageOf<CoordinateBack>(COORDINATEBACK_MSG_ID, CoordinateBack(movingSteps, coordinatorPosition)),
@@ -667,9 +676,9 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                 BaseSimulator::getWorld()->getBlockByPosition(pos)->blockCode
             );
             console << "ADD NEIGHBOR: " << pos << "\n";
-            if(not rotating and posBlock->rotating or (!posBlock->rotating and isCoordinator) or module->blockId == 22) {
+            if(not rotating and posBlock->rotating or (!posBlock->rotating and isCoordinator) ) {
                 setGreenLight(false);
-            }            
+            }
             operation->handleAddNeighborEvent(this, pos);             
             break;
         }
