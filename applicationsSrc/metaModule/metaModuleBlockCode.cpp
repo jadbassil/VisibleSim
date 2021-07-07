@@ -219,7 +219,14 @@ void MetaModuleBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
         bool nextToSender = isAdjacentToPosition(srcPos);
         bool nextToTarget = isAdjacentToPosition(targetPos);
         bool targetNextToSrc = false;
-       
+        if(module->getState() == BuildingBlock::State::ACTUATING) {
+            getScheduler()->trace("light turned orange", module->blockId, ORANGE);
+                moduleAwaitingGo = true;
+                awaitingModulePos = srcPos;
+                awaitingModuleProbeItf = sender;
+                module->setColor(DARKORANGE);
+                return;
+        }
         Catoms3DBlock* targetLightNeighbor = findTargetLightAmongNeighbors(targetPos, srcPos, sender);
         
         if(targetLightNeighbor) { //Check if targetLightNeighbor has already received this msg
@@ -690,7 +697,7 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                     lattice->getOppositeDirection((std::static_pointer_cast<RemoveNeighborEvent>(pev))->face);
 
                     Cell3DPosition pos;
-                    if (module->getNeighborPos(face, pos) and (module->getState() == BuildingBlock::State::ALIVE)) {
+                    if (module->getNeighborPos(face, pos) and (module->getState() == BuildingBlock::State::ALIVE) and module->getState() !=  BuildingBlock::State::ACTUATING ) {
                          console << "REMOVE NEIGHBOR: " << pos << "\n";
                         setGreenLight(true);
                     }
