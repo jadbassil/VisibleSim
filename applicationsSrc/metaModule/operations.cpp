@@ -216,19 +216,21 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
 
 void Transfer_Operation::updateState(BaseSimulator::BlockCode *bc) {
     MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
-    switch (direction and mmShape) {
-    case Direction::LEFT and FRONTBACK: {
-        mmbc->shapeState = BACKFRONT;
-        Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::LEFT, mmbc->seedPosition);
-        mmbc->MMPosition = mmbc->MMPosition.offsetX(-1);
-        mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
-        break;
-    }
-    case Direction::LEFT and BACKFRONT: {
-        mmbc->shapeState = FRONTBACK;
-        Init::getNeighborMMSeedPos( mmbc->seedPosition,  mmbc->MMPosition, Direction::LEFT,  mmbc->seedPosition);
-        mmbc->MMPosition =  mmbc->MMPosition.offsetX(-1);
-        mmbc->initialPosition =  mmbc->module->position -  mmbc->seedPosition;
+    switch (direction ) {
+    case Direction::LEFT : {
+        if(mmShape == FRONTBACK) {
+            mmbc->shapeState = BACKFRONT;
+            Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::LEFT, mmbc->seedPosition);
+            mmbc->MMPosition = mmbc->MMPosition.offsetX(-1);
+            mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
+            break;
+        } else if(mmShape == BACKFRONT) {
+            mmbc->shapeState = FRONTBACK;
+            Init::getNeighborMMSeedPos( mmbc->seedPosition,  mmbc->MMPosition, Direction::LEFT,  mmbc->seedPosition);
+            mmbc->MMPosition =  mmbc->MMPosition.offsetX(-1);
+            mmbc->initialPosition =  mmbc->module->position -  mmbc->seedPosition;
+            break;
+        }
     }
     default:
         break;
@@ -293,10 +295,9 @@ Build_Operation::Build_Operation (Direction _direction, MMShape _mmShape)
     
     switch (direction) {
     case Direction::UP:
+        // motions rules are set for Z even
         if(mmShape == BACKFRONT) {
-            // localRules.reset(&LocalRules_BF_Dismantle_Left);
-            // op = BF_Dismantle_Left;
-            //localRules = &LocalRules_BF_Dismantle_Left;
+            localRules.reset(&LocalRules_BF_Build_Up);
         } else if(mmShape == FRONTBACK) {
             localRules.reset(&LocalRules_FB_Build_Up);
         }
@@ -313,6 +314,7 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
                                              const Cell3DPosition& pos) {
     MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
     if (mmbc->isCoordinator and abs(pos.pt[1] - mmbc->module->position.pt[1]) == 1 and
+        abs(pos.pt[2] - mmbc->module->position.pt[2]) == 0 and
         mmbc->mvt_it < localRules->size()) {
         
         mmbc->transferCount++; 
@@ -324,7 +326,11 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
         }
         if (mmbc->transferCount == 9) {
             // mvt_it = 43 given to a module via coordinate msg so must jump to next module
-            mmbc->mvt_it += 9;  
+            while((*localRules)[mmbc->mvt_it].state == MOVING) {
+                mmbc->mvt_it++;
+            }
+             mmbc->mvt_it++;
+            //mmbc->mvt_it += 7;  
         }
 
         mmbc->sendMessage(
@@ -347,17 +353,28 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
 
 void Build_Operation::updateState(BaseSimulator::BlockCode* bc) {
     MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
-    switch (direction and mmShape) {
-    case Direction::UP and FRONTBACK: {
-        mmbc->shapeState = FRONTBACK;
-        Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::UP, mmbc->seedPosition);
-        mmbc->MMPosition = mmbc->MMPosition.offsetZ(1);
-        mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
-        break;
+    switch (direction) {
+    case Direction::UP: {
+        if(mmShape == FRONTBACK) {
+            mmbc->shapeState = FRONTBACK;
+            Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::UP, mmbc->seedPosition);
+            mmbc->MMPosition = mmbc->MMPosition.offsetZ(1);
+            mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
+            break;
+        } else if(mmShape == BACKFRONT){
+            mmbc->shapeState = BACKFRONT;
+            Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::UP, mmbc->seedPosition);
+            mmbc->MMPosition = mmbc->MMPosition.offsetZ(1);
+            mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
+            break;
+        }
+        
     }
+
     
     default:
         break;
     }
+
 }
 
