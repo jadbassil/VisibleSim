@@ -372,22 +372,23 @@ void MetaModuleBlockCode::handleGLOMessage(std::shared_ptr<Message> _msg,
         sendMessage("GLO Msg", new MessageOf<PLS>(GLO_MSG_ID, PLS(srcPos, targetPos)), itf, 100, 0);
     } else if(module->position == targetPos){
         VS_ASSERT(module->position == targetPos);
-        //rotating = true;
-        // LocalMovement lmvt = (*localRules)[mvt_it];
-        // console << lmvt.nextPosition << "\n";
-        // movingState = lmvt.state;
-        // movingSteps++;
-        // Sender should be pivot to be used for next motion
-        //Catoms3DBlock* pivot = static_cast<Catoms3DBlock*>(msg->sourceInterface->hostBlock);
-        //VS_ASSERT(pivot and pivot !=module);
-        //scheduleRotationTo(mabc.stepTargetPos, pivot);
-        //operation->localRules.reset(&LocalRules_BF_Dismantle_Left);
-        //cout << (*operation->localRules.get())[0] << endl;
         Cell3DPosition targetPosition = (*operation->localRules)[mvt_it].nextPosition + seedPosition;
-        module->moveTo(targetPosition);
-        // scheduler->schedule(new Catoms3DRotationStartEvent(getScheduler()->now(),
-        //                                              module, targetPos,
-        //                                              RotationLinkType::OctaFace, false));
+        //module->moveTo(targetPosition);
+        if(module->canRotateToPosition(targetPosition)) {
+            if(rotating and (relativePos() == Cell3DPosition(-1,1,2) or relativePos() == Cell3DPosition(-1,-1,2))) {
+                getScheduler()->schedule(new Catoms3DRotationStartEvent(getScheduler()->now(),
+                                                     module, targetPosition,
+                                                     RotationLinkType::OctaFace, false));
+            } else {
+                getScheduler()->schedule(new Catoms3DRotationStartEvent(getScheduler()->now(),
+                                                     module, targetPosition,
+                                                     RotationLinkType::Any, false));
+            }
+            
+        } else {
+            VS_ASSERT(false);
+        }
+        
     }
 }
 
