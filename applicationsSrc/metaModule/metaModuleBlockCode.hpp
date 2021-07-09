@@ -161,12 +161,13 @@ public:
     P2PNetworkInterface* awaitingModuleProbeItf{NULL};
     P2PNetworkInterface *coordinateItf{NULL};
     bool initialized{false};
-    int *fillingPos[3];
 
-    Operation *operation = new Operation();
+    Operation *operation = NULL;
 
     MetaModuleBlockCode(Catoms3DBlock *host);
-    ~MetaModuleBlockCode(){};
+    ~MetaModuleBlockCode(){
+        if(operation) delete operation;
+    };
 
     inline static Time getRoundDuration() {
         return (Catoms3DRotation::ANIMATION_DELAY * BaseSimulator::motionDelayMultiplier

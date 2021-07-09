@@ -17,33 +17,34 @@ protected:
     Direction direction;
     MMShape mmShape;
     Cell3DPosition nextSeed;
-   
+    bool Zeven;
    
 public:
     Operation(/* args */);
-    Operation(Direction _direction, MMShape _mmshape);
+    Operation(Direction _direction, MMShape _mmshape, int Z = 0);
     virtual ~Operation();
 
     std::shared_ptr<vector<LocalMovement>> localRules;
     MMOperation op;
     MMOperation nextOperation;
+    Cell3DPosition getNextSeed(BaseSimulator::BlockCode*);
+    Direction getDirection() const {return direction;};
+    bool mustHandleBridgeOnAdd(const Cell3DPosition&);
 
     virtual void handleAddNeighborEvent(BaseSimulator::BlockCode*,const Cell3DPosition&) {};
-    Cell3DPosition getNextSeed(BaseSimulator::BlockCode*);
-    virtual void updateState(BaseSimulator::BlockCode*) {};
+    virtual void updateState(BaseSimulator::BlockCode*) {} ;
     virtual bool isDismantle() const {return false;};
     virtual bool isFill() const {return false;};
     virtual bool isTransfer() const  {return false;};
     virtual bool isConstruct() const {return false;};
     virtual bool isBuild() const {return false;};
-    Direction getDirection() const {return direction;};
 };
 
 class Dismantle_Operation: public virtual Operation {
 private:
     /* data */
 public:
-    Dismantle_Operation(Direction _direction, MMShape _mmShape);
+    Dismantle_Operation(Direction _direction, MMShape _mmShape , int Z = 0);
     ~Dismantle_Operation ();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
@@ -55,7 +56,7 @@ class Fill_Operation: public Operation {
 private:
     
 public:
-    Fill_Operation(Direction _direction, MMShape _mmShape);
+    Fill_Operation(Direction _direction, MMShape _mmShape, int Z = 0);
     ~Fill_Operation ();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
@@ -65,9 +66,9 @@ public:
 
 class Transfer_Operation: public Operation {
 private:
-    bool isFirstTransferOperation;
+
 public:
-    Transfer_Operation(Direction _direction, MMShape _mmShape, bool _isFirstransferOperation = false);
+    Transfer_Operation(Direction _direction, MMShape _mmShape, int Z = 0);
     ~Transfer_Operation();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
@@ -80,9 +81,8 @@ public:
 };
 
 class Build_Operation: public Operation {
-
 public:
-    Build_Operation(Direction _direction, MMShape _mmShape);
+    Build_Operation(Direction _direction, MMShape _mmShape, int Z = 0);
     ~Build_Operation ();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
