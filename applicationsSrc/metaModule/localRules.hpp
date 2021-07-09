@@ -186,10 +186,10 @@ static vector<LocalMovement> LocalRules_FB_Dismantle_Left = {
     {LocalMovement(Cell3DPosition(-2,1,2), Cell3DPosition(-3,0,1), IN_POSITION)},
 
 
-    {LocalMovement(Cell3DPosition(-1,-1,3), Cell3DPosition(0,-1,2), MOVING)}, //33
-    {LocalMovement(Cell3DPosition(0,-1,2), Cell3DPosition(0,0,2), MOVING)},
-    {LocalMovement(Cell3DPosition(0,0,2), Cell3DPosition(-1,0,1), MOVING)},
-    {LocalMovement(Cell3DPosition(-1,0,1), Cell3DPosition(-1,1,2), MOVING)},
+    {LocalMovement(Cell3DPosition(-1,-1,3), Cell3DPosition(-1,0,2), MOVING)}, //33
+    // {LocalMovement(Cell3DPosition(-1,1,2), Cell3DPosition(0,0,2), MOVING)},
+    // {LocalMovement(Cell3DPosition(0,0,2), Cell3DPosition(-1,0,1), MOVING)},
+    {LocalMovement(Cell3DPosition(-1,0,2), Cell3DPosition(-1,1,2), MOVING)},
     {LocalMovement(Cell3DPosition(-1,1,2), Cell3DPosition(-2,1,2), MOVING)},
     {LocalMovement(Cell3DPosition(-2,1,2), Cell3DPosition(-3,0,1), IN_POSITION)},
 
