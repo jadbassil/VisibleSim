@@ -166,7 +166,6 @@ public:
 
     MetaModuleBlockCode(Catoms3DBlock *host);
     ~MetaModuleBlockCode(){
-        if(operation) delete operation;
     };
 
     inline static Time getRoundDuration() {
