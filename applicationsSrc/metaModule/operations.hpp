@@ -29,6 +29,7 @@ public:
     MMOperation nextOperation;
     Cell3DPosition getNextSeed(BaseSimulator::BlockCode*);
     Direction getDirection() const {return direction;};
+    MMShape getMMShape() const {return mmShape;};
     bool mustHandleBridgeOnAdd(const Cell3DPosition&);
 
     virtual void handleAddNeighborEvent(BaseSimulator::BlockCode*,const Cell3DPosition&) {};

@@ -1,0 +1,76 @@
+<?xml version="1.0" standalone="no" ?>
+<world gridSize="40,40,40" windowSize="933,1016">
+    <camera target="179.067,217.639,78.5885" directionSpherical="-1000.59,27.7082,100" angle="35.000000" near="75.000000" far="1500.000000" />
+    <spotlight target="200,200,100" directionSpherical="60,30,900" angle="33.690068" />
+    <blockList blockSize="10,10,10">
+        <block position="20,20,10" color="0,255,0" orientation="0" />
+        <block position="21,20,10" color="0,255,0" orientation="0" />
+        <block position="21,20,11" color="0,255,0" orientation="0" />
+        <block position="22,21,12" color="0,255,0" orientation="0" />
+        <block position="21,20,13" color="0,255,0" orientation="0" />
+        <block position="21,20,14" color="0,255,0" orientation="0" />
+        <block position="20,20,14" color="0,255,0" orientation="0" />
+        <block position="19,19,13" color="0,255,0" orientation="0" />
+        <block position="19,19,12" color="0,255,0" orientation="0" />
+        <block position="19,19,11" color="0,255,0" orientation="0" />
+        <block position="16,20,10" color="255,165,0" orientation="0" />
+        <block position="17,20,10" color="255,165,0" orientation="0" />
+        <block position="17,19,11" color="255,165,0" orientation="0" />
+        <block position="18,19,12" color="255,165,0" orientation="0" />
+        <block position="17,19,13" color="255,165,0" orientation="0" />
+        <block position="17,20,14" color="255,165,0" orientation="0" />
+        <block position="16,20,14" color="255,165,0" orientation="0" />
+        <block position="15,20,13" color="255,165,0" orientation="0" />
+        <block position="15,21,12" color="255,165,0" orientation="0" />
+        <block position="15,20,11" color="255,165,0" orientation="0" />
+        <block position="24,20,10" color="255,255,0" orientation="0" />
+        <block position="25,20,10" color="255,255,0" orientation="0" />
+        <block position="25,19,11" color="255,255,0" orientation="0" />
+        <block position="26,19,12" color="255,255,0" orientation="0" />
+        <block position="25,19,13" color="255,255,0" orientation="0" />
+        <block position="25,20,14" color="255,255,0" orientation="0" />
+        <block position="24,20,14" color="255,255,0" orientation="0" />
+        <block position="23,20,13" color="255,255,0" orientation="0" />
+        <block position="23,21,12" color="255,255,0" orientation="0" />
+        <block position="23,20,11" color="255,255,0" orientation="0" />
+        <block position="20,23,10" color="0,255,0" orientation="0" />
+        <block position="21,23,10" color="0,255,0" orientation="0" />
+        <block position="21,22,11" color="0,255,0" orientation="0" />
+        <block position="22,22,12" color="0,255,0" orientation="0" />
+        <block position="21,22,13" color="0,255,0" orientation="0" />
+        <block position="21,23,14" color="0,255,0" orientation="0" />
+        <block position="20,23,14" color="0,255,0" orientation="0" />
+        <block position="19,23,13" color="0,255,0" orientation="0" />
+        <block position="19,24,12" color="0,255,0" orientation="0" />
+        <block position="19,23,11" color="0,255,0" orientation="0" />
+        <block position="16,23,10" color="0,255,255" orientation="0" />
+        <block position="17,23,10" color="0,255,255" orientation="0" />
+        <block position="17,23,11" color="0,255,255" orientation="0" />
+        <block position="18,24,12" color="0,255,255" orientation="0" />
+        <block position="17,23,13" color="0,255,255" orientation="0" />
+        <block position="17,23,14" color="0,255,255" orientation="0" />
+        <block position="16,23,14" color="0,255,255" orientation="0" />
+        <block position="15,22,13" color="0,255,255" orientation="0" />
+        <block position="15,22,12" color="0,255,255" orientation="0" />
+        <block position="15,22,11" color="0,255,255" orientation="0" />
+        <block position="24,23,10" color="0,0,255" orientation="0" />
+        <block position="25,23,10" color="0,0,255" orientation="0" />
+        <block position="25,23,11" color="0,0,255" orientation="0" />
+        <block position="26,24,12" color="0,0,255" orientation="0" />
+        <block position="25,23,13" color="0,0,255" orientation="0" />
+        <block position="25,23,14" color="0,0,255" orientation="0" />
+        <block position="24,23,14" color="0,0,255" orientation="0" />
+        <block position="23,22,13" color="0,0,255" orientation="0" />
+        <block position="23,22,12" color="0,0,255" orientation="0" />
+        <block position="23,22,11" color="0,0,255" orientation="0" />
+        <block position="17,21,14" color="255,165,0" orientation="0" />
+        <block position="22,20,12" color="0,255,0" orientation="0" />
+        <block position="23,20,12" color="0,255,0" orientation="0" />
+        <block position="17,19,14" color="255,165,0" orientation="0" />
+        <block position="16,19,14" color="255,165,0" orientation="0" />
+        <block position="17,20,11" color="255,165,0" orientation="0" />
+        <block position="16,22,12" color="255,165,0" orientation="0" />
+        <block position="17,22,11" color="255,165,0" orientation="0" />
+        <block position="17,22,12" color="255,165,0" orientation="0" />
+    </blockList>
+</world>

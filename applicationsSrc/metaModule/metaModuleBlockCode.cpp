@@ -73,7 +73,7 @@ void MetaModuleBlockCode::startup() {
         MetaModuleBlockCode *block49 = static_cast<MetaModuleBlockCode*>(
             BaseSimulator::getWorld()->getBlockById(49)->blockCode
         );
-        //operation = new Operation(Direction::LEFT, BACKFRONT);
+        operation = new Operation(Direction::LEFT, BACKFRONT);
         block49->operation = new Dismantle_Operation(Direction::LEFT, FRONTBACK);
         block49->setCoordinator(FB_Dismantle_Left);
         
@@ -83,6 +83,8 @@ void MetaModuleBlockCode::startup() {
             COORDINATE_MSG_ID, Coordinate(block49->operation, targetModule, block49->module->position, block49->mvt_it)),
             block49->module->getInterface(block49->nearestPositionTo(targetModule)), 100, 200
         );
+
+        
 
         MetaModuleBlockCode *block13 = static_cast<MetaModuleBlockCode*>(
             BaseSimulator::getWorld()->getBlockById(13)->blockCode
@@ -96,92 +98,116 @@ void MetaModuleBlockCode::startup() {
         );
         block3->operation = new Transfer_Operation(Direction::LEFT, FRONTBACK);
         block3->isCoordinator = true;
+
+        // MetaModuleBlockCode *block3 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(3)->blockCode
+        // );
+        // block3->operation = new Transfer_Operation(Direction::BACK, FRONTBACK);
+        // block3->isCoordinator = true;
         
+
+        // MetaModuleBlockCode *block23 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(23)->blockCode
+        // );
+        // block23->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT);
+        // block23->isCoordinator = true;
 
         MetaModuleBlockCode *block23 = static_cast<MetaModuleBlockCode*>(
             BaseSimulator::getWorld()->getBlockById(23)->blockCode
         );
-        block23->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT);
+        block23->operation = new Transfer_Operation(Direction::BACK, BACKFRONT);
         block23->isCoordinator = true;
 
-        MetaModuleBlockCode *block33 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(33)->blockCode
-        );
-        // block33->operation->nextOperation = NO_OPERATION;
-        // block33->operation = new Build_Operation(Direction::UP, FRONTBACK);
+        // MetaModuleBlockCode *block33 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(33)->blockCode
+        // );
+
+        // block33->operation = new Transfer_Operation(Direction::UP, FRONTBACK, block33->MMPosition.pt[2]);
         // block33->isCoordinator = true;
-        block33->operation = new Transfer_Operation(Direction::UP, FRONTBACK, block33->MMPosition.pt[2]);
-        block33->isCoordinator = true;
 
-        MetaModuleBlockCode *block103 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(103)->blockCode
-        );
+        // MetaModuleBlockCode *block103 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(103)->blockCode
+        // );
      
-        block103->operation = new Transfer_Operation(Direction::UP, FRONTBACK, block103->MMPosition.pt[2]);
-        block103->isCoordinator = true;
+        // block103->operation = new Transfer_Operation(Direction::UP, FRONTBACK, block103->MMPosition.pt[2]);
+        // block103->isCoordinator = true;
 
-        MetaModuleBlockCode *block123 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(123)->blockCode
-        );
+        // MetaModuleBlockCode *block123 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(123)->blockCode
+        // );
      
-        block123->operation = new Build_Operation(Direction::UP, FRONTBACK, block123->MMPosition.pt[2]);
-        block123->isCoordinator = true;
+        // block123->operation = new Build_Operation(Direction::UP, FRONTBACK, block123->MMPosition.pt[2]);
+        // block123->isCoordinator = true;
 
-        // *******************************************Y = 1********************************************************
-        MetaModuleBlockCode *block99 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(99)->blockCode
-        );
-        //operation = new Operation(Direction::LEFT, BACKFRONT);
-        block99->operation = new Dismantle_Operation(Direction::LEFT, BACKFRONT);
-        block99->setCoordinator(BF_Dismantle_Left);
-        targetModule = block99->seedPosition + (*block99->operation->localRules)[0].currentPosition;
-        block99->console << "targetModule: " << block99->nearestPositionTo(targetModule) << "\n"; 
-        block99->sendMessage("Coordinate Msg1", new MessageOf<Coordinate>(
-            COORDINATE_MSG_ID, Coordinate(block99->operation, targetModule, block99->module->position, block99->mvt_it)),
-            block99->module->getInterface(block99->nearestPositionTo(targetModule)), 100, 200
-        );
+        // /*******************************************Y = 1********************************************************/
+        // MetaModuleBlockCode *block99 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(99)->blockCode
+        // );
+        // //operation = new Operation(Direction::LEFT, BACKFRONT);
+        // block99->operation = new Dismantle_Operation(Direction::LEFT, BACKFRONT);
+        // block99->setCoordinator(BF_Dismantle_Left);
+        // targetModule = block99->seedPosition + (*block99->operation->localRules)[0].currentPosition;
+        // block99->console << "targetModule: " << block99->nearestPositionTo(targetModule) << "\n"; 
+        // block99->sendMessage("Coordinate Msg1", new MessageOf<Coordinate>(
+        //     COORDINATE_MSG_ID, Coordinate(block99->operation, targetModule, block99->module->position, block99->mvt_it)),
+        //     block99->module->getInterface(block99->nearestPositionTo(targetModule)), 100, 200
+        // );
 
-        MetaModuleBlockCode *block63 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(63)->blockCode
-        );
+        // MetaModuleBlockCode *block63 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(63)->blockCode
+        // );
 
-        block63->operation = new Transfer_Operation(Direction::LEFT, FRONTBACK, true);
-        block63->isCoordinator = true;
+        // block63->operation = new Transfer_Operation(Direction::LEFT, FRONTBACK, true);
+        // block63->isCoordinator = true;
 
-        MetaModuleBlockCode *block53 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(53)->blockCode
-        );
-        block53->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT);
-        block53->isCoordinator = true;
+        // MetaModuleBlockCode *block53 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(53)->blockCode
+        // );
+        // block53->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT);
+        // block53->isCoordinator = true;
+
+        // MetaModuleBlockCode *block53 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(53)->blockCode
+        // );
+        // block53->operation = new Build_Operation(Direction::UP, BACKFRONT);
+        // block53->isCoordinator = true;
         
+
+        // MetaModuleBlockCode *block73 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(73)->blockCode
+        // );
+        // block73->operation = new Transfer_Operation(Direction::LEFT, FRONTBACK);
+        // block73->isCoordinator = true;
 
         MetaModuleBlockCode *block73 = static_cast<MetaModuleBlockCode*>(
             BaseSimulator::getWorld()->getBlockById(73)->blockCode
         );
-        block73->operation = new Transfer_Operation(Direction::LEFT, FRONTBACK);
+        block73->operation = new Build_Operation(Direction::UP, FRONTBACK);
         block73->isCoordinator = true;
 
-        MetaModuleBlockCode *block83 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(83)->blockCode
-        );
-        block83->operation = new Transfer_Operation(Direction::UP, BACKFRONT, block83->MMPosition.pt[2]);
-        block83->isCoordinator = true;
+        // MetaModuleBlockCode *block83 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(83)->blockCode
+        // );
+        // block83->operation = new Transfer_Operation(Direction::UP, BACKFRONT, block83->MMPosition.pt[2]);
+        // block83->isCoordinator = true;
 
-        MetaModuleBlockCode *block113 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(113)->blockCode
-        );
-        block113->operation = new Transfer_Operation(Direction::UP, BACKFRONT, block103->MMPosition.pt[2]);
-        block113->isCoordinator = true;
+        // MetaModuleBlockCode *block113 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(113)->blockCode
+        // );
+        // block113->operation = new Transfer_Operation(Direction::UP, BACKFRONT, block103->MMPosition.pt[2]);
+        // block113->isCoordinator = true;
 
-        MetaModuleBlockCode *block133 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(133)->blockCode
-        );
-        block133->operation = new Build_Operation(Direction::UP, BACKFRONT, block133->MMPosition.pt[2]);
-        block133->isCoordinator = true;
+        // MetaModuleBlockCode *block133 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(133)->blockCode
+        // );
+        // block133->operation = new Build_Operation(Direction::UP, BACKFRONT, block133->MMPosition.pt[2]);
+        // block133->isCoordinator = true;
 
         Init::initialMapBuildDone = true;
     }
+
     initialized = true;
+
 }
 
 void MetaModuleBlockCode::handleSetCoordinatorMessage(std::shared_ptr<Message> _msg,
@@ -393,16 +419,18 @@ void MetaModuleBlockCode::handleGLOMessage(std::shared_ptr<Message> _msg,
         Cell3DPosition targetPosition = (*operation->localRules)[mvt_it].nextPosition + seedPosition;
         //module->moveTo(targetPosition);
         if(module->canRotateToPosition(targetPosition)) {
-            if(rotating and (relativePos() == Cell3DPosition(-1,1,2) or relativePos() == Cell3DPosition(-1,-1,2))) {
-                getScheduler()->schedule(new Catoms3DRotationStartEvent(getScheduler()->now(),
-                                                     module, targetPosition,
-                                                     RotationLinkType::OctaFace, false));
+            if (rotating and (relativePos() == Cell3DPosition(-1, 1, 2) or
+                              relativePos() == Cell3DPosition(-1, -1, 2)) or
+                relativePos() == Cell3DPosition(1, 0, 1)) {
+                getScheduler()->schedule(
+                    new Catoms3DRotationStartEvent(getScheduler()->now(), module, targetPosition,
+                                                   RotationLinkType::OctaFace, false));
             } else {
                 getScheduler()->schedule(new Catoms3DRotationStartEvent(getScheduler()->now(),
                                                      module, targetPosition,
                                                      RotationLinkType::Any, false));
             }
-            
+
         } else {
             VS_ASSERT(false);
         }
@@ -681,11 +709,14 @@ P2PNetworkInterface * MetaModuleBlockCode::interfaceTo(Cell3DPosition& dstPos, P
 
 void MetaModuleBlockCode::onMotionEnd() {
     console << " has reached its destination" << "\n";
+
     console << "op:" << operation->op << "\n";
+   
     LocalMovement lmvt = (*operation->localRules)[mvt_it];
     console << lmvt.nextPosition << "\n";
     movingState = lmvt.state;
     movingSteps++;
+    
   
     if(movingState == MOVING) {        
         mvt_it++;
@@ -697,9 +728,15 @@ void MetaModuleBlockCode::onMotionEnd() {
         rotating = false;
         if((!isCoordinator and operation->isDismantle()) 
             or (operation->isTransfer() 
-                and (operation->getDirection() == Direction::LEFT or operation->getDirection() == Direction::RIGHT)
-                and mvt_it >= 14
+                and ((operation->getDirection() == Direction::LEFT or operation->getDirection() == Direction::RIGHT)
+                and mvt_it >= 14) or 
+                ((operation->getDirection() == Direction::BACK or operation->getDirection() == Direction::FRONT)
+                and mvt_it >= 21 and operation->getMMShape() == BACKFRONT)
                 )
+            // or (operation->isTransfer() 
+            //     and (operation->getDirection() == Direction::BACK or operation->getDirection() == Direction::FRONT)
+            //     and movingState == WAITING
+            // )
             // or (operation->isBuild()
             //     and (operation->getDirection() == Direction::UP)
             //     and mvt_it >= 51
@@ -712,10 +749,13 @@ void MetaModuleBlockCode::onMotionEnd() {
         console << "coordinator position: " << coordinatorPosition << "\n";
         movingSteps = 0;
         P2PNetworkInterface* pivotItf = module->getInterface(pivotPosition);
-        VS_ASSERT(pivotItf and pivotItf->isConnected());
+       // VS_ASSERT(pivotItf and pivotItf->isConnected());
         //sendMessageToAllNeighbors("FTR msg",new MessageOf<Cell3DPosition>(FTR_MSG_ID, module->position), 100, 0, 0);
-        sendMessage("FTR msg", new MessageOf<Cell3DPosition>(FTR_MSG_ID, module->position),
+        if(pivotItf and pivotItf->isConnected()) {
+            sendMessage("FTR msg", new MessageOf<Cell3DPosition>(FTR_MSG_ID, module->position),
                     module->getInterface(pivotPosition), 100, 200);
+        }
+        
 
         if(movingState == IN_POSITION) {
             console << "mvt_it in pos: " << mvt_it << "\n";
@@ -833,6 +873,8 @@ void MetaModuleBlockCode::onBlockSelected() {
     cerr << "mvt_it: " << mvt_it << endl;
     if(operation) cerr << "operation: " << operation->op << endl;
     cerr << "MovingState: " << movingState << endl;
+    cerr << "Possible 21,21,12: " << module->canMoveTo(Cell3DPosition(21,21,12)) << endl;
+     cerr << "Possible 20,22,12: " << module->canMoveTo(Cell3DPosition(20,22,12)) << endl;
     //cerr << BaseSimulator::getWorld()->lattice->getCellDistance(seed->position, module->position) << endl;
 }
 
@@ -847,8 +889,8 @@ void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     );
 
     ofstream file;
-    file.open("BF_Transfer_Up_ZOdd.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(12,22,14);
+    file.open("FB_Build_Up.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(16,23,10);
     if(!file.is_open()) return;
 
     if(c == 'o') {
@@ -949,6 +991,6 @@ void MetaModuleBlockCode::parseUserElements(TiXmlDocument *config) {
 
 string MetaModuleBlockCode::onInterfaceDraw() {
     stringstream trace;
-    trace << "Some value " << 123;
+    trace << "Nb of modules " << BaseSimulator::getWorld()->getNbBlocks();
     return trace.str();
 }
