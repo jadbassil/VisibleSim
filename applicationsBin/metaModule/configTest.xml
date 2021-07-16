@@ -40,6 +40,17 @@
 		<block position="-2,1,-1"/>
 		<block position="2,1,-1"/>
 
+		<block position="-2,3,1"/>
+		<block position="-2,3,2"/>
+
+		<block position="-1,3,1"/>
+		<block position="-1,3,2"/>
+
+		<block position="-1,2,-1"/>
+		<block position="-1,3,-1"/>
+
+		<block position="-2,2,-1"/>
+		<block position="-2,3,-1"/>
 		<!-- <block position="0,0,1"/>
 		<block position="1,0,1"/>
 		<block position="-1,0,1"/>
