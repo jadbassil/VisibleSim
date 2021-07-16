@@ -10,6 +10,8 @@ static const int COORDINATE_MSG_ID = 1003;
 static const int COORDINATEBACK_MSG_ID = 1004;
 
 static const int IT_MODE_FINDING_PIVOT = 2000;
+static const int IT_MODE_TRANSFERBACK = 2001;
+static const int IT_MODE_TRANSFERBACK_REACHCOORDINATOR = 2002;
 
 static const int PLS_MSG_ID = 1005;
 static const int GLO_MSG_ID = 1006;
@@ -150,7 +152,7 @@ public:
     int movingSteps{0};
     Cell3DPosition coordinatorPosition;
     Cell3DPosition targetSeed;
-    bool waiting{false};
+    bool awaitingCoordinator{false};
     bool rotating{false};
     int transferCount{0};
     bool greenLightIsOn{true};

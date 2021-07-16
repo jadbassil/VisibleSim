@@ -67,14 +67,15 @@ public:
 
 class Transfer_Operation: public Operation {
 private:
-
+    bool comingFromBack;
 public:
-    Transfer_Operation(Direction _direction, MMShape _mmShape, int Z = 0);
+    Transfer_Operation(Direction _direction, MMShape _mmShape, bool comingFromBack = false, int Z = 0);
     ~Transfer_Operation();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
     void updateState(BaseSimulator::BlockCode*) override;
     bool isTransfer() const override {return true;};
+    bool isComingFromBack() const {return comingFromBack;};
     /**
      * @brief Special operation for bride on Coordinate message reception
     **/
