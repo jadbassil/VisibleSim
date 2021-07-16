@@ -104,26 +104,32 @@ void MetaModuleBlockCode::startup() {
         MetaModuleBlockCode *block23 = static_cast<MetaModuleBlockCode*>(
             BaseSimulator::getWorld()->getBlockById(23)->blockCode
         );
-        block23->operation = new Transfer_Operation(Direction::BACK, BACKFRONT, false);
+        block23->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT);
         block23->isCoordinator = true;
 
-        MetaModuleBlockCode *block73 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(73)->blockCode
+        MetaModuleBlockCode *block33 = static_cast<MetaModuleBlockCode*>(
+            BaseSimulator::getWorld()->getBlockById(33)->blockCode
         );
-        block73->operation = new Transfer_Operation(Direction::BACK, FRONTBACK);
-        block73->isCoordinator = true;
+        block33->operation = new Transfer_Operation(Direction::BACK, FRONTBACK);
+        block33->isCoordinator = true;
 
-        MetaModuleBlockCode *block103 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(103)->blockCode
+        MetaModuleBlockCode *block83 = static_cast<MetaModuleBlockCode*>(
+            BaseSimulator::getWorld()->getBlockById(83)->blockCode
         );
-        block103->operation = new Transfer_Operation(Direction::BACK, BACKFRONT, true);
-        block103->isCoordinator = true;
+        block83->operation = new Transfer_Operation(Direction::BACK, BACKFRONT, true);
+        block83->isCoordinator = true;
 
-        MetaModuleBlockCode *block123 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(123)->blockCode
+        MetaModuleBlockCode *block113 = static_cast<MetaModuleBlockCode*>(
+            BaseSimulator::getWorld()->getBlockById(113)->blockCode
         );
-        block123->operation = new Build_Operation(Direction::UP, FRONTBACK, block123->MMPosition.pt[2]);
-        block123->isCoordinator = true;
+        block113->operation = new Transfer_Operation(Direction::BACK, FRONTBACK);
+        block113->isCoordinator = true;
+
+        MetaModuleBlockCode *block133 = static_cast<MetaModuleBlockCode*>(
+            BaseSimulator::getWorld()->getBlockById(133)->blockCode
+        );
+        block133->operation = new Build_Operation(Direction::UP, BACKFRONT, block133->MMPosition.pt[2]);
+        block133->isCoordinator = true;
 
 
         // MetaModuleBlockCode *block33 = static_cast<MetaModuleBlockCode*>(

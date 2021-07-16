@@ -465,7 +465,9 @@ bool Transfer_Operation::handleBridgeMovements(BaseSimulator::BlockCode* bc) {
                 BaseSimulator::getWorld()
                     ->getBlockByPosition(mmbc->coordinatorPosition)
                     ->blockCode);
-            if(coordinatorBlock->operation->isTransfer() and coordinatorBlock->operation->getDirection() == Direction::BACK) {
+            if (coordinatorBlock->operation->isTransfer() and
+                coordinatorBlock->operation->getDirection() == Direction::BACK
+                and static_cast<Transfer_Operation*>(coordinatorBlock->operation)->isComingFromBack()) {
                 return true;
             }
             mmbc->sendMessage(
