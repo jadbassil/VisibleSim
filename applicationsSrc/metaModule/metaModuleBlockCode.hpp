@@ -5,7 +5,6 @@
 #include "robots/catoms3D/catoms3DBlockCode.h"
 #include "operations.hpp"
 
-static const int SETCOORDINATOR_MSG_ID = 1000;
 static const int COORDINATE_MSG_ID = 1003;
 static const int COORDINATEBACK_MSG_ID = 1004;
 
@@ -91,24 +90,19 @@ public:
     Cell3DPosition initialPosition;
     Catoms3DBlock *module;
     bool isCoordinator{false};
-    bool opening{false};
-    Movement currentMovement{NO_MOVEMENT};
-    MMOperation  nextOperation{NO_OPERATION};
     MovingState movingState{MovingState::IN_POSITION};
     int mvt_it{0};
-    vector<LocalMovement> *localRules{nullptr};
     int movingSteps{0};
     Cell3DPosition coordinatorPosition;
-    Cell3DPosition targetSeed;
     bool awaitingCoordinator{false};
     bool rotating{false};
-    int transferCount{0};
+    int transferCount{0}; // Used to count the number of passed modules
     bool greenLightIsOn{true};
     bool moduleAwaitingGo{false};
     bool notFindingPivot{false};
     Cell3DPosition pivotPosition;
     Cell3DPosition awaitingModulePos;
-    P2PNetworkInterface* awaitingModuleProbeItf{NULL};
+    P2PNetworkInterface *awaitingModuleProbeItf{NULL};
     P2PNetworkInterface *coordinateItf{NULL};
     bool initialized{false};
 
@@ -132,11 +126,20 @@ public:
     Catoms3DBlock *getModule() { return module; };
     Cell3DPosition getMMPosition() { return MMPosition; };
 
+    /**
+     * @brief Update the state of a module once it becomes int its new position
+     * 
+     */
     void updateState();
     bool isInMM(Cell3DPosition &neighborPosition);
+    /**
+     * @brief Used for routing. Finds the nearest active cell to targetPosition using network distance
+     * @warning Computationally heavy
+     * @param targetPosition 
+     * @param except 
+     * @return Cell3DPosition 
+     */
     Cell3DPosition nearestPositionTo(Cell3DPosition &targetPosition, P2PNetworkInterface *except = nullptr);
-    //void setLocalRules(Movement movement);
-    void setCoordinator(MMOperation op) ;
     Cell3DPosition nextInBorder(P2PNetworkInterface* sender);
     P2PNetworkInterface *interfaceTo(Cell3DPosition& dstPos, P2PNetworkInterface *sender = nullptr);
 
@@ -178,7 +181,6 @@ public:
      * @brief Sample message handler for this instance of the blockcode
      * @param _msg Pointer to the message received by the module, requires casting
      * @param sender Connector of the module that has received the message and that is connected to the sender */
-    void handleSetCoordinatorMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     void handleCoordinateMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     void handleCoordinateBackMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
 

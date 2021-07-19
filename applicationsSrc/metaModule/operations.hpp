@@ -18,21 +18,32 @@ protected:
     MMShape mmShape;
     Cell3DPosition nextSeed;
     bool Zeven;
-   
+    
+    void setMvtItToNextModule(BaseSimulator::BlockCode*);
 public:
     Operation(/* args */);
     Operation(Direction _direction, MMShape _mmshape, int Z = 0);
     virtual ~Operation();
 
     std::shared_ptr<vector<LocalMovement>> localRules;
-    MMOperation op;
-    MMOperation nextOperation;
     Cell3DPosition getNextSeed(BaseSimulator::BlockCode*);
     Direction getDirection() const {return direction;};
     MMShape getMMShape() const {return mmShape;};
     bool mustHandleBridgeOnAdd(const Cell3DPosition&);
+    /**
+     * @brief Check onMotionEnd if a module must send coordinateBack msg 
+     * to inform the coordinator to pass to the next waiting module
+     * 
+     * @return bool
+     */
+    virtual bool mustSendCoordinateBack(BaseSimulator::BlockCode*) {return false;};
 
-    virtual void handleAddNeighborEvent(BaseSimulator::BlockCode*,const Cell3DPosition&) {};
+    /**
+     * @brief Operation dependent logic to be executed when a module is attached on a coordinator
+     *  
+     * @param pos the position of the attached module
+     */
+    virtual void handleAddNeighborEvent(BaseSimulator::BlockCode*,const Cell3DPosition& pos) {};
     virtual void updateState(BaseSimulator::BlockCode*) {} ;
     virtual bool isDismantle() const {return false;};
     virtual bool isFill() const {return false;};
@@ -50,6 +61,7 @@ public:
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
     void updateState(BaseSimulator::BlockCode*) override;
+    bool mustSendCoordinateBack(BaseSimulator::BlockCode*) override;
     bool isDismantle() const override {return true;};
 };
 
@@ -74,6 +86,7 @@ public:
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
     void updateState(BaseSimulator::BlockCode*) override;
+    bool mustSendCoordinateBack(BaseSimulator::BlockCode*) override;
     bool isTransfer() const override {return true;};
     bool isComingFromBack() const {return comingFromBack;};
     /**

@@ -41,8 +41,6 @@ enum Direction {
     BACK
 };
 
-static int countSteps = 0;
-
 class LocalMovement {
 private:
    
