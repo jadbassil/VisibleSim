@@ -66,7 +66,7 @@ doc/xml/
 doc/html/
 
 # Configuration files (must be added manually)
-# applicationsBin/*/*.xml
+#applicationsBin/*/*.xml
 
 # Screenshot and video exports
 # applicationsBin/*/*.ppm
@@ -80,6 +80,8 @@ doc/html/
 # applicationsBin/*/*.dat
 # applicationsBin/*/*.pdf
 applicationsBin/*/animation_*/
+applicationsBin/*/*.txt
+# applicationsBin/*/Captures
 # applicationsBin/*/Screenshots/
 
 # User-generated files
