@@ -109,9 +109,9 @@ Fill_Operation::Fill_Operation (Direction _direction, MMShape _mmShape, int Z)
     switch (direction) {
     case Direction::LEFT:
         if(mmShape == BACKFRONT) {
-            //localRules.reset(&LocalRules_BF_Fill_Left);
+            localRules.reset(&LocalRules_BF_Fill_Left);
         } else if(mmShape == FRONTBACK) {
-            localRules.reset(&LocalRules_FB_Fill_Left);
+            //localRules.reset(&LocalRules_FB_Fill_Left);
         }
         break;
     
@@ -124,34 +124,65 @@ Fill_Operation::~Fill_Operation () {}
 
 void Fill_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const Cell3DPosition& pos) {
     MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
-    if(mmbc->isCoordinator 
-        and pos == mmbc->module->position.offsetY(-1) 
-        and mmbc->mvt_it < localRules->size()) {
-        Cell3DPosition targetModule = mmbc->seedPosition + (*localRules)[mmbc->mvt_it].currentPosition;
-        while(targetModule != mmbc->module->position.offsetY(-1)) {
-            mmbc->sendMessage("Coordinate Msg", new MessageOf<Coordinate>(
-                COORDINATE_MSG_ID, Coordinate(mmbc->operation, targetModule, mmbc->module->position, mmbc->mvt_it)),
-                mmbc->module->getInterface(mmbc->nearestPositionTo(targetModule)), 100, 200
-            );
-            mmbc->mvt_it++;
-            targetModule = mmbc->seedPosition + (*localRules)[mmbc->mvt_it].currentPosition;
+    if(mmbc->isCoordinator) {
+        if (pos == mmbc->module->position.offsetY(-1) or
+                pos == mmbc->module->position.offsetY(1)) {
+            mmbc->transferCount++;
+            getScheduler()->trace("transferCount: " + to_string(mmbc->transferCount), mmbc->module->blockId, Color(MAGENTA));
+            Cell3DPosition targetModule =
+                mmbc->seedPosition + (*localRules)[mmbc->mvt_it].currentPosition;
+            if(mmbc->transferCount == 10) return; 
+            if (mustHandleBridgeOnAdd(pos)) {  // suppose that there is a bridge
+                if(mmbc->transferCount == 8 or mmbc->transferCount == 10) return;
+                else if(mmbc->transferCount == 9) {
+                    // msg so must jump to next module if previous operation requires bridging
+                     setMvtItToNextModule(bc);
+                }
+            }
+            mmbc->sendMessage(
+                "Coordinate Msg",
+                new MessageOf<Coordinate>(COORDINATE_MSG_ID,
+                                          Coordinate(mmbc->operation, targetModule,
+                                                     mmbc->module->position, mmbc->mvt_it)),
+                mmbc->module->getInterface(pos), 100, 200);
+            if( mmbc->transferCount < 9) {
+                setMvtItToNextModule(bc);
+            } 
         }
-        mmbc->sendMessage("Coordinate Msg", new MessageOf<Coordinate>(
-            COORDINATE_MSG_ID, Coordinate(mmbc->operation, targetModule,  mmbc->module->position,  mmbc->mvt_it)),
-            mmbc->module->getInterface( mmbc->nearestPositionTo(targetModule)), 100, 200
-        );
-        int i=0;
-        int j= mmbc->mvt_it;
-        while((*localRules)[j].state == MOVING) {
-            i++;
-            j++;
-        }
-         mmbc->mvt_it += i+1;
     }
 }
 
 void Fill_Operation::updateState(BaseSimulator::BlockCode *bc) {
     MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
+    switch (direction) {
+    case Direction::LEFT: {
+        if(mmShape == FRONTBACK) {
+            mmbc->shapeState = BACKFRONT;
+            Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::LEFT, mmbc->seedPosition);
+            mmbc->MMPosition = mmbc->MMPosition.offsetX(-1);
+            mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
+            break;
+        } else if(mmShape == BACKFRONT){
+            mmbc->shapeState = FRONTBACK;
+            Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::LEFT, mmbc->seedPosition);
+            mmbc->MMPosition = mmbc->MMPosition.offsetX(-1);
+            mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
+            break;
+        }
+        
+    }
+
+    
+    default:
+        break;
+    }
+}
+
+bool Fill_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode *bc) {
+    MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
+    if(direction == Direction::LEFT and mmShape == BACKFRONT and mmbc->mvt_it >= 58)
+        return true;
+    return false;
 }
 
 /************************************************************************

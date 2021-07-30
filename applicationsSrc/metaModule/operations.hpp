@@ -74,6 +74,7 @@ public:
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
     void updateState(BaseSimulator::BlockCode*) override;
+    bool mustSendCoordinateBack(BaseSimulator::BlockCode*) override;
     bool isFill() const override {return true;};
 };
 
