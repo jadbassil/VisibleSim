@@ -111,7 +111,7 @@ Fill_Operation::Fill_Operation (Direction _direction, MMShape _mmShape, int Z)
         if(mmShape == BACKFRONT) {
             localRules.reset(&LocalRules_BF_Fill_Left);
         } else if(mmShape == FRONTBACK) {
-            //localRules.reset(&LocalRules_FB_Fill_Left);
+            localRules.reset(&LocalRules_FB_Fill_Left);
         }
         break;
     
@@ -156,20 +156,21 @@ void Fill_Operation::updateState(BaseSimulator::BlockCode *bc) {
     MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
     switch (direction) {
     case Direction::LEFT: {
-        if(mmShape == FRONTBACK) {
+        if (mmShape == FRONTBACK) {
             mmbc->shapeState = BACKFRONT;
-            Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::LEFT, mmbc->seedPosition);
+            Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::LEFT,
+                                       mmbc->seedPosition);
             mmbc->MMPosition = mmbc->MMPosition.offsetX(-1);
             mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
             break;
-        } else if(mmShape == BACKFRONT){
+        } else if (mmShape == BACKFRONT) {
             mmbc->shapeState = FRONTBACK;
-            Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::LEFT, mmbc->seedPosition);
+            Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::LEFT,
+                                       mmbc->seedPosition);
             mmbc->MMPosition = mmbc->MMPosition.offsetX(-1);
             mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
             break;
         }
-        
     }
 
     
@@ -181,6 +182,8 @@ void Fill_Operation::updateState(BaseSimulator::BlockCode *bc) {
 bool Fill_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode *bc) {
     MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
     if(direction == Direction::LEFT and mmShape == BACKFRONT and mmbc->mvt_it >= 58)
+        return true;
+    if(direction == Direction::LEFT and mmShape == FRONTBACK and (mmbc->mvt_it == 53 or mmbc->mvt_it >= 68))
         return true;
     return false;
 }
