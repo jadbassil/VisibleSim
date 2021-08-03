@@ -120,62 +120,39 @@ void Init::buildMMon(Catoms3DBlock *s, Direction pos) {
 
 void Init::fillMM(Catoms3DBlock *s) {
     MetaModuleBlockCode *S = static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(s->position)->blockCode);
-     if(S->shapeState == FRONTBACK) {
-        for(int i=0; i<10; i++) {
-            Cell3DPosition newBlockPos = s->position + Cell3DPosition(FillingPositions_FrontBack[i]);
-            BaseSimulator::getWorld()->addBlock(0, MetaModuleBlockCode::buildNewBlockCode, newBlockPos, Color(LIGHTBLUE));
+    if (S->MMPosition.pt[2] % 2 == 0) { //Z_even
+        if (S->shapeState == FRONTBACK) {
+            for (int i = 0; i < 10; i++) {
+                Cell3DPosition newBlockPos =
+                    s->position + Cell3DPosition(FillingPositions_FrontBack_Zeven[i]);
+                BaseSimulator::getWorld()->addBlock(0, MetaModuleBlockCode::buildNewBlockCode,
+                                                    newBlockPos, Color(LIGHTBLUE));
+            }
+        } else if (S->shapeState == BACKFRONT) {
+            for (int i = 0; i < 10; i++) {
+                Cell3DPosition newBlockPos =
+                    s->position + Cell3DPosition(FillingPositions_BackFront_Zeven[i]);
+                BaseSimulator::getWorld()->addBlock(0, MetaModuleBlockCode::buildNewBlockCode,
+                                                    newBlockPos, Color(LIGHTBLUE));
+            }
         }
-    } else if(S->shapeState == BACKFRONT) {
-        for(int i=0; i<10; i++) {
-            Cell3DPosition newBlockPos = s->position + Cell3DPosition(FillingPositions_BackFront[i]);
-            BaseSimulator::getWorld()->addBlock(0,  MetaModuleBlockCode::buildNewBlockCode, newBlockPos, Color(LIGHTBLUE));
+    } else {  // Z_odd
+        if (S->shapeState == FRONTBACK) {
+            for (int i = 0; i < 10; i++) {
+                Cell3DPosition newBlockPos =
+                    s->position + Cell3DPosition(FillingPositions_FrontBack_Zodd[i]);
+                BaseSimulator::getWorld()->addBlock(0, MetaModuleBlockCode::buildNewBlockCode,
+                                                    newBlockPos, Color(LIGHTBLUE));
+            }
+        } else if (S->shapeState == BACKFRONT) {
+            for (int i = 0; i < 10; i++) {
+                Cell3DPosition newBlockPos =
+                    s->position + Cell3DPosition(FillingPositions_BackFront_Zodd[i]);
+                BaseSimulator::getWorld()->addBlock(0, MetaModuleBlockCode::buildNewBlockCode,
+                                                    newBlockPos, Color(LIGHTBLUE));
+            }
         }
     }
-    // else if(S->shapeState == BACKFRONT && S->MMPosition.pt[2] % 2 != 0) {
-    //     for(int i=0; i<10; i++) {
-    //         Cell3DPosition newBlockPos(s->position.pt[0]+ Fill_BackFrontZOdd[i][0],
-    //          s->position.pt[1] + Fill_BackFrontZOdd[i][1],
-    //          s->position.pt[2] + Fill_BackFrontZOdd[i][2]);
-    //         BaseSimulator::getWorld()->addBlock(0,  MetaModuleBlockCode::buildNewBlockCode, newBlockPos, Color(LIGHTBLUE));
-    //     }
-    // }else if(S->shapeState == FRONTBACK && S->MMPosition.pt[2] % 2 != 0) {
-    //     for(int i=0; i<10; i++) {
-    //         Cell3DPosition newBlockPos(s->position.pt[0]+ Fill_FrontBackZOdd[i][0],
-    //          s->position.pt[1] + Fill_FrontBackZOdd[i][1],
-    //          s->position.pt[2] + Fill_FrontBackZOdd[i][2]);
-    //         BaseSimulator::getWorld()->addBlock(0,  MetaModuleBlockCode::buildNewBlockCode, newBlockPos, Color(LIGHTBLUE));
-    //     }
-    // }
-
-    // if(S->shapeState == FRONTBACK && S->MMPosition.pt[2] % 2 == 0) {
-    //     for(int i=0; i<10; i++) {
-    //         Cell3DPosition newBlockPos(s->position.pt[0]+ Fill_FrontBackZEven[i][0],
-    //          s->position.pt[1] + Fill_FrontBackZEven[i][1],
-    //          s->position.pt[2] + Fill_FrontBackZEven[i][2]);
-    //         BaseSimulator::getWorld()->addBlock(0, MetaModuleBlockCode::buildNewBlockCode, newBlockPos, Color(LIGHTBLUE));
-    //     }
-    // } else if(S->shapeState == BACKFRONT && S->MMPosition.pt[2] % 2 == 0) {
-    //     for(int i=0; i<10; i++) {
-    //         Cell3DPosition newBlockPos(s->position.pt[0]+ Fill_BackFrontZEven[i][0],
-    //          s->position.pt[1] + Fill_BackFrontZEven[i][1],
-    //          s->position.pt[2] + Fill_BackFrontZEven[i][2]);
-    //         BaseSimulator::getWorld()->addBlock(0,  MetaModuleBlockCode::buildNewBlockCode, newBlockPos, Color(LIGHTBLUE));
-    //     }
-    // }else if(S->shapeState == BACKFRONT && S->MMPosition.pt[2] % 2 != 0) {
-    //     for(int i=0; i<10; i++) {
-    //         Cell3DPosition newBlockPos(s->position.pt[0]+ Fill_BackFrontZOdd[i][0],
-    //          s->position.pt[1] + Fill_BackFrontZOdd[i][1],
-    //          s->position.pt[2] + Fill_BackFrontZOdd[i][2]);
-    //         BaseSimulator::getWorld()->addBlock(0,  MetaModuleBlockCode::buildNewBlockCode, newBlockPos, Color(LIGHTBLUE));
-    //     }
-    // }else if(S->shapeState == FRONTBACK && S->MMPosition.pt[2] % 2 != 0) {
-    //     for(int i=0; i<10; i++) {
-    //         Cell3DPosition newBlockPos(s->position.pt[0]+ Fill_FrontBackZOdd[i][0],
-    //          s->position.pt[1] + Fill_FrontBackZOdd[i][1],
-    //          s->position.pt[2] + Fill_FrontBackZOdd[i][2]);
-    //         BaseSimulator::getWorld()->addBlock(0,  MetaModuleBlockCode::buildNewBlockCode, newBlockPos, Color(LIGHTBLUE));
-    //     }
-    // }
 }
 
 void Init::getNeighborMMSeedPos(const Cell3DPosition &seedPos, const Cell3DPosition &MMPos, Direction pos, Cell3DPosition &newSeed) {

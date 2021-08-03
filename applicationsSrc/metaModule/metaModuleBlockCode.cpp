@@ -585,13 +585,13 @@ bool MetaModuleBlockCode::isInMM(Cell3DPosition &neighborPosition) {
     if(shapeState == FRONTBACK) {
         bool inBorder = (find(FrontBackMM.begin(), FrontBackMM.end(), position) != FrontBackMM.end());
         bool inFill = 
-            (find(FillingPositions_FrontBack.begin(), FillingPositions_FrontBack.end(), position) != FillingPositions_FrontBack.end());
+            (find(FillingPositions_FrontBack_Zeven.begin(), FillingPositions_FrontBack_Zeven.end(), position) != FillingPositions_FrontBack_Zeven.end());
         if(inBorder)
             return true;
     }else if(shapeState == BACKFRONT) {
         bool inBorder = (find(BackFrontMM.begin(), BackFrontMM.end(), position) != BackFrontMM.end());
         bool inFill = 
-            (find(FillingPositions_BackFront.begin(), FillingPositions_BackFront.end(), position) != FillingPositions_BackFront.end());
+            (find(FillingPositions_BackFront_Zeven.begin(), FillingPositions_BackFront_Zeven.end(), position) != FillingPositions_BackFront_Zeven.end());
         if(inBorder )
             return true;
     } else {
