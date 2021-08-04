@@ -52,11 +52,13 @@ public:
     virtual bool isBuild() const {return false;};
 };
 
-class Dismantle_Operation: public virtual Operation {
+class Dismantle_Operation: public Operation {
 private:
     /* data */
 public:
-    Dismantle_Operation(Direction _direction, MMShape _mmShape , int Z = 0);
+    bool filled;
+
+    Dismantle_Operation(Direction _direction, MMShape _mmShape , int Z = 0, bool _filled = false);
     ~Dismantle_Operation ();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;

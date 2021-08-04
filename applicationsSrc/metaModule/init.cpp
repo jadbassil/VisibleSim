@@ -127,6 +127,10 @@ void Init::fillMM(Catoms3DBlock *s) {
                     s->position + Cell3DPosition(FillingPositions_FrontBack_Zeven[i]);
                 BaseSimulator::getWorld()->addBlock(0, MetaModuleBlockCode::buildNewBlockCode,
                                                     newBlockPos, Color(LIGHTBLUE));
+                MetaModuleBlockCode *newBlock = static_cast<MetaModuleBlockCode *>(
+                    BaseSimulator::getWorld()->getBlockByPosition(newBlockPos)->blockCode);
+                newBlock->seedPosition = s->position;
+                newBlock->MMPosition = S->MMPosition;
             }
         } else if (S->shapeState == BACKFRONT) {
             for (int i = 0; i < 10; i++) {
@@ -134,6 +138,10 @@ void Init::fillMM(Catoms3DBlock *s) {
                     s->position + Cell3DPosition(FillingPositions_BackFront_Zeven[i]);
                 BaseSimulator::getWorld()->addBlock(0, MetaModuleBlockCode::buildNewBlockCode,
                                                     newBlockPos, Color(LIGHTBLUE));
+                MetaModuleBlockCode *newBlock = static_cast<MetaModuleBlockCode *>(
+                    BaseSimulator::getWorld()->getBlockByPosition(newBlockPos)->blockCode);
+                newBlock->seedPosition = s->position;
+                newBlock->MMPosition = S->MMPosition;
             }
         }
     } else {  // Z_odd
@@ -143,6 +151,10 @@ void Init::fillMM(Catoms3DBlock *s) {
                     s->position + Cell3DPosition(FillingPositions_FrontBack_Zodd[i]);
                 BaseSimulator::getWorld()->addBlock(0, MetaModuleBlockCode::buildNewBlockCode,
                                                     newBlockPos, Color(LIGHTBLUE));
+                MetaModuleBlockCode *newBlock = static_cast<MetaModuleBlockCode *>(
+                    BaseSimulator::getWorld()->getBlockByPosition(newBlockPos)->blockCode);
+                newBlock->seedPosition = s->position;
+                newBlock->MMPosition = S->MMPosition;
             }
         } else if (S->shapeState == BACKFRONT) {
             for (int i = 0; i < 10; i++) {
@@ -150,6 +162,10 @@ void Init::fillMM(Catoms3DBlock *s) {
                     s->position + Cell3DPosition(FillingPositions_BackFront_Zodd[i]);
                 BaseSimulator::getWorld()->addBlock(0, MetaModuleBlockCode::buildNewBlockCode,
                                                     newBlockPos, Color(LIGHTBLUE));
+                MetaModuleBlockCode *newBlock = static_cast<MetaModuleBlockCode *>(
+                    BaseSimulator::getWorld()->getBlockByPosition(newBlockPos)->blockCode);
+                newBlock->seedPosition = s->position;
+                newBlock->MMPosition = S->MMPosition;
             }
         }
     }

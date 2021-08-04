@@ -30,6 +30,12 @@ bool Operation::mustHandleBridgeOnAdd(const Cell3DPosition& pos) {
         BaseSimulator::getWorld()->getBlockByPosition(pos)->blockCode);
     if (posbc->operation->isTransfer() and (posbc->operation->getDirection() == Direction::LEFT or
         posbc->operation->getDirection() == Direction::RIGHT)) {
+        return true;
+    }
+    if (posbc->operation->isDismantle()) {
+        if (static_cast<Dismantle_Operation*>(posbc->operation)->filled and
+            (posbc->operation->getDirection() == Direction::LEFT or
+             posbc->operation->getDirection() == Direction::RIGHT))
             return true;
     }
     return false;
@@ -51,13 +57,14 @@ void Operation::setMvtItToNextModule(BaseSimulator::BlockCode* bc) {
  *************************  DISMANTLE OPERATION  ************************
  ***********************************************************************/
 
-Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape, int Z)
-    :Operation(_direction, _mmShape, Z) {
+Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape, int Z, bool _filled)
+    :Operation(_direction, _mmShape, Z), filled(_filled)  {
     
     switch (direction) {
     case Direction::LEFT:
         if(mmShape == BACKFRONT) {
-            localRules.reset(&LocalRules_BF_Dismantle_Left);
+            filled ? localRules.reset(&LocalRules_BF_DismantleFilled_Left_Zeven)
+                :localRules.reset(&LocalRules_BF_Dismantle_Left);
         } else if(mmShape == FRONTBACK) {
             localRules.reset(&LocalRules_FB_Dismantle_Left);
         }
@@ -107,16 +114,18 @@ bool Dismantle_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
 Fill_Operation::Fill_Operation (Direction _direction, MMShape _mmShape, int Z) 
     :Operation(_direction, _mmShape, Z) {
     switch (direction) {
-    case Direction::LEFT:
-        if(mmShape == BACKFRONT) {
-            localRules.reset(&LocalRules_BF_Fill_Left);
-        } else if(mmShape == FRONTBACK) {
-            localRules.reset(&LocalRules_FB_Fill_Left);
-        }
-        break;
-    
-    default:
-        break;
+        case Direction::LEFT:
+            if (mmShape == BACKFRONT) {
+                Zeven ? localRules.reset(&LocalRules_BF_Fill_Left_Zeven)
+                      : localRules.reset(&LocalRules_BF_Fill_Left);
+            } else if (mmShape == FRONTBACK) {
+                Zeven ? localRules.reset(&LocalRules_FB_Fill_Left_Zeven)
+                      : localRules.reset(&LocalRules_FB_Fill_Left);
+            }
+            break;
+
+        default:
+            break;
     }
 }
 
@@ -181,6 +190,10 @@ void Fill_Operation::updateState(BaseSimulator::BlockCode *bc) {
 
 bool Fill_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode *bc) {
     MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
+    if(direction == Direction::LEFT and mmShape == FRONTBACK and Zeven and (mmbc->mvt_it == 54 or mmbc->mvt_it >= 67))
+        return true;
+    if(direction == Direction::LEFT and mmShape == BACKFRONT and Zeven and mmbc->mvt_it >= 57)
+        return true;
     if(direction == Direction::LEFT and mmShape == BACKFRONT and mmbc->mvt_it >= 58)
         return true;
     if(direction == Direction::LEFT and mmShape == FRONTBACK and (mmbc->mvt_it == 53 or mmbc->mvt_it >= 68))
@@ -488,6 +501,7 @@ bool Transfer_Operation::handleBridgeMovements(BaseSimulator::BlockCode* bc) {
     if(lmvt.currentPosition == lmvt.nextPosition /**and not isFirstTransferOperation**/) {
         mmbc->mvt_it++;
         mmbc->movingState = IN_POSITION;
+       // mmbc->updateState();
         mmbc->sendMessage("CoordinateBack Msg3", 
                         new MessageOf<CoordinateBack>(COORDINATEBACK_MSG_ID, CoordinateBack(1, mmbc->coordinatorPosition)),
                         mmbc->module->getInterface(mmbc->nearestPositionTo(mmbc->coordinatorPosition)) ,100, 200);

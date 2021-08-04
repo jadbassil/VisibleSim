@@ -35,14 +35,14 @@ static vector<Cell3DPosition> BackFrontMM = {Cell3DPosition(0, 0, 0),  Cell3DPos
                                              Cell3DPosition(-1, 1, 2), Cell3DPosition(-1, 0, 1)};
 
 static vector<Cell3DPosition> FillingPositions_FrontBack_Zodd = {
-    Cell3DPosition(0, 1, 2),  Cell3DPosition(1, 1, 2), Cell3DPosition(0, 0, 2),
+    Cell3DPosition(0, 1, 2),  Cell3DPosition(1, 1, 2), Cell3DPosition(-1, 1, 2),
     Cell3DPosition(-1, 0, 1), Cell3DPosition(0, 0, 1), Cell3DPosition(0, -1, 1),
     Cell3DPosition(1, -1, 1), Cell3DPosition(2, 0, 2), Cell3DPosition(1, -1, 3),
     Cell3DPosition(0, -1, 3)
 };
 
 static vector<Cell3DPosition> FillingPositions_BackFront_Zodd = {
-    Cell3DPosition(1, 1, 2),   Cell3DPosition(0, 1, 2),  Cell3DPosition(1, 0, 2),
+    Cell3DPosition(1, 1, 2),   Cell3DPosition(0, 1, 2),  Cell3DPosition(2, 0, 2),
     Cell3DPosition(1, 0, 1),   Cell3DPosition(0, 0, 1),  Cell3DPosition(0, -1, 1),
     Cell3DPosition(-1, -1, 1), Cell3DPosition(-1, 0, 2), Cell3DPosition(-1, -1, 3),
     Cell3DPosition(0, -1, 3),
@@ -50,14 +50,14 @@ static vector<Cell3DPosition> FillingPositions_BackFront_Zodd = {
 
 static vector<Cell3DPosition> FillingPositions_FrontBack_Zeven = {
     Cell3DPosition(0, -1, 1),  Cell3DPosition(1, -1, 1), Cell3DPosition(0, -1, 2),
-    Cell3DPosition(1, -1, 2), Cell3DPosition(1, 0, 2), Cell3DPosition(0, 0, 1),
+    Cell3DPosition(1, -1, 2), Cell3DPosition(2, -1, 2), Cell3DPosition(0, 0, 1),
     Cell3DPosition(-1, 0, 1), Cell3DPosition(-1, 0, 2), Cell3DPosition(-1, 0, 3),
     Cell3DPosition(0, 0, 3)
 };
 
 static vector<Cell3DPosition> FillingPositions_BackFront_Zeven = {
     Cell3DPosition(-1, -1, 1),   Cell3DPosition(0, -1, 1),  Cell3DPosition(0, -1, 2),
-    Cell3DPosition(1, -1, 2),   Cell3DPosition(0, 0, 2),  Cell3DPosition(0, 0, 1),
+    Cell3DPosition(1, -1, 2),   Cell3DPosition(-1, 0, 2),  Cell3DPosition(0, 0, 1),
     Cell3DPosition(1, 0, 1), Cell3DPosition(2, 0, 2), Cell3DPosition(1, 0, 3),
     Cell3DPosition(0, 0, 3),
 };

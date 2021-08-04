@@ -6,9 +6,9 @@
 	</blockList>
 
 	<MMBlockList>
-		<block position="0,0,0"/>
+		<block position="0,0,0" />
 		<block position="1,0,0"/>
-		<block position="-1,0,0"/>
+		<block position="-1,0,0" filled="true"/>
 	
 		<block position="-2,0,0"/>
 		<block position="2,0,0"/>
