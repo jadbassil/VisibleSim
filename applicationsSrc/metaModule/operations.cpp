@@ -114,7 +114,7 @@ bool Dismantle_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
 Fill_Operation::Fill_Operation (Direction _direction, MMShape _mmShape, int Z) 
     :Operation(_direction, _mmShape, Z) {
     switch (direction) {
-        case Direction::LEFT:
+        case Direction::LEFT: {
             if (mmShape == BACKFRONT) {
                 Zeven ? localRules.reset(&LocalRules_BF_Fill_Left_Zeven)
                       : localRules.reset(&LocalRules_BF_Fill_Left);
@@ -122,8 +122,18 @@ Fill_Operation::Fill_Operation (Direction _direction, MMShape _mmShape, int Z)
                 Zeven ? localRules.reset(&LocalRules_FB_Fill_Left_Zeven)
                       : localRules.reset(&LocalRules_FB_Fill_Left);
             }
-            break;
-
+        } break;
+        case Direction::BACK: {
+            if (mmShape == BACKFRONT) {
+                VS_ASSERT_MSG(false, "Not implemented");
+                // Zeven ? localRules.reset(&LocalRules_BF_Fill_Back_Zeven)
+                //       : localRules.reset(&LocalRules_BF_Fill_Back_Zeven);
+            } else if (mmShape == FRONTBACK) {
+                //Zeven ?
+                 localRules.reset(&LocalRules_FB_Fill_Back_Zeven);
+                   //   : localRules.reset(&LocalRules_FB_Fill_Back_Zodd);
+            }
+        } break;
         default:
             break;
     }
@@ -180,10 +190,16 @@ void Fill_Operation::updateState(BaseSimulator::BlockCode *bc) {
             mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
             break;
         }
-    }
+    } break;
+    case Direction::BACK: {
+        mmbc->shapeState == FRONTBACK ? mmbc->shapeState = BACKFRONT : mmbc->shapeState = FRONTBACK;
+        Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::BACK,
+                                   mmbc->seedPosition);
+        mmbc->MMPosition = mmbc->MMPosition.offsetY(1);
+        mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
+    } break;
 
-    
-    default:
+        default:
         break;
     }
 }
@@ -197,6 +213,8 @@ bool Fill_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode *bc) {
     if(direction == Direction::LEFT and mmShape == BACKFRONT and mmbc->mvt_it >= 58)
         return true;
     if(direction == Direction::LEFT and mmShape == FRONTBACK and (mmbc->mvt_it == 53 or mmbc->mvt_it >= 68))
+        return true;
+    if(direction == Direction::BACK and mmShape == FRONTBACK and mmbc->mvt_it >= 49)
         return true;
     return false;
 }
