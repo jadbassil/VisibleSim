@@ -69,9 +69,9 @@ public:
 
 class Fill_Operation: public Operation {
 private:
-    
+    bool comingFromBack;
 public:
-    Fill_Operation(Direction _direction, MMShape _mmShape, int Z = 0);
+    Fill_Operation(Direction _direction, MMShape _mmShape, bool _comingFromBack = false, int Z = 0);
     ~Fill_Operation ();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;

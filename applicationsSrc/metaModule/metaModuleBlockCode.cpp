@@ -89,7 +89,7 @@ void MetaModuleBlockCode::startup() {
         block23->operation = new Transfer_Operation(Direction::LEFT, BACKFRONT);
         block23->isCoordinator = true;
 
-        //  MetaModuleBlockCode *block29 = static_cast<MetaModuleBlockCode*>(
+        // MetaModuleBlockCode *block29 = static_cast<MetaModuleBlockCode*>(
         //     BaseSimulator::getWorld()->getBlockById(29)->blockCode
         // );
         // operation = new Operation(Direction::LEFT, BACKFRONT);
@@ -124,14 +124,14 @@ void MetaModuleBlockCode::startup() {
         MetaModuleBlockCode *block83 = static_cast<MetaModuleBlockCode*>(
             BaseSimulator::getWorld()->getBlockById(83)->blockCode
         );
-        block83->operation = new Transfer_Operation(Direction::BACK, BACKFRONT, true);
+        block83->operation = new Fill_Operation(Direction::BACK, BACKFRONT, true, 0);
         block83->isCoordinator = true;
 
-        MetaModuleBlockCode *block113 = static_cast<MetaModuleBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(113)->blockCode
-        );
-        block113->operation = new Fill_Operation(Direction::BACK, FRONTBACK, 0);
-        block113->isCoordinator = true;
+        // MetaModuleBlockCode *block113 = static_cast<MetaModuleBlockCode*>(
+        //     BaseSimulator::getWorld()->getBlockById(113)->blockCode
+        // );
+        // block113->operation = new Fill_Operation(Direction::BACK, FRONTBACK, 0);
+        // block113->isCoordinator = true;
 
         // MetaModuleBlockCode *block133 = static_cast<MetaModuleBlockCode*>(
         //     BaseSimulator::getWorld()->getBlockById(133)->blockCode
@@ -347,12 +347,15 @@ void MetaModuleBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
                     targetNextToSrc = true;
                 }
             }
+             console << "targetNextToSrc: " << targetNextToSrc << "\n";
         }
-        console << "targetNextToSrc: " << targetNextToSrc << "\n";
+        if(targetLightNeighbor) {
+            console << "Neighbor is target light: " << targetLightNeighbor->position << "\n";
+        }
         if (targetLightNeighbor
             and targetLightNeighbor->position != srcPos and !targetNextToSrc) { // neighbor is target light
             console << "Neighbor is target light: " << targetLightNeighbor->position << "\n";
-            console << "target light pos: " << targetLightNeighbor->position << "\n";
+            console << "target pos: " << targetPos << "\n";
             P2PNetworkInterface* tlitf = module->getInterface(
                 targetLightNeighbor->position);
 
@@ -360,9 +363,17 @@ void MetaModuleBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
 
             sendMessage("PLS Msg", new MessageOf<PLS>(PLS_MSG_ID, PLS(srcPos, targetPos)), tlitf,  100, 200);
         } else if((not targetLightNeighbor and nextToTarget) or targetNextToSrc) {
+            bool mustAvoidBlocking = false;
+            if(targetPos - seedPosition == Cell3DPosition(1,0,2) and lattice->cellHasBlock(seedPosition + Cell3DPosition(1,1,2))) {
+                MetaModuleBlockCode* x = static_cast<MetaModuleBlockCode*>(
+                    BaseSimulator::getWorld()->getBlockByPosition(seedPosition +  Cell3DPosition(1,1,2))->blockCode);
+                if(x->movingState == MOVING) {
+                    mustAvoidBlocking = true;
+                }
+            }
             if (greenLightIsOn
                 or (nextToSender
-                    and module->getState() != BuildingBlock::State::ACTUATING)) {
+                    and module->getState() != BuildingBlock::State::ACTUATING and not mustAvoidBlocking)) {
                 
                 P2PNetworkInterface* itf = nextToSender ?
                     module->getInterface(srcPos) : sender;
@@ -627,6 +638,7 @@ Cell3DPosition MetaModuleBlockCode::nearestPositionTo(Cell3DPosition& targetPosi
     for (auto neighPos : lattice->getActiveNeighborCells(module->position)) {
     MetaModuleBlockCode* neighBlock = static_cast<MetaModuleBlockCode*>(
         BaseSimulator::getWorld()->getBlockByPosition(neighPos)->blockCode);
+        if(neighBlock->module->getState() ==BuildingBlock::State::MOVING ) continue;
         if (except != nullptr) {
             if (module->getInterface(neighPos) == except) {
                 continue;
@@ -912,8 +924,8 @@ void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     );
 
     ofstream file;
-    file.open("FB_Fill_Back_Zeven.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(12,20,10);
+    file.open("BF_Fill_Back_Zeven_ComingFromBack.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(12,23,10);
     if(!file.is_open()) return;
 
     if(c == 'o') {
