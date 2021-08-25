@@ -52,11 +52,13 @@ public:
     virtual bool isBuild() const {return false;};
 };
 
-class Dismantle_Operation: public virtual Operation {
+class Dismantle_Operation: public Operation {
 private:
     /* data */
 public:
-    Dismantle_Operation(Direction _direction, MMShape _mmShape , int Z = 0);
+    bool filled;
+
+    Dismantle_Operation(Direction _direction, MMShape _mmShape , int Z = 0, bool _filled = false);
     ~Dismantle_Operation ();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
@@ -67,13 +69,14 @@ public:
 
 class Fill_Operation: public Operation {
 private:
-    
+    bool comingFromBack;
 public:
-    Fill_Operation(Direction _direction, MMShape _mmShape, int Z = 0);
+    Fill_Operation(Direction _direction, MMShape _mmShape, bool _comingFromBack = false, int Z = 0);
     ~Fill_Operation ();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
     void updateState(BaseSimulator::BlockCode*) override;
+    bool mustSendCoordinateBack(BaseSimulator::BlockCode*) override;
     bool isFill() const override {return true;};
 };
 
