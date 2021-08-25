@@ -347,10 +347,7 @@ void MetaModuleBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
                     targetNextToSrc = true;
                 }
             }
-             console << "targetNextToSrc: " << targetNextToSrc << "\n";
-        }
-        if(targetLightNeighbor) {
-            console << "Neighbor is target light: " << targetLightNeighbor->position << "\n";
+            console << "targetNextToSrc: " << targetNextToSrc << "\n";
         }
         if (targetLightNeighbor
             and targetLightNeighbor->position != srcPos and !targetNextToSrc) { // neighbor is target light
@@ -364,10 +361,14 @@ void MetaModuleBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
             sendMessage("PLS Msg", new MessageOf<PLS>(PLS_MSG_ID, PLS(srcPos, targetPos)), tlitf,  100, 200);
         } else if((not targetLightNeighbor and nextToTarget) or targetNextToSrc) {
             bool mustAvoidBlocking = false;
-            if(targetPos - seedPosition == Cell3DPosition(1,0,2) and lattice->cellHasBlock(seedPosition + Cell3DPosition(1,1,2))) {
-                MetaModuleBlockCode* x = static_cast<MetaModuleBlockCode*>(
-                    BaseSimulator::getWorld()->getBlockByPosition(seedPosition +  Cell3DPosition(1,1,2))->blockCode);
-                if(x->movingState == MOVING) {
+            if (targetPos - seedPosition == Cell3DPosition(1, 0, 2) and
+                lattice->cellHasBlock(seedPosition + Cell3DPosition(1, 1, 2))) {
+                // Special test to avoid blocking when a BF meta-module is filling back
+                MetaModuleBlockCode *x = static_cast<MetaModuleBlockCode *>(
+                    BaseSimulator::getWorld()
+                        ->getBlockByPosition(seedPosition + Cell3DPosition(1, 1, 2))
+                        ->blockCode);
+                if (x->movingState == MOVING) {
                     mustAvoidBlocking = true;
                 }
             }
@@ -431,13 +432,6 @@ void MetaModuleBlockCode::handleGLOMessage(std::shared_ptr<Message> _msg,
     } else if(module->position == targetPos){
         VS_ASSERT(module->position == targetPos);
         Cell3DPosition targetPosition = (*operation->localRules)[mvt_it].nextPosition + seedPosition;
-        //module->moveTo(targetPosition);
-        // if(relativePos() == Cell3DPosition(1,2,2)) {
-        //      getScheduler()->schedule(
-        //             new Catoms3DRotationStartEvent(getScheduler()->now(), module, targetPosition,
-        //                                            RotationLinkType::OctaFace, true));
-        //     return;
-        // }
         if(module->canRotateToPosition(targetPosition)) {
             if ((relativePos() == Cell3DPosition(-1, 1, 2) /**or
                               /ùùrelativePos() == Cell3DPosition(-1, -1, 2)**/) or

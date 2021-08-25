@@ -71,6 +71,7 @@ Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape
         break;
     
     default:
+        VS_ASSERT_MSG(false, "Not implemented");
         break;
     }
 }
@@ -130,17 +131,13 @@ Fill_Operation::Fill_Operation (Direction _direction, MMShape _mmShape, bool _co
                     if(not comingFromBack) localRules.reset(&LocalRules_BF_Fill_Back_Zeven);
                     else localRules.reset(&LocalRules_BF_Fill_Back_Zeven_ComingFromBack); //comingFromBack
                 } else { //Zodd
-
+                    VS_ASSERT_MSG(false, "Not implemented");
                 }
-                //VS_ASSERT_MSG(false, "Not implemented");
-                // Zeven ? 
-                
-                //       : localRules.reset(&LocalRules_BF_Fill_Back_Zodd);
             } else if (mmShape == FRONTBACK) {
                 comingFromBack = false;
-                //Zeven ?
-                 localRules.reset(&LocalRules_FB_Fill_Back_Zeven);
-                   //   : localRules.reset(&LocalRules_FB_Fill_Back_Zodd);
+                Zeven ?
+                 localRules.reset(&LocalRules_FB_Fill_Back_Zeven)
+                    : VS_ASSERT_MSG(false, "Not implemented");
             }
         } break;
         default:
@@ -154,8 +151,9 @@ void Fill_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const 
     MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
     if(mmbc->isCoordinator) {
         if (pos == mmbc->module->position.offsetY(-1) or
-                pos == mmbc->module->position.offsetY(1) and not comingFromBack) {
+                pos == mmbc->module->position.offsetY(1) and not comingFromBack) { // Left; Rigth and FB back
             mmbc->transferCount++;
+
             if(direction == Direction::BACK and mmShape == BACKFRONT) {
                 if(mmbc->transferCount == 3) {
                     Cell3DPosition targetModule =
@@ -169,6 +167,7 @@ void Fill_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const 
                     setMvtItToNextModule(bc);
                 }
             }
+
             getScheduler()->trace("transferCount: " + to_string(mmbc->transferCount), mmbc->module->blockId, Color(MAGENTA));
             Cell3DPosition targetModule =
                 mmbc->seedPosition + (*localRules)[mmbc->mvt_it].currentPosition;
@@ -190,7 +189,7 @@ void Fill_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const 
             if( mmbc->transferCount < 9) {
                 setMvtItToNextModule(bc);
             } 
-        } else if(pos == mmbc->module->position + Cell3DPosition(0, 1, 1)) {
+        } else if(pos == mmbc->module->position + Cell3DPosition(0, 1, 1)) { // BF back
             if(direction == Direction::BACK and mmShape == BACKFRONT and comingFromBack) {
                 mmbc->transferCount++;
                 getScheduler()->trace("transferCount: " + to_string(mmbc->transferCount),
@@ -206,19 +205,7 @@ void Fill_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const 
                     mmbc->module->getInterface(pos), 100, 200);
                 if (mmbc->transferCount < 9 and mmbc->transferCount != 4) {
                     setMvtItToNextModule(bc);
-                }
-                // if(mmbc->transferCount == 1) {
-                //     Cell3DPosition targetModule =
-                //     mmbc->seedPosition + (*localRules)[mmbc->mvt_it].currentPosition;
-                //     mmbc->sendMessage(
-                //     "Coordinate Msg",
-                //     new MessageOf<Coordinate>(COORDINATE_MSG_ID,
-                //                             Coordinate(mmbc->operation, targetModule,
-                //                                         mmbc->module->position, mmbc->mvt_it)),
-                //     mmbc->module->getInterface(pos), 100, 200);
-                // }
-                // if(mmbc->mvt_it == 51) return;
-             
+                }             
             }
         }
     }
@@ -268,7 +255,9 @@ bool Fill_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode *bc) {
     } else if(direction == Direction::BACK) {
         if (mmShape == FRONTBACK and mmbc->mvt_it >= 49) return true;
         if(mmShape == BACKFRONT and not comingFromBack and mmbc->mvt_it >= 50) return true;
-        if(mmShape == BACKFRONT and comingFromBack and (mmbc->mvt_it == 9 or mmbc->mvt_it == 15 or mmbc->mvt_it == 21 or mmbc->mvt_it >= 31)) return true;
+        if (mmShape == BACKFRONT and comingFromBack and
+            (mmbc->mvt_it == 9 or mmbc->mvt_it == 15 or mmbc->mvt_it == 21 or mmbc->mvt_it >= 31))
+            return true;
     }
 
     return false;
@@ -320,6 +309,7 @@ Transfer_Operation::Transfer_Operation(Direction _direction, MMShape _mmShape, b
 
     } break;
     default:
+        VS_ASSERT_MSG(false, "Not implemented");
         break;
     }
 }
@@ -355,13 +345,6 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
 
                 if (mmbc->transferCount <= 2) {
                     setMvtItToNextModule(bc);
-                    // int i = 0;
-                    // int j = mmbc->mvt_it;
-                    // while ((*localRules)[j].state == MOVING) {
-                    //     i++;
-                    //     j++;
-                    // }
-                    // mmbc->mvt_it += i + 1;
                 } else if (mmbc->transferCount < 10) {
                     mmbc->mvt_it = 8;
                 }
@@ -635,8 +618,6 @@ Build_Operation::Build_Operation (Direction _direction, MMShape _mmShape, int Z)
                 localRules.reset(&LocalRules_FB_Build_Up);
             }
         } else { // Z odd
-            
-            cerr << "Z is odd" << endl;
             if(mmShape == BACKFRONT) {
                 localRules.reset(&LocalRules_BF_Build_Up_ZOdd);
             } else if(mmShape == FRONTBACK) {
@@ -647,6 +628,7 @@ Build_Operation::Build_Operation (Direction _direction, MMShape _mmShape, int Z)
         break;
     
     default:
+        VS_ASSERT_MSG(false, "Not implemented");
         break;
     }
 }
