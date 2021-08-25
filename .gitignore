@@ -81,7 +81,7 @@ doc/html/
 # applicationsBin/*/*.pdf
 applicationsBin/*/animation_*/
 applicationsBin/*/*.txt
-# applicationsBin/*/Captures
+applicationsBin/*/Captures
 # applicationsBin/*/Screenshots/
 
 # User-generated files
