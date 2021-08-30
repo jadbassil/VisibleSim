@@ -90,7 +90,8 @@ static vector<Cell3DPosition> FillingPositions_BackFront_Zeven = {
 static vector<Cell3DPosition> OpenedPositions = {
     Cell3DPosition(-1, 0, 0), Cell3DPosition(-1, 0, 4), Cell3DPosition(2, 0, 0), Cell3DPosition(2, 0, 4)};
 
-static vector<array<int,4>> initialMap;
+static vector<array<int, 4>> initialMap;
+static vector<array<int, 4>> targetMap;
 
 static Catoms3DBlock *seed;
 
@@ -121,6 +122,7 @@ public:
     P2PNetworkInterface *coordinateItf{NULL};
     bool initialized{false};
 
+
     Operation *operation = NULL;
 
     Color initialColor;
@@ -140,6 +142,34 @@ public:
 
     Catoms3DBlock *getModule() { return module; };
     Cell3DPosition getMMPosition() { return MMPosition; };
+
+    /**
+     * @brief test if the MetaModule is a destination for Max-Flow
+     *  
+     */
+    bool isDestination();
+    /**
+     * @brief test if the Meta-Module is a source for Max-Flow
+     * 
+     */
+    bool isSource();
+    /**
+     * @param  pos a meta-module position in a 3D lattice
+     * @return true if the meta-module is in the targetMap
+     * @return false 
+     */
+    bool inTargetShape(Cell3DPosition pos);
+     /**
+     * @param  pos a meta-module position in a 3D lattice
+     * @return true if the meta-module is in the initialMap
+     * @return false 
+     */
+    bool inInitialShape(Cell3DPosition pos);
+    /**
+     * @return vector<Cell3DPosition> containing all adjacent MMs Positions occupied or not
+     */
+    vector<Cell3DPosition> getAdjacentMMPositions();
+
 
     /**
      * @brief Update the state of a module once it becomes int its new position
