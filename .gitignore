@@ -83,7 +83,8 @@ applicationsBin/*/animation_*/
 applicationsBin/*/*.txt
 applicationsBin/*/Captures
 # applicationsBin/*/Screenshots/
-
+applicationsBin/*/Captures/
+applicationsBin/*/*.txt
 # User-generated files
 applicationsBin/*/*.m
 TAGS
