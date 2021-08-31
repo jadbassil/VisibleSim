@@ -16,6 +16,7 @@ public:
     static void buildInitialMap(Cell3DPosition firstSeedPos, vector<array<int,4>> &map);
     static void getNeighborMMSeedPos(const Cell3DPosition &seedPos, const Cell3DPosition &MMPos, Direction pos, Cell3DPosition &newSeed);
     static void fillMM(Catoms3DBlock *s);
+    static Cell3DPosition getSeedPositionFromMMPosition(Cell3DPosition &MMPos);
 };
 
 #endif

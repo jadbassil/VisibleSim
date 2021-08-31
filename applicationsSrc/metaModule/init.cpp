@@ -6,19 +6,18 @@ Init::Init(/* args */) {
 
 Init::~Init() {
 }
- 
+
 bool Init::initialMapBuildDone = false;
 
-void Init::buildInitialMap(Cell3DPosition firstSeedPos, vector<array<int,4>> &map) {
-    if(initialMapBuildDone) {
+void Init::buildInitialMap(Cell3DPosition firstSeedPos, vector<array<int, 4>> &map) {
+    if (initialMapBuildDone) {
         cerr << "Initial map already built!!" << endl;
         return;
     }
-     cerr << map.size()<< endl;
-    for(int i=1; i< map.size(); i++) {
-       
-        int x,y,z;
-        x = firstSeedPos.pt[0] + 4*map[i][0];
+    cerr << "Number of Meta-Modules: " << map.size() << endl;
+    for (int i = 1; i < map.size(); i++) {
+        int x, y, z;
+        x = firstSeedPos.pt[0] + 4 * map[i][0];
         y = firstSeedPos.pt[1] + 3*map[i][1];
         z = firstSeedPos.pt[2] + 4*map[i][2];
         if(map[i][2] % 2 != 0) {
@@ -214,3 +213,4 @@ void Init::getNeighborMMSeedPos(const Cell3DPosition &seedPos, const Cell3DPosit
     }
     newSeed = neighbor_position;
 }
+

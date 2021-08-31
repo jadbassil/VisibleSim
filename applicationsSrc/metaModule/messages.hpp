@@ -45,3 +45,23 @@ struct CoordinateBack {
         : steps(_steps), coordinatorPosition(_coordinatorPosition){};
 
 };
+
+/* --------------------------------- MAXFLOW -------------------------------- */
+struct BFSdata {
+    Cell3DPosition MMPosition;
+    Cell3DPosition fromMMPosition;
+    Cell3DPosition toSeedPosition;
+
+    BFSdata(Cell3DPosition _MMPosition, Cell3DPosition _fromMMPosition, Cell3DPosition _toSeedPosition):
+        MMPosition(_MMPosition), fromMMPosition(_fromMMPosition), toSeedPosition(_toSeedPosition){};
+};
+
+struct ConfirmMsgData {
+    Cell3DPosition fromMMPosition;
+    Cell3DPosition toMMPosition;
+
+    ConfirmMsgData(Cell3DPosition _fromMMPosition, Cell3DPosition _toMMPosition):
+        fromMMPosition(_fromMMPosition),toMMPosition(_toMMPosition) {};
+};
+
+/* -------------------------------------------------------------------------- */

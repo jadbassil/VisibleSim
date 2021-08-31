@@ -5,19 +5,30 @@
 #include "robots/catoms3D/catoms3DBlockCode.h"
 #include "operations.hpp"
 
-static const int COORDINATE_MSG_ID = 1003;
-static const int COORDINATEBACK_MSG_ID = 1004;
+using namespace Catoms3D;
 
 static const int IT_MODE_FINDING_PIVOT = 2000;
 static const int IT_MODE_TRANSFERBACK = 2001;
 static const int IT_MODE_TRANSFERBACK_REACHCOORDINATOR = 2002;
+/* ----------------------- OPERATION COORDINATION MSGS ---------------------- */
+static const int COORDINATE_MSG_ID = 1003;
+static const int COORDINATEBACK_MSG_ID = 1004;
+/* -------------------------------------------------------------------------- */
 
+/* ------------------------ MOTION COORDINATION MSGS ------------------------ */
 static const int PLS_MSG_ID = 1005;
 static const int GLO_MSG_ID = 1006;
 static const int FTR_MSG_ID = 1007;
+/* -------------------------------------------------------------------------- */
 
-using namespace Catoms3D;
-
+/* ------------------------------ MAX-FLOW MSGS ----------------------------- */
+static const int BFS_MSG_ID = 1008;
+static const int CONFIRMEDGE_MSG_ID = 1009;
+static const int CONFIRMPATH_MSG_ID = 1010;
+static const int CONFIRMSTREAMLINE_MSG_ID = 1011;
+static const int AVAILABLE_MSG_ID = 1012;
+static const int CUTOFF_MSG_ID = 1013;
+/* -------------------------------------------------------------------------- */
 
 
 // enum MovingState{IN_POSITION, OPENING, MOVING, WAITING};
@@ -87,11 +98,14 @@ static vector<Cell3DPosition> FillingPositions_BackFront_Zeven = {
 //     Cell3DPosition(0, 0, 1),
 // };
 
+enum PathState {NONE, BFS, ConfPath, Streamline};
+
 static vector<Cell3DPosition> OpenedPositions = {
     Cell3DPosition(-1, 0, 0), Cell3DPosition(-1, 0, 4), Cell3DPosition(2, 0, 0), Cell3DPosition(2, 0, 4)};
 
 static vector<array<int, 4>> initialMap;
 static vector<array<int, 4>> targetMap;
+static bool showSrcAndDst = false;
 
 static Catoms3DBlock *seed;
 
@@ -122,6 +136,27 @@ public:
     P2PNetworkInterface *coordinateItf{NULL};
     bool initialized{false};
 
+/* ---------------------------- MAXFLOW variables --------------------------- */
+    //TODO use position (or Direction) instead of bID so the MM can know the position of parent and childs
+    PathState mainPathState{NONE};	            //! state of the main path: {NONE, BFS, ConfPath, Streamline}
+    Cell3DPosition mainPathIn;		            //! Position of parent meta-module on the main tree
+    vector<Cell3DPosition> mainPathOut;         //! Position’s of child meta-modules on the main tree
+    vector<Cell3DPosition >mainPathsOld;         //! old Position's of child meta-modules on the main tree
+    PathState aug1PathState{NONE};	            //! state of the augmenting path 1: {NONE, BFS, ConfPath}
+    Cell3DPosition aug1PathIn;				            //! Position of parent meta-module on the augmenting tree (type 1)
+    vector<Cell3DPosition>aug1PathOut;		    //! Position’s of child meta-modules on the augmenting tree (type 1)
+    vector<Cell3DPosition>aug1PathOld;		    //! old Position's of child meta-modules on the augmenting tree (type 1)
+    PathState aug2PathState{NONE};	            //! state of the augmenting path 2: {NONE, BFS, ConfPath}
+    Cell3DPosition aug2PathIn;				    //! Position of parent meta-module on the augmenting tree (type 2)
+    vector<Cell3DPosition>aug2PathOut;		    //! Position’s of child meta-modules on the augmenting tree (type 2)
+    vector<Cell3DPosition>aug2PathsOld;		    //! old Position's of child meta-modules on the augmenting tree (type 2)
+
+    /**
+     * @brief get all adjacent MM seeds positions
+     * 
+     */
+    vector<Cell3DPosition> getAdjacentMMSeeds();
+/* -------------------------------------------------------------------------- */
 
     Operation *operation = NULL;
 
@@ -186,6 +221,7 @@ public:
      */
     Cell3DPosition nearestPositionTo(Cell3DPosition &targetPosition, P2PNetworkInterface *except = nullptr);
     Cell3DPosition nextInBorder(P2PNetworkInterface* sender);
+    Cell3DPosition getSeedPositionFromMMPosition(Cell3DPosition &MMPos);
     P2PNetworkInterface *interfaceTo(Cell3DPosition& dstPos, P2PNetworkInterface *sender = nullptr);
 
     void probeGreenLight();
@@ -232,6 +268,14 @@ public:
     void handlePLSMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     void handleGLOMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     void handleFTRMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+
+    void handleBFSMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+    void handleConfirmEdgeMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+    void handleConfirmPathMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+    void handleConfirmStreamlineMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+    void handleAvailableMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+    void handleCutOffMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+
     /// Advanced blockcode handlers below
 
     /**
@@ -306,5 +350,32 @@ public:
     };
     /*****************************************************************************/
 };
+
+template <typename T>
+void operator+=(std::vector<T> &v1, const std::vector<T> &v2) {
+    v1.insert(v1.end(), v2.begin(), v2.end());
+}
+
+template <typename T>
+bool operator==(T value,const std::vector<T> &v) {
+    return v.size()==1 && v.front()==value;
+}
+
+template <typename T>
+bool operator!=(T value,const std::vector<T> &v) {
+    return v.size()!=1 || v.front()!=value;
+}
+
+
+template <typename T>
+bool isIn(const std::vector<T> &v,T value) {
+    typename vector<T>::const_iterator current=v.begin();
+    while (current!=v.end()) {
+        if (*current==value) return true;
+        ++current;
+    }
+    return false;
+}
+
 
 #endif /* MetaModuleBlockCode_H_ */
