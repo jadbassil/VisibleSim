@@ -137,7 +137,6 @@ public:
     bool initialized{false};
 
 /* ---------------------------- MAXFLOW variables --------------------------- */
-    //TODO use position (or Direction) instead of bID so the MM can know the position of parent and childs
     PathState mainPathState{NONE};	            //! state of the main path: {NONE, BFS, ConfPath, Streamline}
     Cell3DPosition mainPathIn;		            //! Position of parent meta-module on the main tree
     vector<Cell3DPosition> mainPathOut;         //! Position’s of child meta-modules on the main tree

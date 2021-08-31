@@ -235,9 +235,10 @@ void MetaModuleBlockCode::startup() {
     initialColor = module->color;
     initialized = true;
     VS_ASSERT(Init::initialMapBuildDone);
+    if(targetMap.empty()) return;
     if(isSource() and seedPosition == module->position) {
         cerr << MMPosition << ": is source\n";
-        VS_ASSERT(mainPathState == NONE);
+        //VS_ASSERT(mainPathState == NONE);
         mainPathState = BFS;
         mainPathIn = MMPosition;
         mainPathsOld.push_back(MMPosition);
@@ -619,7 +620,7 @@ void MetaModuleBlockCode::handleBFSMessage(std::shared_ptr<Message> _msg,
             mainPathIn = data.fromMMPosition;
             mainPathOut.clear();
             mainPathOut.push_back(MMPosition);
-            
+            console << "fromSeedPosition: " << fromSeedPosition << "\n";
             sendMessage("ConfirmPath msg",
                         new MessageOf<ConfirmMsgData>(CONFIRMPATH_MSG_ID, ConfirmMsgData(MMPosition, data.fromMMPosition)),
                         interfaceTo(fromSeedPosition), 100, 200);
@@ -717,6 +718,7 @@ void MetaModuleBlockCode::handleConfirmPathMessage(std::shared_ptr<Message> _msg
         return;
     }
     console << "mainPathState: " << mainPathState << "\n";
+    console << "toSeedPositition: " << toSeedPosition << "\n";
     if(mainPathState == BFS and isIn(mainPathOut, fromMMPosition)) {
         for(auto out: mainPathOut) {
             if(out != fromMMPosition) {
@@ -1191,6 +1193,8 @@ Cell3DPosition MetaModuleBlockCode::getSeedPositionFromMMPosition(Cell3DPosition
     Cell3DPosition seedPos = Cell3DPosition();
     seedPos.set(seed->position.pt[0] + (MMPos.pt[0] * 4), seed->position.pt[1] + (MMPos.pt[1] * 3),
                 seed->position.pt[2] + (MMPos.pt[2] * 4));
+    if (MMPos.pt[2] % 2 != 0) 
+        seedPos =  seedPos.offsetY(-1);
     return seedPos;
 }
 
@@ -1536,7 +1540,7 @@ void MetaModuleBlockCode::parseUserElements(TiXmlDocument *config) {
 
     // Parsing target positions
     TiXmlElement *MMtargetsElement = MMblocksElement->NextSiblingElement();
-    if(not MMblocksElement) {
+    if(not MMtargetsElement) {
         cerr << "No target positions are provided!!" << endl;
         return;
     }
