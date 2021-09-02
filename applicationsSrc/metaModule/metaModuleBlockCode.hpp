@@ -10,6 +10,12 @@ using namespace Catoms3D;
 static const int IT_MODE_FINDING_PIVOT = 2000;
 static const int IT_MODE_TRANSFERBACK = 2001;
 static const int IT_MODE_TRANSFERBACK_REACHCOORDINATOR = 2002;
+
+/* -------------------------------- TREE MSGS ------------------------------- */
+static const int GO_MSG_ID = 1001;
+static const int BACK_MSG_ID = 1002;
+/* -------------------------------------------------------------------------- */
+
 /* ----------------------- OPERATION COORDINATION MSGS ---------------------- */
 static const int COORDINATE_MSG_ID = 1003;
 static const int COORDINATEBACK_MSG_ID = 1004;
@@ -29,9 +35,6 @@ static const int CONFIRMSTREAMLINE_MSG_ID = 1011;
 static const int AVAILABLE_MSG_ID = 1012;
 static const int CUTOFF_MSG_ID = 1013;
 /* -------------------------------------------------------------------------- */
-
-
-// enum MovingState{IN_POSITION, OPENING, MOVING, WAITING};
 
 static vector<Cell3DPosition> FrontBackMM = {Cell3DPosition(0, 0, 0),   Cell3DPosition(1, 0, 0),
                                              Cell3DPosition(1, 0, 1),   Cell3DPosition(2, 1, 2),
@@ -114,6 +117,15 @@ class MetaModuleBlockCode : public Catoms3DBlockCode
 private:
     
 public:
+
+/* ----------------------- COORDINATION TREE VARIABLES ---------------------- */
+    Cell3DPosition parentPosition = Cell3DPosition(-1,-1,-1);
+    vector<Cell3DPosition> childrenPositions;
+    short distance{-1};
+    short nbWaitedAnswers{0};
+/* -------------------------------------------------------------------------- */
+
+/* ------------------------ TRANSPORTATION VARIABLES ------------------------ */
     MMShape shapeState;
     Cell3DPosition MMPosition;
     Cell3DPosition seedPosition;
@@ -135,6 +147,7 @@ public:
     P2PNetworkInterface *awaitingModuleProbeItf{NULL};
     P2PNetworkInterface *coordinateItf{NULL};
     bool initialized{false};
+/* -------------------------------------------------------------------------- */
 
 /* ---------------------------- MAXFLOW variables --------------------------- */
     PathState mainPathState{NONE};	            //! state of the main path: {NONE, BFS, ConfPath, Streamline}
@@ -261,6 +274,9 @@ public:
      * @brief Sample message handler for this instance of the blockcode
      * @param _msg Pointer to the message received by the module, requires casting
      * @param sender Connector of the module that has received the message and that is connected to the sender */
+    void handleGoMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+    void handleBackMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+
     void handleCoordinateMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     void handleCoordinateBackMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
 

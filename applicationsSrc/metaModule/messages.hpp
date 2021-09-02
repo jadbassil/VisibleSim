@@ -1,5 +1,25 @@
 #include "metaModuleBlockCode.hpp"
 
+/* ---------------------------- COORDINATION TREE --------------------------- */
+struct GOdata {
+    Cell3DPosition fromMMPosition;
+    Cell3DPosition toMMPosition;
+    short distance;
+
+    GOdata(Cell3DPosition _fromMMPosition, Cell3DPosition _toMMPosition, short _distance)
+        : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), distance(_distance){};
+};
+
+struct Backdata {
+    Cell3DPosition fromMMPosition;
+    Cell3DPosition toMMPosition;
+    bool isChild;
+
+    Backdata(Cell3DPosition _fromMMPosition, Cell3DPosition _toMMPosition, bool _isChild)
+        : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), isChild(_isChild){};
+};
+/* -------------------------------------------------------------------------- */
+
 struct PLS {
     Cell3DPosition srcPos;
     Cell3DPosition targetPos;
@@ -56,11 +76,11 @@ struct BFSdata {
         MMPosition(_MMPosition), fromMMPosition(_fromMMPosition), toSeedPosition(_toSeedPosition){};
 };
 
-struct ConfirmMsgData {
+struct MaxFlowMsgData {
     Cell3DPosition fromMMPosition;
     Cell3DPosition toMMPosition;
 
-    ConfirmMsgData(Cell3DPosition _fromMMPosition, Cell3DPosition _toMMPosition):
+    MaxFlowMsgData(Cell3DPosition _fromMMPosition, Cell3DPosition _toMMPosition):
         fromMMPosition(_fromMMPosition),toMMPosition(_toMMPosition) {};
 };
 
