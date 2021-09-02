@@ -281,7 +281,7 @@ void MetaModuleBlockCode::startup() {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                             INITIAL TREE BUILD                             */
+/*                           COORDINATION TREE BUILD                          */
 /* -------------------------------------------------------------------------- */
 void MetaModuleBlockCode::handleGoMessage(std::shared_ptr<Message> _msg,
                                                   P2PNetworkInterface* sender) {
@@ -380,7 +380,7 @@ void MetaModuleBlockCode::handleBackMessage(std::shared_ptr<Message> _msg,
     }
     if(nbWaitedAnswers == 0) {
         if(parentPosition == Cell3DPosition(-1,-1,-1)) {
-            cerr << "Tree is Built\n";
+            cerr << "Coordination Tree is Built\n";
         } else {
             Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(parentPosition);
             sendMessage(

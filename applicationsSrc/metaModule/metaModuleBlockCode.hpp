@@ -11,7 +11,7 @@ static const int IT_MODE_FINDING_PIVOT = 2000;
 static const int IT_MODE_TRANSFERBACK = 2001;
 static const int IT_MODE_TRANSFERBACK_REACHCOORDINATOR = 2002;
 
-/* -------------------------------- TREE MSGS ------------------------------- */
+/* ------------------------- COORDINATION TREE MSGS ------------------------- */
 static const int GO_MSG_ID = 1001;
 static const int BACK_MSG_ID = 1002;
 /* -------------------------------------------------------------------------- */
