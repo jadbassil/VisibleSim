@@ -607,7 +607,7 @@ void MetaModuleBlockCode::handleBFSMessage(std::shared_ptr<Message> _msg,
     }
     vector<Cell3DPosition> pathsOld;
     pathsOld += mainPathsOld;
-    pathsOld += aug1PathOld;
+    pathsOld += aug1PathsOld;
     pathsOld += aug2PathsOld;
     if(mainPathState == NONE and !isIn(pathsOld, data.MMPosition)) {
         mainPathsOld.push_back(data.MMPosition);
@@ -641,7 +641,7 @@ void MetaModuleBlockCode::handleBFSMessage(std::shared_ptr<Message> _msg,
     } else if (mainPathState == Streamline and aug1PathState == NONE and
                data.fromMMPosition != mainPathIn and data.fromMMPosition != mainPathOut and
                !isIn(pathsOld, data.MMPosition)) {
-        aug1PathOld.push_back(data.MMPosition);
+        aug1PathsOld.push_back(data.MMPosition);
         Cell3DPosition fromSeedPosition = getSeedPositionFromMMPosition(data.fromMMPosition);
         sendMessage("ConfirmEdge msg",
                     new MessageOf<ConfirmMsgData>(
@@ -773,6 +773,8 @@ void MetaModuleBlockCode::handleConfirmPathMessage(std::shared_ptr<Message> _msg
                     new MessageOf<ConfirmMsgData>(CONFIRMPATH_MSG_ID,
                                                   ConfirmMsgData(MMPosition, aug2PathIn)),
                     interfaceTo(aug2PathInSeedPosition), 100, 200);
+    } else {
+        console << "test\n";
     }
 }
 
@@ -901,11 +903,11 @@ void MetaModuleBlockCode::handleAvailableMessage(std::shared_ptr<Message> _msg,
                         interfaceTo(toSeedPosition), 100, 200);
         }
     } else if (aug1PathState == BFS and fromMMPosition == mainPathIn) {
-        if (!aug1PathOld.empty()) {
+        if (!aug1PathsOld.empty()) {
             Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(fromMMPosition);
             sendMessage("BFS msg",
                         new MessageOf<BFSdata>(
-                            BFS_MSG_ID, BFSdata(aug1PathOld.back(), MMPosition, toSeedPosition)),
+                            BFS_MSG_ID, BFSdata(aug1PathsOld.back(), MMPosition, toSeedPosition)),
                         interfaceTo(toSeedPosition), 100, 200);
         }
     } else if (aug2PathState == BFS and fromMMPosition == mainPathOut) {
@@ -938,7 +940,7 @@ void MetaModuleBlockCode::handleCutOffMessage(std::shared_ptr<Message> _msg,
                     interfaceTo(toSeedPosition), 100, 200);
         return;
     }
-    if(mainPathState != NONE and fromMMPosition != mainPathIn) {
+    if(mainPathState != NONE and fromMMPosition == mainPathIn) {
         for (auto out : mainPathOut) {
             Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(out);
             sendMessage(
@@ -1424,8 +1426,14 @@ void MetaModuleBlockCode::onBlockSelected() {
     for(auto out: aug1PathOut) cerr << out << " | ";
     cerr << endl;
     cerr << "aug2PathIn: " << aug2PathIn << endl;
-      cerr << "aug2PathOut: ";
+    cerr << "aug2PathOut: ";
     for(auto out: aug2PathOut) cerr << out << " | ";
+    cerr << endl;
+    cerr << "mainPathsOld: ";
+    for(auto old: mainPathsOld) cerr << old << " | ";
+    cerr << endl;
+    cerr << "aug1PathsOld: ";
+    for(auto old: aug1PathsOld) cerr << old << " | ";
     cerr << endl;
 }
 

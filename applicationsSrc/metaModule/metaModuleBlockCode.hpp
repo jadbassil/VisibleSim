@@ -144,7 +144,7 @@ public:
     PathState aug1PathState{NONE};	            //! state of the augmenting path 1: {NONE, BFS, ConfPath}
     Cell3DPosition aug1PathIn;				            //! Position of parent meta-module on the augmenting tree (type 1)
     vector<Cell3DPosition>aug1PathOut;		    //! Position’s of child meta-modules on the augmenting tree (type 1)
-    vector<Cell3DPosition>aug1PathOld;		    //! old Position's of child meta-modules on the augmenting tree (type 1)
+    vector<Cell3DPosition>aug1PathsOld;		    //! old Position's of child meta-modules on the augmenting tree (type 1)
     PathState aug2PathState{NONE};	            //! state of the augmenting path 2: {NONE, BFS, ConfPath}
     Cell3DPosition aug2PathIn;				    //! Position of parent meta-module on the augmenting tree (type 2)
     vector<Cell3DPosition>aug2PathOut;		    //! Position’s of child meta-modules on the augmenting tree (type 2)
