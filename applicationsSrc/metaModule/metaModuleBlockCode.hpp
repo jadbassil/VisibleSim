@@ -151,15 +151,15 @@ public:
 
 /* ---------------------------- MAXFLOW variables --------------------------- */
     PathState mainPathState{NONE};	            //! state of the main path: {NONE, BFS, ConfPath, Streamline}
-    Cell3DPosition mainPathIn;		            //! Position of parent meta-module on the main tree
+    Cell3DPosition mainPathIn = Cell3DPosition(-1,-1,-1);		            //! Position of parent meta-module on the main tree
     vector<Cell3DPosition> mainPathOut;         //! Position’s of child meta-modules on the main tree
     vector<Cell3DPosition >mainPathsOld;         //! old Position's of child meta-modules on the main tree
     PathState aug1PathState{NONE};	            //! state of the augmenting path 1: {NONE, BFS, ConfPath}
-    Cell3DPosition aug1PathIn;				            //! Position of parent meta-module on the augmenting tree (type 1)
+    Cell3DPosition aug1PathIn = Cell3DPosition(-1,-1,-1);				            //! Position of parent meta-module on the augmenting tree (type 1)
     vector<Cell3DPosition>aug1PathOut;		    //! Position’s of child meta-modules on the augmenting tree (type 1)
     vector<Cell3DPosition>aug1PathsOld;		    //! old Position's of child meta-modules on the augmenting tree (type 1)
     PathState aug2PathState{NONE};	            //! state of the augmenting path 2: {NONE, BFS, ConfPath}
-    Cell3DPosition aug2PathIn;				    //! Position of parent meta-module on the augmenting tree (type 2)
+    Cell3DPosition aug2PathIn = Cell3DPosition(-1,-1,-1);				    //! Position of parent meta-module on the augmenting tree (type 2)
     vector<Cell3DPosition>aug2PathOut;		    //! Position’s of child meta-modules on the augmenting tree (type 2)
     vector<Cell3DPosition>aug2PathsOld;		    //! old Position's of child meta-modules on the augmenting tree (type 2)
 
