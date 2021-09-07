@@ -10,10 +10,15 @@ using namespace Catoms3D;
 static const int IT_MODE_FINDING_PIVOT = 2000;
 static const int IT_MODE_TRANSFERBACK = 2001;
 static const int IT_MODE_TRANSFERBACK_REACHCOORDINATOR = 2002;
+static const int IT_MODE_TERMINATION = 2003;
+static const int IT_MODE_STARTWAVE = 2004;
 
 /* ------------------------- COORDINATION TREE MSGS ------------------------- */
 static const int GO_MSG_ID = 1001;
 static const int BACK_MSG_ID = 1002;
+static const int GOTERM_MSG_ID = 1014;
+static const int BACKTERM_MSG_ID = 1015;
+static const int ACK_MSG_ID = 1016;
 /* -------------------------------------------------------------------------- */
 
 /* ----------------------- OPERATION COORDINATION MSGS ---------------------- */
@@ -102,6 +107,7 @@ static vector<Cell3DPosition> FillingPositions_BackFront_Zeven = {
 // };
 
 enum PathState {NONE, BFS, ConfPath, Streamline};
+enum ProcessState {PASSIVE, ACTIVE};
 
 static vector<Cell3DPosition> OpenedPositions = {
     Cell3DPosition(-1, 0, 0), Cell3DPosition(-1, 0, 4), Cell3DPosition(2, 0, 0), Cell3DPosition(2, 0, 4)};
@@ -123,6 +129,18 @@ public:
     vector<Cell3DPosition> childrenPositions;
     short distance{-1};
     short nbWaitedAnswers{0};
+/* -------------------------------------------------------------------------- */
+
+/* -------------------------- TERMINATION DETECTION ------------------------- */
+    ProcessState state;
+    bool cont_passive{true};
+    bool b{true};
+    bool res{true};
+    int deficit{0};
+    void start_wave();
+    void return_wave(bool b);
+/* -------------------------------------------------------------------------- */
+
 /* -------------------------------------------------------------------------- */
 
 /* ------------------------ TRANSPORTATION VARIABLES ------------------------ */
@@ -276,6 +294,9 @@ public:
      * @param sender Connector of the module that has received the message and that is connected to the sender */
     void handleGoMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     void handleBackMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+    void handleGoTermMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+    void handleBackTermMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+    void handleAckMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
 
     void handleCoordinateMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     void handleCoordinateBackMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
