@@ -108,6 +108,7 @@ static vector<Cell3DPosition> FillingPositions_BackFront_Zeven = {
 
 enum PathState {NONE, BFS, ConfPath, Streamline};
 enum ProcessState {PASSIVE, ACTIVE};
+enum RenconfigurationStep {SRCDEST, MAXFLOW, TRANSPORT};
 
 static vector<Cell3DPosition> OpenedPositions = {
     Cell3DPosition(-1, 0, 0), Cell3DPosition(-1, 0, 4), Cell3DPosition(2, 0, 0), Cell3DPosition(2, 0, 4)};
@@ -117,6 +118,7 @@ static vector<array<int, 4>> targetMap;
 static bool showSrcAndDst = false;
 
 static Catoms3DBlock *seed;
+static RenconfigurationStep reconfigurationStep;
 
 class MetaModuleBlockCode : public Catoms3DBlockCode
 {
@@ -180,7 +182,7 @@ public:
     Cell3DPosition aug2PathIn = Cell3DPosition(-1,-1,-1);				    //! Position of parent meta-module on the augmenting tree (type 2)
     vector<Cell3DPosition>aug2PathOut;		    //! Position’s of child meta-modules on the augmenting tree (type 2)
     vector<Cell3DPosition>aug2PathsOld;		    //! old Position's of child meta-modules on the augmenting tree (type 2)
-
+    Cell3DPosition destinationOut;
     /**
      * @brief get all adjacent MM seeds positions
      * 
@@ -189,6 +191,7 @@ public:
 /* -------------------------------------------------------------------------- */
 
     Operation *operation = NULL;
+    void setOperation(Cell3DPosition inPosition, Cell3DPosition outPosition);
 
     Color initialColor;
 
@@ -233,6 +236,7 @@ public:
     /**
      * @return vector<Cell3DPosition> containing all adjacent MMs Positions occupied or not
      */
+
     vector<Cell3DPosition> getAdjacentMMPositions();
 
 

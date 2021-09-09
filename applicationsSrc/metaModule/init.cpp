@@ -1,5 +1,5 @@
 #include "init.hpp"
-
+#include <fstream>
 
 Init::Init(/* args */) {
 }
@@ -45,6 +45,7 @@ void Init::buildInitialMap(Cell3DPosition firstSeedPos, vector<array<int, 4>> &m
         if(map[i][3] == 1)
             fillMM(newSeed->module);
     }
+    // buildDistanceMatrix();
     initialMapBuildDone = true;
 }
 
@@ -214,3 +215,42 @@ void Init::getNeighborMMSeedPos(const Cell3DPosition &seedPos, const Cell3DPosit
     newSeed = neighbor_position;
 }
 
+map<Cell3DPosition, map<Cell3DPosition, int>> Init::distanceMatrix =
+    map<Cell3DPosition, map<Cell3DPosition, int>>();
+
+void Init::buildDistanceMatrix(bool rebuild) {
+    if(not distanceMatrix.empty() and not rebuild) {
+        return;
+    }
+    cerr << "Building DistanceMatrix" << endl;
+    for(auto id_block1: BaseSimulator::getWorld()->buildingBlocksMap) {
+        Cell3DPosition blockPosition1 = id_block1.second->position;
+        for(auto id_block2: BaseSimulator::getWorld()->buildingBlocksMap) {
+            Cell3DPosition blockPosition2 = id_block2.second->position;
+            if(blockPosition1 != blockPosition2)
+                distanceMatrix[blockPosition1][blockPosition2] = -1;
+            else
+                distanceMatrix[blockPosition1][blockPosition2] = 0;
+            
+        }
+    }
+    for(auto id_block1: BaseSimulator::getWorld()->buildingBlocksMap) {
+        Cell3DPosition blockPosition1 = id_block1.second->position;
+        for(auto id_block2: BaseSimulator::getWorld()->buildingBlocksMap) {
+            Cell3DPosition blockPosition2 = id_block2.second->position;
+            if (blockPosition1 != blockPosition2 and distanceMatrix[blockPosition1][blockPosition2] == -1) {
+                distanceMatrix[blockPosition1][blockPosition2] = BaseSimulator::getWorld()
+                        ->lattice->getCellDistance(blockPosition1, blockPosition2);
+                 distanceMatrix[blockPosition2][blockPosition1] = distanceMatrix[blockPosition1][blockPosition2];
+            }
+        }
+    }
+    cerr << "distanceMatrix built" << endl;
+}
+
+int Init::getDistance(Cell3DPosition p1, Cell3DPosition p2) {
+    if(distanceMatrix.empty()) {
+        buildDistanceMatrix();
+    } 
+    return distanceMatrix[p1][p2];
+}

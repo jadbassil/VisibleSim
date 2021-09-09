@@ -8,6 +8,8 @@ private:
     /* data */
     
 public:
+    static map<Cell3DPosition, map<Cell3DPosition, int>> distanceMatrix;
+
     Init(/* args */);
     ~Init();
     static bool initialMapBuildDone;
@@ -17,6 +19,9 @@ public:
     static void getNeighborMMSeedPos(const Cell3DPosition &seedPos, const Cell3DPosition &MMPos, Direction pos, Cell3DPosition &newSeed);
     static void fillMM(Catoms3DBlock *s);
     static Cell3DPosition getSeedPositionFromMMPosition(Cell3DPosition &MMPos);
+    static void buildDistanceMatrix(bool rebuild = false);
+    static int getDistance(Cell3DPosition p1, Cell3DPosition p2);
+    void readDistanceMapFromFile();
 };
 
 #endif

@@ -7,7 +7,7 @@
 
 	<MMBlockList>
 		<block position="0,0,0"/>
-		<!-- <block position="1,0,0"/> -->
+		<block position="1,0,0"/>
 		<block position="-1,0,0"/>
 		<block position="-1,0,1"/>
 	
