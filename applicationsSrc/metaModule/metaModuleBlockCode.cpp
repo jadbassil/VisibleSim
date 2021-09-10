@@ -251,7 +251,10 @@ void MetaModuleBlockCode::startup() {
     }
     initialColor = module->color;
     initialized = true;
+    
     VS_ASSERT(Init::initialMapBuildDone);
+      if(targetMap.empty()) return;
+
     if(module->blockId == seed->blockId) {
         reconfigurationStep = SRCDEST;
         nbWaitedAnswers = 0;
@@ -268,8 +271,7 @@ void MetaModuleBlockCode::startup() {
             nbWaitedAnswers++;
         }
     }
-    if(targetMap.empty()) return;
-
+  
     // if(isSource() and seedPosition == module->position) {
     //     cerr << MMPosition << ": is source\n";
     //     //VS_ASSERT(mainPathState == NONE);
