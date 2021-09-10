@@ -120,8 +120,10 @@ static bool showSrcAndDst = false;
 static Catoms3DBlock *seed;
 static RenconfigurationStep reconfigurationStep;
 
-class MetaModuleBlockCode : public Catoms3DBlockCode
-{
+static int NbOfStreamlines = 0;
+static int NbOfDestinationsReached = 0;
+
+class MetaModuleBlockCode : public Catoms3DBlockCode {
 private:
     
 public:
@@ -129,8 +131,12 @@ public:
 /* ----------------------- COORDINATION TREE VARIABLES ---------------------- */
     Cell3DPosition parentPosition = Cell3DPosition(-1,-1,-1);
     vector<Cell3DPosition> childrenPositions;
-    short distance{-1};
+    short distance{0};
     short nbWaitedAnswers{0};
+    bool isSource{false};
+    bool isDestination{false};
+
+    void reinitialize();
 /* -------------------------------------------------------------------------- */
 
 /* -------------------------- TERMINATION DETECTION ------------------------- */
@@ -167,6 +173,7 @@ public:
     P2PNetworkInterface *awaitingModuleProbeItf{NULL};
     P2PNetworkInterface *coordinateItf{NULL};
     bool initialized{false};
+    Operation *operation = NULL;
 /* -------------------------------------------------------------------------- */
 
 /* ---------------------------- MAXFLOW variables --------------------------- */
@@ -190,7 +197,7 @@ public:
     vector<Cell3DPosition> getAdjacentMMSeeds();
 /* -------------------------------------------------------------------------- */
 
-    Operation *operation = NULL;
+    
     void setOperation(Cell3DPosition inPosition, Cell3DPosition outPosition);
 
     Color initialColor;
@@ -215,12 +222,12 @@ public:
      * @brief test if the MetaModule is a destination for Max-Flow
      *  
      */
-    bool isDestination();
+    bool isPotentialDestination();
     /**
      * @brief test if the Meta-Module is a source for Max-Flow
      * 
      */
-    bool isSource();
+    bool isPotentialSource();
     /**
      * @param  pos a meta-module position in a 3D lattice
      * @return true if the meta-module is in the targetMap

@@ -71,6 +71,7 @@ void Init::buildMM(Catoms3DBlock *s, MMShape shape, Color col) {
         newBlock->seedPosition = seedModule->module->position;
         newBlock->initialPosition = newBlock->module->position - newBlock->seedPosition;
         newBlock->shapeState = shape;
+        newBlock->parentPosition = newBlock->MMPosition;
     }
 }
 
