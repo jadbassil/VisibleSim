@@ -422,9 +422,11 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                             // skip to avoid unsupported motion
                             return;
                         }
-                        if (mmbc->transferCount > 1) return;
+                        //if (mmbc->transferCount > 1) return;
                         Cell3DPosition targetModule =
                             mmbc->seedPosition + (*localRules)[mmbc->mvt_it].currentPosition;
+                        if(mmbc->transferCount == 9)
+                            return;
                         mmbc->sendMessage(
                             "Coordinate Msg",
                             new MessageOf<Coordinate>(
@@ -433,6 +435,8 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                                            mmbc->mvt_it)),
                             mmbc->module->getInterface(mmbc->nearestPositionTo(targetModule)), 100,
                             200);
+                        if(mmbc->transferCount < 9)
+                            setMvtItToNextModule(bc);
                     }
                 }
             } else if (pos == mmbc->module->position + Cell3DPosition(0, 1, 1)) {
@@ -485,7 +489,6 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
               getMMShape() == BACKFRONT and comingFromBack and
               (direction == Direction::BACK or
                direction == Direction::FRONT)))) {  // when all modules passed the bridge
-
             mmbc->sendMessage(
                 "CoordinateBack Msg",
                 new MessageOf<CoordinateBack>(COORDINATEBACK_MSG_ID,
@@ -539,12 +542,14 @@ bool Transfer_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
     if(mmbc->isCoordinator) return false;
     if((direction == Direction::LEFT or direction == Direction::RIGHT) and mmbc->mvt_it >= 14) {
         return true;
-    } else if(direction == Direction::BACK or direction == Direction::FRONT) {
-        if(not comingFromBack and mmShape == BACKFRONT) {
+    } else if (direction == Direction::BACK or direction == Direction::FRONT) {
+        if (not comingFromBack and mmShape == BACKFRONT and
+            (mmbc->mvt_it == 26 or mmbc->mvt_it == 30 or mmbc->mvt_it == 38 or
+             mmbc->mvt_it == 40)) {
             return true;
-        } else if(comingFromBack and mmShape == BACKFRONT and mmbc->mvt_it > 8) {
+        } else if (comingFromBack and mmShape == BACKFRONT and mmbc->mvt_it > 8) {
             return true;
-        } 
+        }
     }
     return false;
 }
@@ -609,7 +614,7 @@ Build_Operation::Build_Operation (Direction _direction, MMShape _mmShape, int Z)
     :Operation(_direction, _mmShape, Z) {
    
     switch (direction) {
-    case Direction::UP:
+    case Direction::UP: {
         // motions rules are set for Z even
         if(Zeven) {
             if(mmShape == BACKFRONT) {
@@ -624,13 +629,18 @@ Build_Operation::Build_Operation (Direction _direction, MMShape _mmShape, int Z)
                 localRules.reset(&LocalRules_FB_Build_Up_ZOdd);
             }
         }
-        
-        break;
+    } break;
+    case Direction::BACK: {
+        if(mmShape == FRONTBACK) {
+            localRules.reset(&LocalRules_FB_Build_Back);
+        } else if(mmShape == BACKFRONT) {
+            localRules.reset(&LocalRules_BF_Build_Back);
+        }
+    } break;
     
     default:
         VS_ASSERT_MSG(false, "Not implemented");
-        break;
-    }
+    } 
 }
  
 Build_Operation::~Build_Operation () {}
@@ -652,10 +662,7 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
             if(mmbc->transferCount == 8) return;
             else if(mmbc->transferCount == 9) {
                 // msg so must jump to next module if previous operation requires bridging
-                while((*localRules)[mmbc->mvt_it].state == MOVING) {
-                    mmbc->mvt_it++;
-                }
-                mmbc->mvt_it++; 
+                setMvtItToNextModule(bc);
             }
         }
 
@@ -665,15 +672,29 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
                 COORDINATE_MSG_ID,
                 Coordinate(mmbc->operation, targetModule, mmbc->module->position, mmbc->mvt_it)),
             mmbc->module->getInterface(pos), 100, 200);
-    
-        int i = 0;
-        int j = mmbc->mvt_it;
-        while ((*localRules)[j].state == MOVING) {
-            i++;
-            j++;
-        }
-        mmbc->mvt_it += i + 1;
+        setMvtItToNextModule(bc);
+
         mmbc->console << "mvt_it: " << mmbc->mvt_it << "\n";
+    }
+    if (mmbc->movingState == WAITING) {
+        mmbc->transferCount++;
+        mmbc->scheduler->trace("transferCount: " + to_string(mmbc->transferCount),
+                               mmbc->module->blockId, Color(CYAN));
+        if (direction == Direction::BACK  and mmShape == FRONTBACK and mmbc->transferCount == 24) {
+            mmbc->sendMessage(
+                "CoordinateBack Msg",
+                new MessageOf<CoordinateBack>(COORDINATEBACK_MSG_ID,
+                                              CoordinateBack(0, mmbc->coordinatorPosition)),
+                mmbc->interfaceTo(mmbc->coordinatorPosition), 100,
+                200);
+        } else if(direction == Direction::BACK  and mmShape == BACKFRONT and  mmbc->transferCount == 25) {
+            mmbc->sendMessage(
+                "CoordinateBack Msg",
+                new MessageOf<CoordinateBack>(COORDINATEBACK_MSG_ID,
+                                              CoordinateBack(0, mmbc->coordinatorPosition)),
+                mmbc->interfaceTo(mmbc->coordinatorPosition), 100,
+                200);
+        }
     }
 }
 
@@ -695,12 +716,22 @@ void Build_Operation::updateState(BaseSimulator::BlockCode* bc) {
             break;
         }
         
-    }
+    } break;
+     case Direction::BACK: {
+        (mmbc->shapeState == FRONTBACK) ? mmbc->shapeState = BACKFRONT : mmbc->shapeState = FRONTBACK;
+        Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::BACK, mmbc->seedPosition);
+        mmbc->MMPosition = mmbc->MMPosition.offsetY(1);
+        mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
+     } break;   
 
     
     default:
         break;
     }
+}
 
+bool Build_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
+    MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
+    return false;
 }
 

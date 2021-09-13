@@ -19,12 +19,12 @@ protected:
     Cell3DPosition nextSeed;
     bool Zeven;
     
-    void setMvtItToNextModule(BaseSimulator::BlockCode*);
+   
 public:
     Operation(/* args */);
     Operation(Direction _direction, MMShape _mmshape, int Z = 0);
     virtual ~Operation();
-
+     void setMvtItToNextModule(BaseSimulator::BlockCode*);
     std::shared_ptr<vector<LocalMovement>> localRules;
     Cell3DPosition getNextSeed(BaseSimulator::BlockCode*);
     Direction getDirection() const {return direction;};
@@ -105,6 +105,7 @@ public:
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
     void updateState(BaseSimulator::BlockCode*) override;
+    bool mustSendCoordinateBack(BaseSimulator::BlockCode*) override;
     bool isBuild() const override {return true;};
 };
 

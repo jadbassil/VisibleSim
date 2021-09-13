@@ -649,6 +649,7 @@ void MetaModuleBlockCode::handleCoordinateBackMessage(std::shared_ptr<Message> _
         for(int i=0; i<coordinateBackData->steps; i++) {
             mvt_it++;
         }
+   
         
         if(mvt_it >= operation->localRules->size()) {
             // operation ended
@@ -662,6 +663,10 @@ void MetaModuleBlockCode::handleCoordinateBackMessage(std::shared_ptr<Message> _
             probeGreenLight();
             return;
         } 
+
+        if((*operation->localRules)[mvt_it-1].state == MOVING and operation->isTransfer()) {
+            operation->setMvtItToNextModule(module->blockCode);
+        }
         console << mvt_it << ": Movement ended must switch to next one " 
                 << (*operation->localRules)[mvt_it].currentPosition << "\n";
         Cell3DPosition targetModule = seedPosition + (*operation->localRules)[mvt_it].currentPosition;
@@ -736,10 +741,10 @@ void MetaModuleBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
         bool nextToTarget = isAdjacentToPosition(targetPos);
         bool targetNextToSrc = false;
         console << (module->getState() == BuildingBlock::State::ACTUATING) << "\n";
-        if (module->getState() == BuildingBlock::State::ACTUATING) {
 
+        if (module->getState() == BuildingBlock::State::ACTUATING) {
             getScheduler()->trace("light turned orange1", module->blockId, ORANGE);
-            if(moduleAwaitingGo) setGreenLight(true);
+            if (moduleAwaitingGo) setGreenLight(true);
             moduleAwaitingGo = true;
             awaitingModulePos = srcPos;
             awaitingModuleProbeItf = sender;
@@ -908,7 +913,7 @@ void MetaModuleBlockCode::probeGreenLight() {
         (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, 0, 2);
     }
     Cell3DPosition targetPosition = lmvt.nextPosition + seedPosition;
-
+    if(not greenLightIsOn) setGreenLight(true);
     Catoms3DBlock* pivot = customFindMotionPivot(module, targetPosition);
     if (not pivot) {
         notFindingPivot = true;
@@ -1706,7 +1711,7 @@ void MetaModuleBlockCode::onMotionEnd() {
     console << lmvt.nextPosition << "\n";
     movingState = lmvt.state;
     movingSteps++;
-
+    console << "movingSteps: " << movingSteps << "\n"; 
     if (movingState == MOVING) {
         mvt_it++;
         probeGreenLight();
@@ -1738,6 +1743,7 @@ void MetaModuleBlockCode::onMotionEnd() {
                 NbOfDestinationsReached++;
                 cerr << NbOfDestinationsReached << " " << NbOfStreamlines << endl;
                 if(NbOfDestinationsReached == NbOfStreamlines) {
+                    cerr << "REINITIALIZE" << endl;
                     reinitialize();
                     MetaModuleBlockCode* seedMM = static_cast<MetaModuleBlockCode*>(seed->blockCode);
                     reconfigurationStep = SRCDEST;
@@ -1758,7 +1764,9 @@ void MetaModuleBlockCode::onMotionEnd() {
                 }
             }
             updateState();
-            
+            // if(operation->isTransfer() and relativePos() == Cell3DPosition(1,0,1)) {
+            //     setGreenLight(false);
+            // }
         }
     }
 }
@@ -1844,9 +1852,10 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
              Specify if the module must move to the starting position if next operation is not transfer back BF **/
             if (isCoordinator and pos == module->position + Cell3DPosition(0, 1, 1)) {
                 if ((not operation->isTransfer() and not operation->isFill() and
-                     operation->getDirection() != Direction::UP) or
+                     operation->getDirection() != Direction::UP and not operation->isBuild()) or
                     (operation->isTransfer() and operation->getDirection() == Direction::UP and
-                     static_cast<Transfer_Operation*>(operation)->isComingFromBack())) {
+                     static_cast<Transfer_Operation*>(operation)->isComingFromBack()) 
+                    or (operation->isBuild() and operation->getDirection() == Direction::BACK and operation->getMMShape() == BACKFRONT)) {
                     console << "move pos\n";
                     if (posBlock->module->canMoveTo(module->position.offsetY(1))) {
                         posBlock->module->moveTo(module->position.offsetY(1));
@@ -1864,12 +1873,15 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
 
         case EVENT_REMOVE_NEIGHBOR: {
             // Do something when a neighbor is removed from an interface of the module
+            
             if (not rotating and movingState != MOVING) {
+
                 uint64_t face = Catoms3DWorld::getWorld()->lattice->getOppositeDirection(
                     (std::static_pointer_cast<RemoveNeighborEvent>(pev))->face);
 
                 Cell3DPosition pos;
-                if (module->getNeighborPos(face, pos) and (module->getState() <= 3)) {
+                
+                if (module->getNeighborPos(face, pos) and (module->getState() <= 3) ) {
                     console << "REMOVE NEIGHBOR: " << pos << "\n";
                     setGreenLight(true);
                 }
@@ -1978,33 +1990,33 @@ void MetaModuleBlockCode::onBlockSelected() {
     cerr << "childrenPostions: ";
     for(auto c: childrenPositions) cerr << c << "; ";
     cerr << endl;
-    cerr << "distance: " << distance << endl;
-    cerr << "mainPathState: " << mainPathState << endl;
-    cerr << "aug1PathState: " << aug1PathState << endl;
-    cerr << "aug2PathState: " << aug2PathState << endl;
-    cerr << "mainPathIn: " << mainPathIn << endl;
-    cerr << "mainPathOut: ";
-    for(auto out: mainPathOut) cerr << out << " | ";
-    cerr << endl;
-    cerr << "aug1PathIn: " << aug1PathIn << endl;
-    cerr << "aug1PathOut: ";
-    for(auto out: aug1PathOut) cerr << out << " | ";
-    cerr << endl;
-    cerr << "aug2PathIn: " << aug2PathIn << endl;
-    cerr << "aug2PathOut: ";
-    for(auto out: aug2PathOut) cerr << out << " | ";
-    cerr << endl;
-    cerr << "mainPathsOld: ";
-    for(auto old: mainPathsOld) cerr << old << " | ";
-    cerr << endl;
-    cerr << "aug1PathsOld: ";
-    for(auto old: aug1PathsOld) cerr << old << " | ";
-    cerr << endl;
-    cerr << "aug2PathsOld: ";
-    for(auto old: aug2PathsOld) cerr << old << " | ";
-    cerr << endl;
-    cerr << "deficit: " << deficit << endl;
-    cerr << "state: " << state << endl;
+    // cerr << "distance: " << distance << endl;
+    // cerr << "mainPathState: " << mainPathState << endl;
+    // cerr << "aug1PathState: " << aug1PathState << endl;
+    // cerr << "aug2PathState: " << aug2PathState << endl;
+    // cerr << "mainPathIn: " << mainPathIn << endl;
+    // cerr << "mainPathOut: ";
+    // for(auto out: mainPathOut) cerr << out << " | ";
+    // cerr << endl;
+    // cerr << "aug1PathIn: " << aug1PathIn << endl;
+    // cerr << "aug1PathOut: ";
+    // for(auto out: aug1PathOut) cerr << out << " | ";
+    // cerr << endl;
+    // cerr << "aug2PathIn: " << aug2PathIn << endl;
+    // cerr << "aug2PathOut: ";
+    // for(auto out: aug2PathOut) cerr << out << " | ";
+    // cerr << endl;
+    // cerr << "mainPathsOld: ";
+    // for(auto old: mainPathsOld) cerr << old << " | ";
+    // cerr << endl;
+    // cerr << "aug1PathsOld: ";
+    // for(auto old: aug1PathsOld) cerr << old << " | ";
+    // cerr << endl;
+    // cerr << "aug2PathsOld: ";
+    // for(auto old: aug2PathsOld) cerr << old << " | ";
+    // cerr << endl;
+    // cerr << "deficit: " << deficit << endl;
+    // cerr << "state: " << state << endl;
 }
 
 void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
@@ -2037,8 +2049,8 @@ void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     );
 
     ofstream file;
-    file.open("BF_Fill_Back_Zeven_ComingFromBack.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(12,23,10);
+    file.open("BF_Build_Back.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(20,23,10);
     if(!file.is_open()) return;
 
     if(c == 'o') {
