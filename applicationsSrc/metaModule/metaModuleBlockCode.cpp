@@ -315,7 +315,7 @@ void MetaModuleBlockCode::handleGoMessage(std::shared_ptr<Message> _msg,
         return;
     }
     
-    if(parentPosition == Cell3DPosition(-1,-1,-1)) {
+    if(parentPosition == Cell3DPosition(-1,-1,-1) and module->blockId != seed->blockId) {
         parentPosition = data->fromMMPosition;
         // distance = data->distance + 1;
         isPotentialSource() ? distance = data->distance + 1: 
@@ -1764,9 +1764,6 @@ void MetaModuleBlockCode::onMotionEnd() {
                 }
             }
             updateState();
-            // if(operation->isTransfer() and relativePos() == Cell3DPosition(1,0,1)) {
-            //     setGreenLight(false);
-            // }
         }
     }
 }
@@ -1990,14 +1987,14 @@ void MetaModuleBlockCode::onBlockSelected() {
     cerr << "childrenPostions: ";
     for(auto c: childrenPositions) cerr << c << "; ";
     cerr << endl;
-    // cerr << "distance: " << distance << endl;
+    cerr << "distance: " << distance << endl;
     // cerr << "mainPathState: " << mainPathState << endl;
     // cerr << "aug1PathState: " << aug1PathState << endl;
     // cerr << "aug2PathState: " << aug2PathState << endl;
-    // cerr << "mainPathIn: " << mainPathIn << endl;
-    // cerr << "mainPathOut: ";
-    // for(auto out: mainPathOut) cerr << out << " | ";
-    // cerr << endl;
+    cerr << "mainPathIn: " << mainPathIn << endl;
+    cerr << "mainPathOut: ";
+    for(auto out: mainPathOut) cerr << out << " | ";
+    cerr << endl;
     // cerr << "aug1PathIn: " << aug1PathIn << endl;
     // cerr << "aug1PathOut: ";
     // for(auto out: aug1PathOut) cerr << out << " | ";
