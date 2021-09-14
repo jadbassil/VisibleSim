@@ -706,6 +706,9 @@ void MetaModuleBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition
     if(isSource) {
         (shapeState == FRONTBACK) ? coordinatorPosition = seedPosition + Cell3DPosition(-1, -1, 2)
                                   : coordinatorPosition = seedPosition + Cell3DPosition(-1, 1, 2);
+        if(direction == Direction::BACK and shapeState == FRONTBACK) {
+            coordinatorPosition = seedPosition + Cell3DPosition(2,1,2);
+        }
     } else {
         (shapeState == FRONTBACK) ? coordinatorPosition = seedPosition + Cell3DPosition(1, 0, 1)
                               : coordinatorPosition = seedPosition + Cell3DPosition(1, -1, 1);
@@ -1571,7 +1574,7 @@ vector<Cell3DPosition> MetaModuleBlockCode::getAdjacentMMPositions() {
 void MetaModuleBlockCode::updateState() {
     console << "Update State!!\n";
     operation->updateState(this);
-    if(not operation->isTransfer()) {
+    if(not operation->isTransfer() and not operation->isDismantle()) {
         operation =new Operation();
     }
    
@@ -1827,8 +1830,7 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
         }
         case EVENT_ADD_NEIGHBOR: {
             // Do something when a neighbor is added to an interface of the module
-            
-            //VS_ASSERT(operation); 
+             
             uint64_t face = Catoms3DWorld::getWorld()->lattice->
                 getOppositeDirection((std::static_pointer_cast<AddNeighborEvent>(pev))
                                     ->face);
@@ -1852,9 +1854,10 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                      operation->getDirection() != Direction::UP and not operation->isBuild()) or
                     (operation->isTransfer() and operation->getDirection() == Direction::UP and
                      static_cast<Transfer_Operation*>(operation)->isComingFromBack()) 
-                    or (operation->isBuild() and operation->getDirection() == Direction::BACK and operation->getMMShape() == BACKFRONT)) {
-                    console << "move pos\n";
+                    /*or (operation->isBuild() and operation->getDirection() == Direction::BACK and operation->getMMShape() == BACKFRONT)*/) {
+                    
                     if (posBlock->module->canMoveTo(module->position.offsetY(1))) {
+                            console << "move pos\n";
                         posBlock->module->moveTo(module->position.offsetY(1));
                     } else {
                         // Wait until it can move to the desired position
@@ -2046,8 +2049,8 @@ void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     );
 
     ofstream file;
-    file.open("BF_Build_Back.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(20,23,10);
+    file.open("FB_Dismantle_Back.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(12,20,10);
     if(!file.is_open()) return;
 
     if(c == 'o') {

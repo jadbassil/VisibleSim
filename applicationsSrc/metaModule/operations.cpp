@@ -61,18 +61,25 @@ Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape
     :Operation(_direction, _mmShape, Z), filled(_filled)  {
     
     switch (direction) {
-    case Direction::LEFT:
+    case Direction::LEFT: {
         if(mmShape == BACKFRONT) {
             filled ? localRules.reset(&LocalRules_BF_DismantleFilled_Left_Zeven)
                 :localRules.reset(&LocalRules_BF_Dismantle_Left);
         } else if(mmShape == FRONTBACK) {
             localRules.reset(&LocalRules_FB_Dismantle_Left);
         }
-        break;
+    } break;
+    
+    case Direction::BACK: {
+        if(mmShape == BACKFRONT) {
+            localRules.reset(&LocalRules_BF_Dismantle_Back);
+        } else if(mmShape == FRONTBACK) {
+            localRules.reset(&LocalRules_FB_Dismantle_Back);
+        }
+    } break;
     
     default:
         VS_ASSERT_MSG(false, "Not implemented");
-        break;
     }
 }
 
@@ -84,23 +91,25 @@ void Dismantle_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, c
 
 void Dismantle_Operation::updateState(BaseSimulator::BlockCode* bc) {
     MetaModuleBlockCode* mmbc = static_cast<MetaModuleBlockCode*>(bc);
-    switch (direction and mmShape) {
-    case Direction::LEFT and BACKFRONT: {
-        mmbc->shapeState = FRONTBACK;
+    switch (direction) {
+    case Direction::LEFT: {
+        (mmbc->shapeState == FRONTBACK) ? mmbc->shapeState = BACKFRONT: mmbc->shapeState = FRONTBACK;
         Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::LEFT, mmbc->seedPosition);
         mmbc->MMPosition = mmbc->MMPosition.offsetX(-1);
         mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
-        break;
-    }
-    case Direction::LEFT and FRONTBACK: {
-        mmbc->shapeState = BACKFRONT;
-        Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::LEFT, mmbc->seedPosition);
-        mmbc->MMPosition = mmbc->MMPosition.offsetX(-1);
+        
+    }break;
+
+    case Direction::BACK: {
+         (mmbc->shapeState == FRONTBACK) ? mmbc->shapeState = BACKFRONT: mmbc->shapeState = FRONTBACK;
+        Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::BACK, mmbc->seedPosition);
+        mmbc->MMPosition = mmbc->MMPosition.offsetY(1);
         mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
-    }
+    }break;
+
     
     default:
-        break;
+        VS_ASSERT_MSG(false, "Not implemented");
     }
 }
 
@@ -653,7 +662,6 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
     if (mmbc->isCoordinator and abs(pos.pt[1] - mmbc->module->position.pt[1]) == 1 and
         abs(pos.pt[2] - mmbc->module->position.pt[2]) == 0 and
         mmbc->mvt_it < localRules->size()) {
-        
         mmbc->transferCount++; 
         getScheduler()->trace("transferCount: " + to_string(mmbc->transferCount), mmbc->module->blockId, Color(MAGENTA));
         Cell3DPosition targetModule =
