@@ -266,6 +266,7 @@ public:
     Cell3DPosition nextInBorder(P2PNetworkInterface* sender);
     Cell3DPosition getSeedPositionFromMMPosition(Cell3DPosition &MMPos);
     P2PNetworkInterface *interfaceTo(Cell3DPosition& dstPos, P2PNetworkInterface *sender = nullptr);
+    P2PNetworkInterface *interfaceTo(Cell3DPosition& fromMM, Cell3DPosition& toMM, P2PNetworkInterface *sender = nullptr);
 
     void probeGreenLight();
     bool isAdjacentToPosition(const Cell3DPosition& pos) const;

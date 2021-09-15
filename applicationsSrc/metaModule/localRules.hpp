@@ -804,7 +804,7 @@ static vector<LocalMovement> LocalRules_BF_Dismantle_Up_Zodd = {
 
     {LocalMovement(Cell3DPosition(1,-1,1), Cell3DPosition(2,0,2), MOVING)},
     {LocalMovement(Cell3DPosition(2,0,2), Cell3DPosition(1,0,3), MOVING)},
-    {LocalMovement(Cell3DPosition(1,0,2), Cell3DPosition(1,0,3), MOVING)},
+    // {LocalMovement(Cell3DPosition(1,0,2), Cell3DPosition(1,0,3), MOVING)},
     {LocalMovement(Cell3DPosition(1,0,3), Cell3DPosition(2,1,4), MOVING)},
     {LocalMovement(Cell3DPosition(2,1,4), Cell3DPosition(1,1,5), IN_POSITION)},
 
@@ -1822,7 +1822,8 @@ static vector<LocalMovement> LocalRules_BF_Build_Back_ComingFromBack = {
     {LocalMovement(Cell3DPosition(0, 2, 2), Cell3DPosition(0, 3, 2), MOVING)}, //58
     {LocalMovement(Cell3DPosition(0, 3, 2), Cell3DPosition(-1, 3, 3), MOVING)},
     {LocalMovement(Cell3DPosition(-1, 3, 3), Cell3DPosition(-1, 3, 4), MOVING)},
-    {LocalMovement(Cell3DPosition(-1, 3, 4), Cell3DPosition(0, 3, 4), IN_POSITION)},
+    {LocalMovement(Cell3DPosition(-1, 3, 4), Cell3DPosition(-1, 2, 4), MOVING)},
+    {LocalMovement(Cell3DPosition(-1, 2, 4), Cell3DPosition(0, 3, 4), IN_POSITION)},
 };
 
 static vector<LocalMovement> LocalRules_BF_Fill_Left_Zeven = {

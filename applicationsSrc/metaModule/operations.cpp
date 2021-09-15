@@ -587,6 +587,7 @@ void Transfer_Operation::updateState(BaseSimulator::BlockCode *bc) {
         mmbc->initialPosition = mmbc->module->position - mmbc->seedPosition;
     } break;
     case Direction::BACK : {
+         (mmbc->shapeState == FRONTBACK) ? mmbc->shapeState = BACKFRONT : mmbc->shapeState = FRONTBACK;
         Init::getNeighborMMSeedPos(mmbc->seedPosition, mmbc->MMPosition, Direction::BACK,
                                    mmbc->seedPosition);
         mmbc->MMPosition = mmbc->MMPosition.offsetY(1);

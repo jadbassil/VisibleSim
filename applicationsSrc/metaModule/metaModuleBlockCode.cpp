@@ -1,6 +1,7 @@
 #include "metaModuleBlockCode.hpp"
 #include "init.hpp"
 #include "messages.hpp"
+#include "routing.hpp"
 #include <fstream>
 #include "robots/catoms3D/catoms3DMotionEngine.h"
 
@@ -272,7 +273,7 @@ void MetaModuleBlockCode::startup() {
             sendMessage(
                 "Go msg",
                 new MessageOf<GOdata>(GO_MSG_ID, GOdata(MMPosition, toMMPosition, distance)),
-                interfaceTo(p), 100, 200);
+                interfaceTo(MMPosition, toMMPosition), 100, 200);
             nbWaitedAnswers++;
         }
     }
@@ -310,10 +311,11 @@ void MetaModuleBlockCode::handleGoMessage(std::shared_ptr<Message> _msg,
             << data->distance << "> from " << sender->getConnectedBlockId() << "\n";
     Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(data->toMMPosition);
     if(module->position != toSeedPosition) {
+        if( not interfaceTo(data->fromMMPosition, data->toMMPosition)) VS_ASSERT(false);
         sendMessage(
             "Go msg",
             new MessageOf<GOdata>(GO_MSG_ID, *data),
-            interfaceTo(toSeedPosition), 100, 200);
+            interfaceTo(data->fromMMPosition, data->toMMPosition), 100, 200);
         return;
     }
     
@@ -333,7 +335,7 @@ void MetaModuleBlockCode::handleGoMessage(std::shared_ptr<Message> _msg,
             sendMessage(
                 "Go msg",
                 new MessageOf<GOdata>(GO_MSG_ID, GOdata(MMPosition, toMMPosition, distance)),
-                interfaceTo(p), 100, 200);
+                interfaceTo(MMPosition, toMMPosition), 100, 200);
             nbWaitedAnswers++;
         }
         if(nbWaitedAnswers == 0) {
@@ -341,14 +343,14 @@ void MetaModuleBlockCode::handleGoMessage(std::shared_ptr<Message> _msg,
             sendMessage(
                 "Back msg",
                 new MessageOf<Backdata>(BACK_MSG_ID, Backdata(MMPosition, parentPosition, true)),
-                interfaceTo(toSeedPosition), 100, 200);
+                interfaceTo(MMPosition, parentPosition), 100, 200);
         } 
     } else if( (not isPotentialSource() and data->distance < distance) or (isPotentialSource() and data->distance + 1 < distance)) {
         Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(parentPosition);
         sendMessage(
                 "Back msg",
                 new MessageOf<Backdata>(BACK_MSG_ID, Backdata(MMPosition, parentPosition, false)),
-                interfaceTo(toSeedPosition), 100, 200);
+                interfaceTo(MMPosition, parentPosition), 100, 200);
         parentPosition = data->fromMMPosition;
         childrenPositions.clear();
         isPotentialSource() ? distance = data->distance + 1: 
@@ -365,7 +367,7 @@ void MetaModuleBlockCode::handleGoMessage(std::shared_ptr<Message> _msg,
             sendMessage(
                 "Go msg",
                 new MessageOf<GOdata>(GO_MSG_ID, GOdata(MMPosition, toMMPosition, distance)),
-                interfaceTo(p), 100, 200);
+                interfaceTo(MMPosition, toMMPosition), 100, 200);
             nbWaitedAnswers++;
         }
         if(nbWaitedAnswers == 0) {
@@ -373,14 +375,14 @@ void MetaModuleBlockCode::handleGoMessage(std::shared_ptr<Message> _msg,
             sendMessage(
                 "Back msg",
                 new MessageOf<Backdata>(BACK_MSG_ID, Backdata(MMPosition, parentPosition, true)),
-                interfaceTo(toSeedPosition), 100, 200);
+                interfaceTo(MMPosition, parentPosition), 100, 200);
         }
     } else {
         Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(data->fromMMPosition);
         sendMessage(
             "Back msg1",
             new MessageOf<Backdata>(BACK_MSG_ID, Backdata(MMPosition, data->fromMMPosition, false)),
-            interfaceTo(toSeedPosition), 100, 200);
+            interfaceTo(MMPosition, data->fromMMPosition), 100, 200);
     }
     console << "parent: " << parentPosition << "\n";
 }
@@ -396,7 +398,7 @@ void MetaModuleBlockCode::handleBackMessage(std::shared_ptr<Message> _msg,
         sendMessage(
             "Back msg",
             new MessageOf<Backdata>(BACK_MSG_ID, *data),
-            interfaceTo(toSeedPosition), 100, 200);
+            interfaceTo(data->fromMMPosition, data->toMMPosition), 100, 200);
         return;
     }
     nbWaitedAnswers--;
@@ -429,11 +431,12 @@ void MetaModuleBlockCode::handleBackMessage(std::shared_ptr<Message> _msg,
                     MMblock->mainPathsOld.push_back(MMblock->MMPosition);
                     for (auto p : MMblock->getAdjacentMMSeeds()) {
                         // cerr << MMPosition << ": " << p << endl;
+                        MetaModuleBlockCode *toSeed = static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode);
                         MMblock->deficit++;
                         MMblock->sendMessage(
                             "BFS msg",
                             new MessageOf<BFSdata>(BFS_MSG_ID, BFSdata(MMblock->MMPosition, MMblock->MMPosition, p)),
-                            MMblock->interfaceTo(p), 100, 200);
+                            MMblock->interfaceTo(MMblock->MMPosition, toSeed->MMPosition), 100, 200);
                     }
                 }
                 if (MMblock->isPotentialDestination() and MMblock->seedPosition == MMblock->module->position) {
@@ -446,27 +449,28 @@ void MetaModuleBlockCode::handleBackMessage(std::shared_ptr<Message> _msg,
             sendMessage(
                 "Back msg",
                 new MessageOf<Backdata>(BACK_MSG_ID, Backdata(MMPosition, parentPosition, true)),
-                interfaceTo(toSeedPosition), 100, 200);
+                interfaceTo(MMPosition, parentPosition), 100, 200);
         }
     }
 }
 
 void MetaModuleBlockCode::handleGoTermMessage(std::shared_ptr<Message> _msg,
                                                   P2PNetworkInterface* sender) {
-    MessageOf<Cell3DPosition>* msg = static_cast<MessageOf<Cell3DPosition>*>(_msg.get());  
-    Cell3DPosition toMMPosition = *msg->getData();   
+    MessageOf<FromToMsg>* msg = static_cast<MessageOf<FromToMsg>*>(_msg.get()); 
+      Cell3DPosition fromMMPosition = msg->getData()->fromMMPosition;  
+    Cell3DPosition toMMPosition = msg->getData()->toMMPosition;   
     Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(toMMPosition);
     console << "Rec. GoTerm Msg form: "<< sender->getConnectedBlockId() << "\n"; 
     if (module->position != toSeedPosition) {
-        sendMessage("GoTerm Msg", new MessageOf<Cell3DPosition>(GOTERM_MSG_ID, toMMPosition),
-                    interfaceTo(toSeedPosition), 100, 200);
+        sendMessage("GoTerm Msg", new MessageOf<FromToMsg>(GOTERM_MSG_ID, FromToMsg(fromMMPosition, toMMPosition)),
+                    interfaceTo(fromMMPosition, toMMPosition), 100, 200);
         return;
     }
     nbWaitedAnswers = 0;
     for (auto child : childrenPositions) {
         Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(child);
-        sendMessage("GoTerm Msg", new MessageOf<Cell3DPosition>(GOTERM_MSG_ID, child),
-                    interfaceTo(toSeedPosition), 100, 200);
+        sendMessage("GoTerm Msg", new MessageOf<FromToMsg>(GOTERM_MSG_ID, FromToMsg(MMPosition, child)),
+                    interfaceTo(MMPosition, child), 100, 200);
         nbWaitedAnswers++;
     }
     if(nbWaitedAnswers == 0) {
@@ -594,8 +598,8 @@ void MetaModuleBlockCode::start_wave() {
     nbWaitedAnswers = 0;
     for (auto child : childrenPositions) {
         Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(child);
-        sendMessage("GoTerm Msg", new MessageOf<Cell3DPosition>(GOTERM_MSG_ID, child),
-                    interfaceTo(toSeedPosition), 100, 200);
+        sendMessage("GoTerm Msg", new MessageOf<FromToMsg>(GOTERM_MSG_ID, FromToMsg(MMPosition, child)),
+                    interfaceTo(MMPosition, child), 100, 200);
         nbWaitedAnswers++;
     }
 }
@@ -1727,6 +1731,36 @@ P2PNetworkInterface * MetaModuleBlockCode::interfaceTo(Cell3DPosition& dstPos, P
         return module->getInterface(nearestPositionTo(dstPos));
 }
 
+P2PNetworkInterface * MetaModuleBlockCode::interfaceTo(Cell3DPosition& fromMM, Cell3DPosition& toMM, P2PNetworkInterface *sender) {
+    Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(toMM);
+    if(not lattice->cellHasBlock(toSeedPosition)) {
+        VS_ASSERT_MSG(false, "not connected");
+    }
+    if(lattice->cellsAreAdjacent(module->position, toSeedPosition))
+        return module->getInterface(toSeedPosition);
+    Cell3DPosition fromSeedPosition = getSeedPositionFromMMPosition(fromMM);
+    Direction direction;
+    Cell3DPosition directionVector = toMM-fromMM;
+    if (directionVector.pt[0] == -1) direction = Direction::LEFT;
+    if (directionVector.pt[0] == 1) direction = Direction::RIGHT;
+    if (directionVector.pt[1] == -1) direction = Direction::FRONT;
+    if (directionVector.pt[1] == 1) direction = Direction::BACK;
+    if (directionVector.pt[2] == -1) direction = Direction::DOWN;
+    if (directionVector.pt[2] == 1) direction = Direction::UP;
+    MetaModuleBlockCode *fromSeed = static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(fromSeedPosition)->blockCode);
+    vector<Cell3DPosition> routingVector = getRoutingVector(direction, fromSeed->shapeState, fromSeed->MMPosition.pt[2]);
+    Cell3DPosition relativePosition = module->position - fromSeedPosition;
+    vector<Cell3DPosition>::iterator it = find(routingVector.begin(), routingVector.end(), relativePosition);
+    Cell3DPosition nextPos;
+    if(it != routingVector.end()) {
+        nextPos = *(it+1);
+    } else {
+        VS_ASSERT(false);
+    }
+    return module->getInterface(nextPos + fromSeedPosition);
+
+}
+
 void MetaModuleBlockCode::onMotionEnd() {
     console << " has reached its destination"
             << "\n";
@@ -2012,7 +2046,8 @@ void MetaModuleBlockCode::onBlockSelected() {
     cerr << endl << "--- PRINT MODULE " << *module << "---" << endl;
     cerr << "isSeed: " << (seedPosition == module->position ? "true": "false") << endl;
     cerr << "isCoordinator: " << (isCoordinator ? "true": "false") << endl;
-    cerr << "coordinatorPosition: " << coordinatorPosition << "\n" << endl;
+    cerr << "coordinatorPosition: " << coordinatorPosition << endl;
+    cerr << "ShapeState: " << shapeState << endl;
     cerr << "seedPosition: " << seedPosition << endl;
     cerr << "MMPostion: " << MMPosition << endl;
     cerr << "CurrentPos: " << module->position - seedPosition << endl;
@@ -2073,6 +2108,7 @@ void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
             }
         }
     }
+  
     if(!BaseSimulator::getWorld()->selectedGlBlock) {
         cerr << "No block selected!" << endl;
         return;
@@ -2081,8 +2117,15 @@ void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     MetaModuleBlockCode* block = static_cast<MetaModuleBlockCode*>(
         BaseSimulator::getWorld()->getBlockById(blockId)->blockCode
     );
-
+    
     ofstream file;
+    if(c == 'J') {
+        seedPosition = Cell3DPosition(20,19,14);
+        file.open("routes.txt", ios::out | ios::app);
+        if(!file.is_open()) return;
+        file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
+        return;
+    }
     file.open("BF_Dismantle_Left.txt", ios::out | ios::app);
     seedPosition = Cell3DPosition(32,19,6);
     if(!file.is_open()) return;

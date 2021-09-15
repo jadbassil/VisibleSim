@@ -85,3 +85,11 @@ struct MaxFlowMsgData {
 };
 
 /* -------------------------------------------------------------------------- */
+
+struct FromToMsg {
+    Cell3DPosition fromMMPosition;
+    Cell3DPosition toMMPosition;
+
+    FromToMsg(Cell3DPosition _fromMMPosition, Cell3DPosition _toMMPosition):
+        fromMMPosition(_fromMMPosition),toMMPosition(_toMMPosition) {};
+};
