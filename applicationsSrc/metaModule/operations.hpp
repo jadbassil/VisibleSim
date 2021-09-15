@@ -99,14 +99,17 @@ public:
 };
 
 class Build_Operation: public Operation {
+private:
+    bool comingFromBack;
 public:
-    Build_Operation(Direction _direction, MMShape _mmShape, int Z = 0);
+    Build_Operation(Direction _direction, MMShape _mmShape, bool comingFromBack = false, int Z = 0);
     ~Build_Operation ();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
     void updateState(BaseSimulator::BlockCode*) override;
     bool mustSendCoordinateBack(BaseSimulator::BlockCode*) override;
     bool isBuild() const override {return true;};
+    bool isComingFromBack() const {return comingFromBack;};
 };
 
 #endif

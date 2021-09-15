@@ -61,7 +61,7 @@
         <block position="1,1,5"/>
         <block position="0,1,6"/>
         <block position="1,1,6"/>
-
+        <block position="3,0,-2"/>
 	</MMBlockList>
 	<MMTargetList>
 		

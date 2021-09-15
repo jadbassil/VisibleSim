@@ -12,6 +12,7 @@ static const int IT_MODE_TRANSFERBACK = 2001;
 static const int IT_MODE_TRANSFERBACK_REACHCOORDINATOR = 2002;
 static const int IT_MODE_TERMINATION = 2003;
 static const int IT_MODE_STARTWAVE = 2004;
+static const int IT_MODE_DISMANTLEBACK = 2005;
 
 /* ------------------------- COORDINATION TREE MSGS ------------------------- */
 static const int GO_MSG_ID = 1001;
@@ -140,7 +141,7 @@ public:
 /* -------------------------------------------------------------------------- */
 
 /* -------------------------- TERMINATION DETECTION ------------------------- */
-    ProcessState state;
+    ProcessState state{PASSIVE};
     bool cont_passive{true};
     bool b{true};
     bool res{true};
@@ -174,6 +175,7 @@ public:
     P2PNetworkInterface *coordinateItf{NULL};
     bool initialized{false};
     Operation *operation = NULL;
+    bool sendingCoordinateBack{false};
 /* -------------------------------------------------------------------------- */
 
 /* ---------------------------- MAXFLOW variables --------------------------- */
