@@ -431,11 +431,12 @@ void MetaModuleBlockCode::handleBackMessage(std::shared_ptr<Message> _msg,
                     MMblock->mainPathsOld.push_back(MMblock->MMPosition);
                     for (auto p : MMblock->getAdjacentMMSeeds()) {
                         // cerr << MMPosition << ": " << p << endl;
-                        MetaModuleBlockCode *toSeed = static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode);
+                        MetaModuleBlockCode* toSeed = static_cast<MetaModuleBlockCode*>(
+                            BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode);
                         MMblock->deficit++;
                         MMblock->sendMessage(
                             "BFS msg",
-                            new MessageOf<BFSdata>(BFS_MSG_ID, BFSdata(MMblock->MMPosition, MMblock->MMPosition, p)),
+                            new MessageOf<BFSdata>(BFS_MSG_ID, BFSdata(MMblock->MMPosition, MMblock->MMPosition, toSeed->MMPosition)),
                             MMblock->interfaceTo(MMblock->MMPosition, toSeed->MMPosition), 100, 200);
                     }
                 }
@@ -1021,12 +1022,12 @@ void MetaModuleBlockCode::handleBFSMessage(std::shared_ptr<Message> _msg,
                                                P2PNetworkInterface* sender) {
     MessageOf<BFSdata>* msg = static_cast<MessageOf<BFSdata>*>(_msg.get());
     BFSdata data = *msg->getData();
-    console << "Rec. BFS <" << data.MMPosition << ", " << data.fromMMPosition << ", " << data.toSeedPosition << "> from "
+    console << "Rec. BFS <" << data.MMPosition << ", " << data.fromMMPosition << ", " << data.toMMPosition << "> from "
             << sender->getConnectedBlockId() << "\n";
-    if(module->position != data.toSeedPosition) {
+    if(module->position != getSeedPositionFromMMPosition(data.toMMPosition)) {
         //forward the message to seed target
         sendMessage("BFS msg", new MessageOf<BFSdata>(BFS_MSG_ID, data),
-                    interfaceTo(data.toSeedPosition), 100, 200);
+                    interfaceTo(data.fromMMPosition, data.toMMPosition), 100, 200);
         return;
     }
     vector<Cell3DPosition> pathsOld;
@@ -1060,11 +1061,14 @@ void MetaModuleBlockCode::handleBFSMessage(std::shared_ptr<Message> _msg,
             // sendAround()
             for(auto p: getAdjacentMMSeeds()) {
                 console << "Send Around\n";
+                MetaModuleBlockCode* toSeed = static_cast<MetaModuleBlockCode*>(
+                            BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode);
+
                 deficit++;
                 sendMessage(
                     "BFS msg",
                     new MessageOf<BFSdata>(BFS_MSG_ID, BFSdata(data.MMPosition, MMPosition,
-                                                            p)),
+                                                            toSeed->MMPosition)),
                     interfaceTo(p), 100, 200);
             }
         }
@@ -1086,8 +1090,8 @@ void MetaModuleBlockCode::handleBFSMessage(std::shared_ptr<Message> _msg,
             deficit++;
             sendMessage("BFS msg",
                     new MessageOf<BFSdata>(
-                        BFS_MSG_ID, BFSdata(data.MMPosition, MMPosition, mainPathInSeedPosition)),
-                    interfaceTo(mainPathInSeedPosition), 100, 200);
+                        BFS_MSG_ID, BFSdata(data.MMPosition, MMPosition, mainPathIn)),
+                    interfaceTo(MMPosition, mainPathIn), 100, 200);
         }
         
     } else if(mainPathState == Streamline and aug2PathState == NONE and data.fromMMPosition == mainPathOut){
@@ -1110,7 +1114,7 @@ void MetaModuleBlockCode::handleBFSMessage(std::shared_ptr<Message> _msg,
             sendMessage(
                 "BFS msg",
                 new MessageOf<BFSdata>(BFS_MSG_ID, BFSdata(data.MMPosition, MMPosition,
-                                                        p)),
+                                                        seedMMPosition)),
                 interfaceTo(p), 100, 200);
         }
     } else {
@@ -1370,8 +1374,8 @@ void MetaModuleBlockCode::handleAvailableMessage(std::shared_ptr<Message> _msg,
             deficit++;
             sendMessage("BFS msg",
                         new MessageOf<BFSdata>(
-                            BFS_MSG_ID, BFSdata(mainPathsOld.back(), MMPosition, toSeedPosition)),
-                        interfaceTo(toSeedPosition), 100, 200);
+                            BFS_MSG_ID, BFSdata(mainPathsOld.back(), MMPosition, fromMMPosition)),
+                        interfaceTo(MMPosition, fromMMPosition), 100, 200);
         }
     } else if (aug1PathState == BFS and fromMMPosition == mainPathIn) {
         if (!aug1PathsOld.empty()) {
@@ -1379,8 +1383,8 @@ void MetaModuleBlockCode::handleAvailableMessage(std::shared_ptr<Message> _msg,
             deficit++;
             sendMessage("BFS msg",
                         new MessageOf<BFSdata>(
-                            BFS_MSG_ID, BFSdata(aug1PathsOld.back(), MMPosition, toSeedPosition)),
-                        interfaceTo(toSeedPosition), 100, 200);
+                            BFS_MSG_ID, BFSdata(aug1PathsOld.back(), MMPosition, fromMMPosition)),
+                        interfaceTo(MMPosition, fromMMPosition), 100, 200);
         }
     } else if (aug2PathState == BFS and fromMMPosition == mainPathOut) {
         if (!aug2PathsOld.empty()) {
@@ -1388,8 +1392,8 @@ void MetaModuleBlockCode::handleAvailableMessage(std::shared_ptr<Message> _msg,
             deficit++;
             sendMessage("BFS msg",
                         new MessageOf<BFSdata>(
-                            BFS_MSG_ID, BFSdata(aug2PathsOld.back(), MMPosition, toSeedPosition)),
-                        interfaceTo(toSeedPosition), 100, 200);
+                            BFS_MSG_ID, BFSdata(aug2PathsOld.back(), MMPosition, fromMMPosition)),
+                        interfaceTo(MMPosition, fromMMPosition), 100, 200);
         }
     } else {
         console << MMPosition << ": path can no longer be augmented"
