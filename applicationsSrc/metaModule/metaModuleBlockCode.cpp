@@ -1069,7 +1069,7 @@ void MetaModuleBlockCode::handleBFSMessage(std::shared_ptr<Message> _msg,
                     "BFS msg",
                     new MessageOf<BFSdata>(BFS_MSG_ID, BFSdata(data.MMPosition, MMPosition,
                                                             toSeed->MMPosition)),
-                    interfaceTo(p), 100, 200);
+                    interfaceTo(MMPosition, toSeed->MMPosition), 100, 200);
             }
         }
     } else if (mainPathState == Streamline and aug1PathState == NONE and
@@ -1115,7 +1115,7 @@ void MetaModuleBlockCode::handleBFSMessage(std::shared_ptr<Message> _msg,
                 "BFS msg",
                 new MessageOf<BFSdata>(BFS_MSG_ID, BFSdata(data.MMPosition, MMPosition,
                                                         seedMMPosition)),
-                interfaceTo(p), 100, 200);
+                interfaceTo(MMPosition, seedMMPosition), 100, 200);
         }
     } else {
         console << MMPosition << ": path can no longer be augmented" << "\n";
@@ -1824,7 +1824,7 @@ void MetaModuleBlockCode::onMotionEnd() {
                         seedMM->sendMessage(
                             "Go msg",
                             new MessageOf<GOdata>(GO_MSG_ID, GOdata(seedMM->MMPosition,toMMPosition, seedMM->distance)),
-                            seedMM->interfaceTo(p), 100, 200);
+                            seedMM->interfaceTo(seedMM->MMPosition, toMMPosition), 100, 200);
                         seedMM->nbWaitedAnswers++;
                     }
                     
