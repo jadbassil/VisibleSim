@@ -569,6 +569,9 @@ void MetaModuleBlockCode::reinitialize() {
         block->mainPathOut.clear();
         block->aug1PathOut.clear();
         block->aug2PathOut.clear();
+        block->mainPathsOld.clear();
+        block->aug1PathsOld.clear();
+        block->aug2PathsOld.clear();
         block->cont_passive = true;
         block->b = true;
         block->res = true;
@@ -2079,25 +2082,25 @@ void MetaModuleBlockCode::onBlockSelected() {
     cerr << "mainPathOut: ";
     for(auto out: mainPathOut) cerr << out << " | ";
     cerr << endl;
-    // cerr << "aug1PathIn: " << aug1PathIn << endl;
-    // cerr << "aug1PathOut: ";
-    // for(auto out: aug1PathOut) cerr << out << " | ";
-    // cerr << endl;
-    // cerr << "aug2PathIn: " << aug2PathIn << endl;
-    // cerr << "aug2PathOut: ";
-    // for(auto out: aug2PathOut) cerr << out << " | ";
-    // cerr << endl;
-    // cerr << "mainPathsOld: ";
-    // for(auto old: mainPathsOld) cerr << old << " | ";
-    // cerr << endl;
-    // cerr << "aug1PathsOld: ";
-    // for(auto old: aug1PathsOld) cerr << old << " | ";
-    // cerr << endl;
-    // cerr << "aug2PathsOld: ";
-    // for(auto old: aug2PathsOld) cerr << old << " | ";
-    // cerr << endl;
-    // cerr << "deficit: " << deficit << endl;
-    // cerr << "state: " << state << endl;
+    cerr << "aug1PathIn: " << aug1PathIn << endl;
+    cerr << "aug1PathOut: ";
+    for(auto out: aug1PathOut) cerr << out << " | ";
+    cerr << endl;
+    cerr << "aug2PathIn: " << aug2PathIn << endl;
+    cerr << "aug2PathOut: ";
+    for(auto out: aug2PathOut) cerr << out << " | ";
+    cerr << endl;
+    cerr << "mainPathsOld: ";
+    for(auto old: mainPathsOld) cerr << old << " | ";
+    cerr << endl;
+    cerr << "aug1PathsOld: ";
+    for(auto old: aug1PathsOld) cerr << old << " | ";
+    cerr << endl;
+    cerr << "aug2PathsOld: ";
+    for(auto old: aug2PathsOld) cerr << old << " | ";
+    cerr << endl;
+    cerr << "deficit: " << deficit << endl;
+    cerr << "state: " << state << endl;
 }
 
 void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
