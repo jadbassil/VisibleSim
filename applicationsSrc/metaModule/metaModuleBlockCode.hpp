@@ -13,7 +13,9 @@ static const int IT_MODE_TRANSFERBACK_REACHCOORDINATOR = 2002;
 static const int IT_MODE_TERMINATION = 2003;
 static const int IT_MODE_STARTWAVE = 2004;
 static const int IT_MODE_DISMANTLEBACK = 2005;
-
+static const int IT_MODE_TRANSFEREBACK_COMINGFROMBACK = 2006;
+static const int IT_MODE_TRANSFERELEFT = 2007;
+static const int IT_MODE_TRANSFEREBACK_FRONTBACK = 2008;
 /* ------------------------- COORDINATION TREE MSGS ------------------------- */
 static const int GO_MSG_ID = 1001;
 static const int BACK_MSG_ID = 1002;
@@ -123,6 +125,7 @@ static RenconfigurationStep reconfigurationStep;
 
 static int NbOfStreamlines = 0;
 static int NbOfDestinationsReached = 0;
+static vector<Cell3DPosition> destinations;
 
 class MetaModuleBlockCode : public Catoms3DBlockCode {
 private:

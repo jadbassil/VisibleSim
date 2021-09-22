@@ -441,7 +441,12 @@ void MetaModuleBlockCode::handleBackMessage(std::shared_ptr<Message> _msg,
                     }
                 }
                 if (MMblock->isPotentialDestination() and MMblock->seedPosition == MMblock->module->position) {
-                    cerr << MMblock->MMPosition << ": is destination\n";
+                    if(find(destinations.begin(), destinations.end(), MMblock->destinationOut) == destinations.end()){
+                        cerr << MMblock->MMPosition << ": is destination\n";
+                        MMblock->isDestination = true;
+                        destinations.push_back(MMblock->destinationOut);
+                    }
+                    
                 }                
             }
             start_wave();
@@ -564,6 +569,7 @@ void MetaModuleBlockCode::reinitialize() {
         block->childrenPositions.clear();
         block->distance = 0;
         block->isSource = false;
+        block->isDestination = false;
         block->mainPathState = block->aug1PathState = block->aug2PathState = NONE;
         block->mainPathIn = block->aug1PathIn = block->aug2PathIn = Cell3DPosition(-1, -1, -1);
         block->mainPathOut.clear();
@@ -581,6 +587,7 @@ void MetaModuleBlockCode::reinitialize() {
         if(block->movingState != MOVING ) block->mvt_it = 0;
         NbOfStreamlines = 0;
         NbOfDestinationsReached = 0;
+        destinations.clear();
     }
 }
 
@@ -651,7 +658,7 @@ void MetaModuleBlockCode::handleCoordinateMessage(std::shared_ptr<Message> _msg,
     }
 }
 
-void MetaModuleBlockCode::handleCoordinateBackMessage(std::shared_ptr<Message> _msg,
+void MetaModuleBlockCode::  handleCoordinateBackMessage(std::shared_ptr<Message> _msg,
                                                P2PNetworkInterface* sender) {
     MessageOf<CoordinateBack> *msg = static_cast<MessageOf<CoordinateBack>*>(_msg.get());
     CoordinateBack *coordinateBackData = msg->getData();
@@ -690,6 +697,7 @@ void MetaModuleBlockCode::handleCoordinateBackMessage(std::shared_ptr<Message> _
         console << mvt_it << ": Movement ended must switch to next one " 
                 << (*operation->localRules)[mvt_it].currentPosition << "\n";
         Cell3DPosition targetModule = seedPosition + (*operation->localRules)[mvt_it].currentPosition;
+
         if (lattice->cellsAreAdjacent(module->position, targetModule) and
             not module->getInterface(targetModule)->isConnected()) {
             // Received coordinateBack and no module is connected
@@ -730,7 +738,7 @@ void MetaModuleBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition
         if(direction == Direction::BACK and shapeState == FRONTBACK) {
             coordinatorPosition = seedPosition + Cell3DPosition(2,1,2);
         } else if(direction ==Direction::UP) {
-            if(shapeState == BACKFRONT and MMPosition.pt[2] % 2 != 0) {
+            if(MMPosition.pt[2] % 2 != 0) {
                 coordinatorPosition = seedPosition + Cell3DPosition(1,0,4);
             }
         }
@@ -744,11 +752,12 @@ void MetaModuleBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition
     coordinator->isCoordinator = true;
     if (isSource) {
         coordinator->operation = new Dismantle_Operation(direction, shapeState, MMPosition.pt[2], false);
-    } else if (isPotentialDestination()) {
+    } else if (isDestination) {
         bool comingFromBack = (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1]-1 and shapeState == BACKFRONT);
        coordinator->operation = new Build_Operation(direction, shapeState, comingFromBack,  MMPosition.pt[2]);
     } else {
         bool comingFromBack = (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1]-1 and shapeState == BACKFRONT);
+
         coordinator->operation = new Transfer_Operation(direction, shapeState, comingFromBack, MMPosition.pt[2]);
     }
 
@@ -824,6 +833,7 @@ void MetaModuleBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
                     mustAvoidBlocking = true;
                 }
             }
+            console << "mustAvoidBlocking: " << mustAvoidBlocking << "\n\n"; 
             if (greenLightIsOn
                 or (nextToSender
                     and module->getState() != BuildingBlock::State::ACTUATING and not mustAvoidBlocking)) {
@@ -831,10 +841,12 @@ void MetaModuleBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
                 P2PNetworkInterface* itf = nextToSender ?
                     module->getInterface(srcPos) : sender;
                 VS_ASSERT(itf and itf->isConnected());
+                console << "test\n";
                 sendMessage("GLO Msg", new MessageOf<PLS>(GLO_MSG_ID, PLS(targetPos, srcPos)),itf, 100, 0);
             } else {
 
                 getScheduler()->trace("light turned orange2", module->blockId, ORANGE);
+                if (moduleAwaitingGo) setGreenLight(true);
                 moduleAwaitingGo = true;
                 awaitingModulePos = srcPos;
                 awaitingModuleProbeItf = sender;
@@ -886,7 +898,8 @@ void MetaModuleBlockCode::handleGLOMessage(std::shared_ptr<Message> _msg,
         VS_ASSERT(module->position == targetPos);
         Cell3DPosition targetPosition =
             (*operation->localRules)[mvt_it].nextPosition + seedPosition;
-        if (module->canRotateToPosition(targetPosition)) {
+        
+        if (module->canRotateToPosition(targetPosition) /**and not lattice->cellIsBlocked(targetPosition)**/) {
             if ((relativePos() == Cell3DPosition(-1, 1, 2) /**or
                               /ùùrelativePos() == Cell3DPosition(-1, -1, 2)**/) or
                 relativePos() == Cell3DPosition(1, 0, 1) or
@@ -903,8 +916,9 @@ void MetaModuleBlockCode::handleGLOMessage(std::shared_ptr<Message> _msg,
 
         } else {
             // retry rotating to next position
+//            VS_ASSERT_MSG(false, "Can not rotate to next position");
             probeGreenLight();
-            // VS_ASSERT_MSG(false, "Can not rotate to next position");
+            
         }
     }
 }
@@ -916,7 +930,7 @@ void MetaModuleBlockCode::handleFTRMessage(std::shared_ptr<Message> _msg,
     Cell3DPosition finalPos = *msg->getData();
     VS_ASSERT(lattice->cellsAreAdjacent(module->position, finalPos));
     if (not greenLightIsOn) {
-        console << "test\n";
+
         setGreenLight(true);
         // for (auto n : lattice->getActiveNeighborCells(module->position)) {
         //     if (n == finalPos) continue;
@@ -930,19 +944,147 @@ void MetaModuleBlockCode::handleFTRMessage(std::shared_ptr<Message> _msg,
 
 void MetaModuleBlockCode::probeGreenLight() {
     VS_ASSERT(operation->localRules != NULL);
-    LocalMovement lmvt = (*operation->localRules)[mvt_it];
+    if (operation->getDirection() == Direction::UP and operation->isTransfer() and
+        (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, 0, 2)) {
+        (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(2, 0, 2);
+    }
+   
+    
+    rotating = true;
+
+    if(operation->isTransfer() and operation->getDirection() == Direction::UP) {
+        console << "UP1\n";
+    }
+    
+    if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(2, 0, 2)  and
+        lattice->cellHasBlock(module->position.offsetX(1)) and
+        operation->getDirection() == Direction::UP and operation->isTransfer()) {
+            console << "UP2\n";
+        (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, 0, 2);
+    }
+     LocalMovement lmvt = (*operation->localRules)[mvt_it];
+     console << "ProbeGreenLight\n";
     console << lmvt.nextPosition << "\n";
     console << "mvt_it: " << mvt_it << "\n";
     console << lmvt.nextPosition + seedPosition << "\n";
-    rotating = true;
+    // else if((lmvt.nextPosition == Cell3DPosition(1, 0, 2) and
+    //     not lattice->cellHasBlock(module->position.offsetX(1)) and
+    //     operation->getDirection() == Direction::UP and operation->isTransfer()) ){
+    //         cerr << "UP3 \n";
+    //         getScheduler()->toggle_pause();
+    //     (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(2, 0, 2);
+    // }
 
-    if (lmvt.nextPosition == Cell3DPosition(2, 0, 2) and
-        module->getInterface(module->position.offsetX(1))->isConnected() and
-        operation->getDirection() == Direction::UP) {
-        (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, 0, 2);
-    }
     Cell3DPosition targetPosition = lmvt.nextPosition + seedPosition;
     if(not greenLightIsOn) setGreenLight(true);
+    
+    if(operation->isDismantle() and shapeState == FRONTBACK and operation->getDirection() == Direction::BACK){
+        if(lmvt.nextPosition == Cell3DPosition(1,2,2) and lattice->cellHasBlock(seedPosition + Cell3DPosition(1,3,2))) {
+            getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
+                                                       module, IT_MODE_DISMANTLEBACK));
+            return;
+        }
+    }
+    if (operation->isTransfer() and
+        /**static_cast<Transfer_Operation*>(operation)->isComingFromBack() and**/
+        operation->getMMShape() == BACKFRONT and
+        lattice->cellHasBlock(seedPosition + Cell3DPosition(1, 3, 1)) and
+        operation->getDirection() == Direction::BACK ) {
+        MetaModuleBlockCode* nextCoordinator = static_cast<MetaModuleBlockCode*>(
+            BaseSimulator::getWorld()
+                ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 1))
+                ->blockCode);
+        MetaModuleBlockCode* nextModule = static_cast<MetaModuleBlockCode*>(
+            BaseSimulator::getWorld()
+                ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 0))
+                ->blockCode);
+        if ((not nextCoordinator->greenLightIsOn or not nextModule->greenLightIsOn) and
+            not lattice->cellsAreAdjacent(module->position, nextModule->module->position) and module->blockId != 48) {
+            console << "schedule\n";
+            getScheduler()->schedule(
+                new InterruptionEvent(getScheduler()->now() + getRoundDuration(), module,
+                                      IT_MODE_TRANSFEREBACK_COMINGFROMBACK));
+            return;
+        }
+    }
+
+    if (operation->isTransfer() and operation->getDirection() == Direction::LEFT) {
+        if (operation->getMMShape() == FRONTBACK and
+            lmvt.nextPosition == Cell3DPosition(-2, 1, 2) and
+            lattice->cellHasBlock(seedPosition + Cell3DPosition(-3, 0, 2)) ) {
+            MetaModuleBlockCode* nextModule = static_cast<MetaModuleBlockCode*>(
+                BaseSimulator::getWorld()
+                    ->getBlockByPosition(seedPosition + Cell3DPosition(-3, 0, 2))
+                    ->blockCode);
+            MetaModuleBlockCode* nextCoordinator = static_cast<MetaModuleBlockCode*>(
+                BaseSimulator::getWorld()
+                    ->getBlockByPosition(seedPosition + Cell3DPosition(-3, -1, 1))
+                    ->blockCode);
+            if (not nextCoordinator->greenLightIsOn or
+                nextModule->module->getState() == BuildingBlock::State::ACTUATING) {
+                getScheduler()->schedule(new InterruptionEvent(
+                    getScheduler()->now() + getRoundDuration(), module, IT_MODE_TRANSFERELEFT));
+                return;
+            }
+        } else if (operation->getMMShape() == BACKFRONT and
+                   lmvt.nextPosition == Cell3DPosition(-2, -1, 2)) {
+            MetaModuleBlockCode* nextCoordinator = static_cast<MetaModuleBlockCode*>(
+                BaseSimulator::getWorld()
+                    ->getBlockByPosition(seedPosition + Cell3DPosition(-3, 0, 1))
+                    ->blockCode);
+            if (not nextCoordinator->greenLightIsOn) {
+                getScheduler()->schedule(new InterruptionEvent(
+                    getScheduler()->now() + getRoundDuration(), module, IT_MODE_TRANSFERELEFT));
+                return;
+            }
+        } else if (operation->getMMShape() == BACKFRONT and
+                   lmvt.nextPosition == Cell3DPosition(0, -1, 1) and
+                   lattice->cellHasBlock(seedPosition + Cell3DPosition(-1, -1, 1))) {
+            getScheduler()->schedule(new InterruptionEvent(
+                getScheduler()->now() + getRoundDuration(), module, IT_MODE_TRANSFERELEFT));
+            return;
+        }
+    }
+
+    if (operation->isTransfer() and operation->getDirection() == Direction::BACK and
+        operation->getMMShape() == FRONTBACK and
+        lattice->cellHasBlock(seedPosition + Cell3DPosition(1, 3, 0)) and lattice->cellHasBlock(seedPosition + Cell3DPosition(1,2,1))) {
+        MetaModuleBlockCode* nextCoordinator = static_cast<MetaModuleBlockCode*>(
+            BaseSimulator::getWorld()
+                ->getBlockByPosition(seedPosition + Cell3DPosition(1, 2, 1))
+                ->blockCode);
+        MetaModuleBlockCode* nextModule = static_cast<MetaModuleBlockCode*>(
+            BaseSimulator::getWorld()
+                ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 0))
+                ->blockCode);
+        MetaModuleBlockCode* nextModule1 = static_cast<MetaModuleBlockCode*>(
+            BaseSimulator::getWorld()
+                ->getBlockByPosition(seedPosition + Cell3DPosition(0, 3, 0))
+                ->blockCode);
+        bool frontBackModule = false;
+        if (lattice->cellHasBlock(seedPosition + Cell3DPosition(1, 4, 0))) {
+            MetaModuleBlockCode* nextModule2 = static_cast<MetaModuleBlockCode*>(
+                BaseSimulator::getWorld()
+                    ->getBlockByPosition(seedPosition + Cell3DPosition(1, 4, 0))
+                    ->blockCode);
+            if (nextModule2->module->getState() == BuildingBlock::ACTUATING or
+                not nextModule2->greenLightIsOn) {
+                frontBackModule = true;
+            }
+        }
+
+        if (lmvt.nextPosition == Cell3DPosition(1, 3, 2) and
+            (nextModule->module->getState() == BuildingBlock::State::ACTUATING or
+             nextCoordinator->module->getState() == BuildingBlock::State::ACTUATING or
+             not nextModule1->greenLightIsOn)) {
+            // Avoid blocking on FB transfer back op
+            getScheduler()->schedule(
+                new InterruptionEvent(getScheduler()->now() + getRoundDuration(), module,
+                                      IT_MODE_TRANSFEREBACK_FRONTBACK));
+            return;
+        }
+    }
+
     Catoms3DBlock* pivot = customFindMotionPivot(module, targetPosition);
     if (not pivot) {
         notFindingPivot = true;
@@ -953,13 +1095,7 @@ void MetaModuleBlockCode::probeGreenLight() {
         scheduler->trace(info.str(), module->blockId, PINK);
         return;
     }
-    if(operation->isDismantle() and shapeState == FRONTBACK and operation->getDirection() == Direction::BACK){
-        if(lmvt.nextPosition == Cell3DPosition(1,2,2) and lattice->cellHasBlock(seedPosition + Cell3DPosition(1,3,2))) {
-            getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
-                                                       module, IT_MODE_DISMANTLEBACK));
-            return;
-        }
-    }
+
     notFindingPivot = false;
     // VS_ASSERT(pivot);
     console << "pivot: " << pivot->position << "\n";
@@ -1040,14 +1176,14 @@ void MetaModuleBlockCode::handleBFSMessage(std::shared_ptr<Message> _msg,
     console << "pathsOld: ";
     for(auto pOld: pathsOld) console << pOld << "; ";
     console << "\n";
-    if(mainPathState == NONE and !isIn(pathsOld, data.MMPosition)) {
+    if(mainPathState == NONE and !isIn(pathsOld, data.MMPosition) and MMPosition.pt[1] >= data.fromMMPosition.pt[1]) {
         mainPathsOld.push_back(data.MMPosition);
         Cell3DPosition fromSeedPosition = getSeedPositionFromMMPosition(data.fromMMPosition);
         deficit++;
         sendMessage("ConfirmEdge msg",
                     new MessageOf<MaxFlowMsgData>(CONFIRMEDGE_MSG_ID, MaxFlowMsgData(MMPosition, data.fromMMPosition)),
                     interfaceTo(MMPosition, data.fromMMPosition), 100, 200);
-        if(isPotentialDestination()) {
+        if(isDestination) {
             mainPathState = ConfPath;
             mainPathIn = data.fromMMPosition;
             mainPathOut.clear();
@@ -1066,7 +1202,6 @@ void MetaModuleBlockCode::handleBFSMessage(std::shared_ptr<Message> _msg,
                 console << "Send Around\n";
                 MetaModuleBlockCode* toSeed = static_cast<MetaModuleBlockCode*>(
                             BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode);
-
                 deficit++;
                 sendMessage(
                     "BFS msg",
@@ -1077,7 +1212,7 @@ void MetaModuleBlockCode::handleBFSMessage(std::shared_ptr<Message> _msg,
         }
     } else if (mainPathState == Streamline and aug1PathState == NONE and
                data.fromMMPosition != mainPathIn and data.fromMMPosition != mainPathOut and
-               !isIn(pathsOld, data.MMPosition)) {
+               !isIn(pathsOld, data.MMPosition) and MMPosition.pt[1] >= data.fromMMPosition.pt[1]) {
         aug1PathsOld.push_back(data.MMPosition);
         Cell3DPosition fromSeedPosition = getSeedPositionFromMMPosition(data.fromMMPosition);
         deficit++;
@@ -1097,7 +1232,7 @@ void MetaModuleBlockCode::handleBFSMessage(std::shared_ptr<Message> _msg,
                     interfaceTo(MMPosition, mainPathIn), 100, 200);
         }
         
-    } else if(mainPathState == Streamline and aug2PathState == NONE and data.fromMMPosition == mainPathOut){
+    } else if(mainPathState == Streamline and aug2PathState == NONE and data.fromMMPosition == mainPathOut and MMPosition.pt[1] >= data.fromMMPosition.pt[1]){
         aug2PathsOld.push_back(data.MMPosition);
         Cell3DPosition fromSeedPosition = getSeedPositionFromMMPosition(data.fromMMPosition);
         deficit++;
@@ -1176,7 +1311,7 @@ void MetaModuleBlockCode::handleConfirmPathMessage(std::shared_ptr<Message> _msg
     console << "toSeedPositition: " << toSeedPosition << "\n";
     if(mainPathState == BFS and isIn(mainPathOut, fromMMPosition)) {
         for(auto out: mainPathOut) {
-            if(out != fromMMPosition) {
+            if(out != fromMMPosition and not isIn(aug1PathOut, out) and not isIn(aug2PathOut, out)) {
                 deficit++;
                 Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(out);
                 sendMessage("CutOff msgMain", new MessageOf<MaxFlowMsgData>(CUTOFF_MSG_ID, MaxFlowMsgData(MMPosition, out)),
@@ -1256,7 +1391,7 @@ void MetaModuleBlockCode::handleConfirmStreamlineMessage(std::shared_ptr<Message
     }
     if(mainPathState == ConfPath and fromMMPosition == mainPathIn) {
         mainPathState = Streamline;
-        if (not isPotentialDestination()) {
+        if (not isDestination) {
             VS_ASSERT(not mainPathOut.empty());
             Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(mainPathOut.front());
             deficit++;
@@ -1348,8 +1483,10 @@ void MetaModuleBlockCode::handleConfirmStreamlineMessage(std::shared_ptr<Message
         aug2PathState = NONE;
         aug2PathOut.clear();
         aug2PathIn.set(-1,-1,-1);
-    } 
-    if(not isPotentialDestination())
+    } else {
+        VS_ASSERT(false);
+    }
+    if(not isDestination)
         setOperation(mainPathIn, mainPathOut.front());
     else
         setOperation(mainPathIn, destinationOut);
@@ -1424,7 +1561,18 @@ void MetaModuleBlockCode::handleCutOffMessage(std::shared_ptr<Message> _msg,
     console << "mainPathState: " << mainPathState << "\n";
     console << "aug1PathState: " << aug1PathState << "\n";
     console << "aug2PathState: " << aug2PathState << "\n";
-
+ console << "mainPathIn: " << mainPathIn << "\n";
+    console << "mainPathOut: ";
+    for(auto out: mainPathOut) console << out << " | "; 
+    console << "\n";
+    console << "aug1PathIn: " << aug1PathIn << "\n";
+    console << "aug1PathOut: ";
+    for(auto out: aug1PathOut) console << out << " | ";
+    console << "\n";
+    console << "aug2PathIn: " << aug2PathIn << "\n";
+    console << "aug2PathOut: ";
+    for(auto out: aug2PathOut) console << out << " | ";
+    console << "\n";
     if(mainPathState != NONE and fromMMPosition == mainPathIn) {
         for (auto out : mainPathOut) {
 //            VS_ASSERT(mainPathOut.size() == 1); 
@@ -1442,7 +1590,12 @@ void MetaModuleBlockCode::handleCutOffMessage(std::shared_ptr<Message> _msg,
         isMainPathRemoved = true;
     } 
         console << "isMainPathRemoved: " << isMainPathRemoved << "\n";
+       
+        // if(module->blockId == 89 and isMainPathRemoved) {
+        //     VS_ASSERT(false);
+        // }
     if(aug1PathState != NONE and (fromMMPosition == aug1PathIn or isMainPathRemoved)) {
+        
         // 
         // bool test = false;
         // if(aug2PathState == ConfPath) {
@@ -1453,6 +1606,8 @@ void MetaModuleBlockCode::handleCutOffMessage(std::shared_ptr<Message> _msg,
         // }
         if(aug1PathOut != aug2PathOut) {
             for (auto out : aug1PathOut) {
+                if(isIn(aug2PathOut, out)) continue;
+                
                 deficit++;
                 Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(out);
                 sendMessage(
@@ -1469,6 +1624,7 @@ void MetaModuleBlockCode::handleCutOffMessage(std::shared_ptr<Message> _msg,
     }   
     if(aug2PathState != NONE and (fromMMPosition == aug2PathIn or isMainPathRemoved)) {
         for (auto out : aug2PathOut) {
+            if(isIn(aug1PathOut, out)) continue;
             deficit++;
             Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(out);
             sendMessage(
@@ -1538,7 +1694,6 @@ bool MetaModuleBlockCode::setGreenLight(bool onoff) {
             P2PNetworkInterface *itf = nextToModule ? module->getInterface(awaitingModulePos) :
                                                     // Move the message up the branch
                                            awaitingModuleProbeItf;
-
             VS_ASSERT(itf and itf->isConnected());
             sendMessage("GLO Msg",
                         new MessageOf<PLS>(GLO_MSG_ID, PLS(module->position, awaitingModulePos)),
@@ -1560,6 +1715,10 @@ bool MetaModuleBlockCode::isPotentialDestination() {
     for (auto adjPos : getAdjacentMMPositions()) {
         if (inTargetShape(adjPos) and not inInitialShape(adjPos) and not
             lattice->cellHasBlock(getSeedPositionFromMMPosition(adjPos))) {
+            if(find(destinations.begin(), destinations.end(), adjPos) != destinations.end()) {
+                continue;
+            }
+            if(adjPos.pt[0] == MMPosition.pt[0] -1) continue;
             destinationOut = adjPos;
             return true;
         }
@@ -1650,7 +1809,7 @@ Cell3DPosition MetaModuleBlockCode::nearestPositionTo(Cell3DPosition& targetPosi
     for (auto neighPos : lattice->getActiveNeighborCells(module->position)) {
     MetaModuleBlockCode* neighBlock = static_cast<MetaModuleBlockCode*>(
         BaseSimulator::getWorld()->getBlockByPosition(neighPos)->blockCode);
-        if(neighBlock->module->getState() ==BuildingBlock::State::MOVING ) continue;
+        if(neighBlock->module->getState() == BuildingBlock::State::MOVING ) continue;
         if (except != nullptr) {
             if (module->getInterface(neighPos) == except) {
                 continue;
@@ -1671,7 +1830,7 @@ Cell3DPosition MetaModuleBlockCode::nearestPositionTo(Cell3DPosition& targetPosi
         module->getNeighborPos(module->getInterfaceId(except), nearest);
         return nearest;
     }
-    VS_ASSERT(distance != DBL_MAX);
+    VS_ASSERT(distance != DBL_MAX and module->getInterface(nearest)->isConnected());
     return nearest;
 }
 
@@ -1797,14 +1956,14 @@ void MetaModuleBlockCode::onMotionEnd() {
         }
         console << "coordinator position: " << coordinatorPosition << "\n";
         movingSteps = 0;
-        P2PNetworkInterface* pivotItf = module->getInterface(pivotPosition);
-        if (operation->isFill() or operation->isBuild()) {
+        P2PNetworkInterface* pivotItf = module->getInterface(pivotPosition);  
+        if (operation->isFill() or operation->isBuild() ) {
             sendMessageToAllNeighbors("FTR msg",
                                       new MessageOf<Cell3DPosition>(FTR_MSG_ID, module->position),
                                       100, 200, 0);
         } else if (pivotItf and pivotItf->isConnected()) {
-            sendMessage("FTR msg", new MessageOf<Cell3DPosition>(FTR_MSG_ID, module->position),
-                        module->getInterface(pivotPosition), 100, 200);
+                sendMessage("FTR msg", new MessageOf<Cell3DPosition>(FTR_MSG_ID, module->position),
+                            module->getInterface(pivotPosition), 100, 200);
         }
         if (movingState == IN_POSITION) {
             console << "mvt_it in pos: " << mvt_it << "\n";
@@ -1813,6 +1972,7 @@ void MetaModuleBlockCode::onMotionEnd() {
                 NbOfDestinationsReached++;
                 cerr << NbOfDestinationsReached << " " << NbOfStreamlines << endl;
                 if(NbOfDestinationsReached == NbOfStreamlines) {
+
                     cerr << "REINITIALIZE" << endl;
                     reinitialize();
                     MetaModuleBlockCode* seedMM = static_cast<MetaModuleBlockCode*>(seed->blockCode);
@@ -1923,10 +2083,10 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                 if ((not operation->isTransfer() and not operation->isFill() and
                      operation->getDirection() != Direction::UP and not operation->isBuild()) or
                     (operation->isTransfer() and operation->getDirection() == Direction::UP and
-                     static_cast<Transfer_Operation*>(operation)->isComingFromBack()) or
+                     static_cast<Transfer_Operation*>(operation)->isComingFromBack()) /*or
                     (operation->isBuild() and operation->getDirection() == Direction::BACK and
                      operation->getMMShape() == BACKFRONT and not
-                        static_cast<Build_Operation*>(operation)->isComingFromBack())) {
+                        static_cast<Build_Operation*>(operation)->isComingFromBack())*/) {
                     if (posBlock->module->canMoveTo(module->position.offsetY(1)) and not posBlock->sendingCoordinateBack) {
                             console << "move pos\n";
                         posBlock->module->moveTo(module->position.offsetY(1));
@@ -1977,7 +2137,7 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
 
             switch(itev->mode) {
                 case IT_MODE_FINDING_PIVOT: {
-                    if (!rotating) return;
+                    if (!rotating or module->getState() == BuildingBlock::State::MOVING) return;
                     // VS_ASSERT(++notFindingPivotCount < 10);
                     VS_ASSERT(operation->localRules.get());
                     probeGreenLight();  // the seed starts the algorithm
@@ -1989,17 +2149,20 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                     if(not awaitingCoordinator) return;
                     Cell3DPosition targetModule =
                         seedPosition + (*operation->localRules)[mvt_it].currentPosition;
-                    if (not module->getInterface(targetModule)->isConnected()) {
+
+                    if (not lattice->cellHasBlock(targetModule)) {
                         getScheduler()->schedule(
                             new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
                                                   module, IT_MODE_TRANSFERBACK));
                     } else {
-                        sendMessage(
-                            "Coordinate Msg",
-                            new MessageOf<Coordinate>(
-                                COORDINATE_MSG_ID,
-                                Coordinate(operation, targetModule, module->position, mvt_it)),
-                            module->getInterface(targetModule), 100, 200);
+                        if(lattice->cellHasBlock(targetModule)) {
+                            sendMessage(
+                                "Coordinate Msg",
+                                new MessageOf<Coordinate>(
+                                    COORDINATE_MSG_ID,
+                                    Coordinate(operation, targetModule, module->position, mvt_it)),
+                                module->getInterface(targetModule), 100, 200);
+                        }
                         awaitingCoordinator = false;
                     }
                 } break;
@@ -2040,15 +2203,152 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                     }
                 } break;
                 case IT_MODE_DISMANTLEBACK: {
+                      getScheduler()->trace("DismantleBack", module->blockId, RED);
+                    if (!rotating or module->getState() == BuildingBlock::State::MOVING) return;
                     if(lattice->cellHasBlock(seedPosition + Cell3DPosition(1,3,2))) {
+                        console << "Schedule dismantleBack\n";
                         getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
                                                        module, IT_MODE_DISMANTLEBACK));
                     } else {
                         probeGreenLight();
                     }
                 } break;
-            }  
-            
+
+                case IT_MODE_TRANSFEREBACK_COMINGFROMBACK: {
+                    // LocalMovement lmvt = (*operation->localRules)[mvt_it];
+                    // MetaModuleBlockCode* nextCoordinator = static_cast<MetaModuleBlockCode*>(
+                    //     BaseSimulator::getWorld()
+                    //         ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 1))
+                    //         ->blockCode);
+                    // console << "test1\n";
+                    // MetaModuleBlockCode* nextModule = static_cast<MetaModuleBlockCode*>(
+                    //     BaseSimulator::getWorld()
+                    //         ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 0))
+                    //         ->blockCode);
+                    // if (lmvt.nextPosition == Cell3DPosition(0, 2, 1) and
+                    //     (nextCoordinator->module->getState() == BuildingBlock::State::ACTUATING or
+                    //      nextModule->module->getState() == BuildingBlock::State::ACTUATING or
+                    //      lattice->cellHasBlock(nextCoordinator->module->position.offsetY(-1)) or
+                    //      lattice->cellHasBlock(nextCoordinator->module->position.offsetZ(1)))) {
+                    //     console << "schedule\n";
+                    //     getScheduler()->schedule(
+                    //         new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
+                    //                               module, IT_MODE_TRANSFEREBACK_COMINGFROMBACK));
+                    //     console << "test2\n";
+                        // VS_ASSERT(false);
+                    getScheduler()->trace("TRANSFERBACK_COMINGFROMBACK", module->blockId, RED);
+                    if (!rotating or module->getState() == BuildingBlock::State::MOVING) return;
+                    MetaModuleBlockCode* nextCoordinator = static_cast<MetaModuleBlockCode*>(
+                        BaseSimulator::getWorld()
+                            ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 1))
+                            ->blockCode);
+                    MetaModuleBlockCode* nextModule = static_cast<MetaModuleBlockCode*>(
+                        BaseSimulator::getWorld()
+                            ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 0))
+                            ->blockCode);
+                    if ((not nextCoordinator->greenLightIsOn or not nextModule->greenLightIsOn) and
+                        not lattice->cellsAreAdjacent(module->position,
+                                                      nextModule->module->position) and module->blockId != 48) {
+                        console << "schedule\n";
+                        getScheduler()->schedule(
+                            new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
+                                                  module, IT_MODE_TRANSFEREBACK_COMINGFROMBACK));
+                    } else {
+                        probeGreenLight();
+                    }
+                } break;
+
+                case IT_MODE_TRANSFERELEFT: {
+                      getScheduler()->trace("TRANSFERLEFT", module->blockId, RED);
+                    LocalMovement lmvt = (*operation->localRules)[mvt_it];
+                    // if (operation->isTransfer() and operation->getDirection() == Direction::LEFT
+                    // and
+                    //     lmvt.nextPosition == Cell3DPosition(-2, 1, 2)) {
+                    // Avoid collision on FB transfer left op
+                    if (!rotating or module->getState() == BuildingBlock::State::MOVING) return;
+                    if (operation->getMMShape() == FRONTBACK and
+                        lmvt.nextPosition == Cell3DPosition(-2, 1, 2) and
+                        lattice->cellHasBlock(seedPosition + Cell3DPosition(-3, 0, 2))) {
+                        MetaModuleBlockCode* nextModule = static_cast<MetaModuleBlockCode*>(
+                            BaseSimulator::getWorld()
+                                ->getBlockByPosition(seedPosition + Cell3DPosition(-3, 0, 2))
+                                ->blockCode);
+                        MetaModuleBlockCode* nextCoordinator = static_cast<MetaModuleBlockCode*>(
+                            BaseSimulator::getWorld()
+                                ->getBlockByPosition(seedPosition + Cell3DPosition(-3, -1, 1))
+                                ->blockCode);
+                        if (not nextCoordinator->greenLightIsOn or
+                            nextModule->module->getState() == BuildingBlock::State::ACTUATING) {
+                            getScheduler()->schedule(
+                                new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
+                                                      module, IT_MODE_TRANSFERELEFT));
+                        } else {
+                            probeGreenLight();
+                        }
+                    } else if (operation->getMMShape() == BACKFRONT and
+                               lmvt.nextPosition == Cell3DPosition(-2, -1, 2)) {
+                        MetaModuleBlockCode* nextCoordinator = static_cast<MetaModuleBlockCode*>(
+                            BaseSimulator::getWorld()
+                                ->getBlockByPosition(seedPosition + Cell3DPosition(-3, 0, 1))
+                                ->blockCode);
+                        if (not nextCoordinator->greenLightIsOn) {
+                            getScheduler()->schedule(
+                                new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
+                                                      module, IT_MODE_TRANSFERELEFT));
+                        } else {
+                            probeGreenLight();
+                        }
+                    } else if (operation->getMMShape() == BACKFRONT and
+                               lmvt.nextPosition == Cell3DPosition(0, -1, 1) and
+                               lattice->cellHasBlock(seedPosition + Cell3DPosition(-1, -1, 1))) {
+                        getScheduler()->schedule(
+                            new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
+                                                  module, IT_MODE_TRANSFERELEFT));
+                        
+                    } else {
+                        probeGreenLight();
+                    }
+                } break;
+
+                case IT_MODE_TRANSFEREBACK_FRONTBACK: {
+                      getScheduler()->trace("TRANSFERBACK_FRONTBACK", module->blockId, RED); 
+                    LocalMovement lmvt = (*operation->localRules)[mvt_it];
+                    if (!rotating or module->getState() == BuildingBlock::State::MOVING) return;
+                    MetaModuleBlockCode* nextModule = static_cast<MetaModuleBlockCode*>(
+                        BaseSimulator::getWorld()
+                            ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 0))
+                            ->blockCode);
+                    MetaModuleBlockCode* nextModule1 = static_cast<MetaModuleBlockCode*>(
+                        BaseSimulator::getWorld()
+                            ->getBlockByPosition(seedPosition + Cell3DPosition(0, 3, 0))
+                            ->blockCode);
+                    MetaModuleBlockCode* nextCoordinator = static_cast<MetaModuleBlockCode*>(
+                BaseSimulator::getWorld()
+                    ->getBlockByPosition(seedPosition + Cell3DPosition(1, 2, 1))
+                    ->blockCode);
+                            bool frontBackModule = false;
+                    if(lattice->cellHasBlock(seedPosition + Cell3DPosition(1,4,0))) {
+                        MetaModuleBlockCode* nextModule2 = static_cast<MetaModuleBlockCode*>(
+                        BaseSimulator::getWorld()
+                            ->getBlockByPosition(seedPosition + Cell3DPosition(1, 4, 0))
+                            ->blockCode);
+                        if(nextModule2->module->getState() == BuildingBlock::ACTUATING or not nextModule2->greenLightIsOn) {
+                            frontBackModule = true;
+                        }
+                    }
+                    if (lmvt.nextPosition == Cell3DPosition(1, 3, 2) and
+                        (nextModule->module->getState() == BuildingBlock::State::ACTUATING or
+                        not nextModule1->greenLightIsOn or not nextCoordinator->greenLightIsOn or frontBackModule)) {
+                        // Avoid blocking on FB transfer back op
+                        getScheduler()->schedule(
+                            new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
+                                                  module, IT_MODE_TRANSFEREBACK_FRONTBACK));
+
+                    } else {
+                        probeGreenLight();
+                    }
+                } break;
+            }
         }
     }
 }
@@ -2080,7 +2380,13 @@ void MetaModuleBlockCode::onBlockSelected() {
     // cerr << "aug2PathState: " << aug2PathState << endl;
     cerr << "mainPathIn: " << mainPathIn << endl;
     cerr << "mainPathOut: ";
-    for(auto out: mainPathOut) cerr << out << " | ";
+    for(auto out: mainPathOut) cerr << out << " | "; 
+    cerr << endl;
+    if(isDestination) cerr << "destinationFor: " << destinationOut << endl;
+    if(operation) {
+        if(operation->isTransfer())
+        cerr << "comingFromBack: " << static_cast<Transfer_Operation*>(operation)->isComingFromBack() << endl;
+    }
     cerr << endl;
     cerr << "aug1PathIn: " << aug1PathIn << endl;
     cerr << "aug1PathOut: ";
@@ -2112,7 +2418,7 @@ void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
             if(showSrcAndDst) {
                 if(block->isPotentialSource()) {
                     block->module->setColor(RED);
-                } else if(block->isPotentialDestination()) {
+                } else if(block->isDestination) {
                     block->getModule()->setColor(GREEN);
                 } else {
                     block->getModule()->setColor(WHITE);
@@ -2140,8 +2446,8 @@ void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
         file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
         return;
     }
-    file.open("BF_Dismantle_Left.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(32,19,6);
+    file.open("BF_Build_Up.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(20,22,14);
     if(!file.is_open()) return;
 
     if(c == 'o') {
@@ -2271,3 +2577,4 @@ string MetaModuleBlockCode::onInterfaceDraw() {
     trace << "Nb of modules " << BaseSimulator::getWorld()->getNbBlocks();
     return trace.str();
 }
+ 

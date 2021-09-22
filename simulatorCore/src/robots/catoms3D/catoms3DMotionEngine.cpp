@@ -142,7 +142,7 @@ Catoms3DBlock* Catoms3DMotionEngine::findMotionPivot(const Catoms3DBlock* m,
                                                      const Cell3DPosition& tPos,
                                                      RotationLinkType faceReq) {
     const auto &allLinkPairs = findPivotLinkPairsForTargetCell(m, tPos, faceReq);
-
+    
     // cout << "size: " << allLinkPairs.size() << endl;
 
     for (const auto& pair : allLinkPairs) {

@@ -50,6 +50,7 @@ public:
     virtual bool isTransfer() const  {return false;};
     virtual bool isConstruct() const {return false;};
     virtual bool isBuild() const {return false;};
+    bool isZeven() const {return Zeven;};
 };
 
 class Dismantle_Operation: public Operation {
