@@ -653,7 +653,7 @@ void GlutContext::drawFunc(void) {
     shadowedRenderingStep3(camera);
     glPushMatrix();
     wrl->glDraw();
-
+    wrl->objRepere->glDraw();
     if (showGrid) {
         wrl->glDrawBackground();
     }
@@ -721,6 +721,7 @@ void GlutContext::drawFuncNoShadows() {
     noshadowRenderingStart(camera);
     glPushMatrix();
     wrl->glDraw();
+        wrl->objRepere->glDraw();
 
     if (showGrid) {
         wrl->glDrawBackground();

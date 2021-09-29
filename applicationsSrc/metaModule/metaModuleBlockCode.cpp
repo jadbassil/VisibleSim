@@ -249,6 +249,12 @@ void MetaModuleBlockCode::startup() {
         //     block373->MMPosition.pt[2]); block373->isCoordinator = true;
 
         Init::initialMapBuildDone = true;
+        // ofstream file;
+        // file.open("nbMovementsPerTimeStep.txt", ios::out);
+        // file << timeStep << ',' << 0 << ',' << 0 << '\n';
+        // getScheduler()->schedule(
+        //                     new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
+        //                                           module, IT_MODE_NBMOVEMENTS));
     }
 
     initialColor = module->color;
@@ -264,6 +270,7 @@ void MetaModuleBlockCode::startup() {
         nbWaitedAnswers = 0;
         distance = 0;
                  cerr << "Building coordination tree\n";
+        getScheduler()->toggle_pause();
         for (auto p : getAdjacentMMSeeds()) {
             Cell3DPosition toMMPosition =
                 static_cast<MetaModuleBlockCode*>(
@@ -277,6 +284,8 @@ void MetaModuleBlockCode::startup() {
             nbWaitedAnswers++;
         }
     }
+
+    
   
     // if(isSource() and seedPosition == module->position) {
     //     cerr << MMPosition << ": is source\n";
@@ -416,6 +425,7 @@ void MetaModuleBlockCode::handleBackMessage(std::shared_ptr<Message> _msg,
         if(parentPosition == Cell3DPosition(-1,-1,-1) and module->position == seed->position) {
             cerr << module->blockId << ": Coordination Tree is Built\n";
             reconfigurationStep = MAXFLOW;
+            
             for (auto block : BaseSimulator::getWorld()->buildingBlocksMap) {
                 MetaModuleBlockCode *MMblock = static_cast<MetaModuleBlockCode*>(block.second->blockCode);
                 if (MMblock->isPotentialSource() and
@@ -445,11 +455,25 @@ void MetaModuleBlockCode::handleBackMessage(std::shared_ptr<Message> _msg,
                         cerr << MMblock->MMPosition << ": is destination\n";
                         MMblock->isDestination = true;
                         destinations.push_back(MMblock->destinationOut);
+                        // if (MMblock->shapeState == FRONTBACK) {
+                        //     for (auto p : FrontBackMM) {
+                        //         static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()
+                        //             ->getBlockByPosition(MMblock->seedPosition + p)->blockCode)
+                        //             ->isDestination = true;
+                        //     }
+                        // } else {
+                        //     for (auto p : BackFrontMM) {
+                        //       if(lattice->cellHasBlock(MMblock->seedPosition+p))
+                        //        static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()
+                        //             ->getBlockByPosition(MMblock->seedPosition + p)->blockCode)
+                        //             ->isDestination = true;
+                        //     }
+                        // }
                     }
-                    
-                }                
+                }
             }
             start_wave();
+            switchModulesColors();
         } else {
             Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(parentPosition);
             sendMessage(
@@ -522,14 +546,17 @@ void MetaModuleBlockCode::handleBackTermMessage(std::shared_ptr<Message> _msg,
             } else {
                 console << "res: " << res << "; b: " << b << "\n";
                 if (res and b) {
+                
                     cerr << "MaxFlow Terminated!!" << endl;
                     cerr << "Starting Modules Transportation" << endl;
                     reconfigurationStep = TRANSPORT;
+                    bool end = true;
                     for (auto id_block : BaseSimulator::getWorld()->buildingBlocksMap) {
                         MetaModuleBlockCode* block =
                             static_cast<MetaModuleBlockCode*>(id_block.second->blockCode);
                         if (block->isSource and block->mainPathState == Streamline and
                             block->module->position == block->seedPosition) {
+                            end = false;
                             MetaModuleBlockCode* coord = static_cast<MetaModuleBlockCode*>(
                                 BaseSimulator::getWorld()
                                     ->getBlockByPosition(block->coordinatorPosition)
@@ -549,6 +576,11 @@ void MetaModuleBlockCode::handleBackTermMessage(std::shared_ptr<Message> _msg,
                                 coord->module->getInterface(coord->nearestPositionTo(targetModule)),
                                 100, 200);
                         }
+                      
+                    }
+                        
+                    if(end) {
+                        reconfigurationStep = DONE;
                     }
                 } else {
                     start_wave();
@@ -787,7 +819,7 @@ void MetaModuleBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
             awaitingModulePos = srcPos;
             awaitingModuleProbeItf = sender;
             setGreenLight(false);
-            module->setColor(DARKORANGE);
+            // module->setColor(DARKORANGE);
             return;
         }
         Catoms3DBlock* targetLightNeighbor = findTargetLightAmongNeighbors(targetPos, srcPos, sender);
@@ -850,7 +882,7 @@ void MetaModuleBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
                 moduleAwaitingGo = true;
                 awaitingModulePos = srcPos;
                 awaitingModuleProbeItf = sender;
-                module->setColor(DARKORANGE);
+                // module->setColor(DARKORANGE);
             }
         }else { // not neighborNextToTarget and not nextToSender
             module->setColor(BLACK);
@@ -944,13 +976,14 @@ void MetaModuleBlockCode::handleFTRMessage(std::shared_ptr<Message> _msg,
 
 void MetaModuleBlockCode::probeGreenLight() {
     VS_ASSERT(operation->localRules != NULL);
-    if (operation->getDirection() == Direction::UP and operation->isTransfer() and
+    if (operation->getDirection() == Direction::UP /*and operation->isTransfer()*/ and
         (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, 0, 2)) {
         (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(2, 0, 2);
     }
    
     
     rotating = true;
+    module->setColor(BLUE);
 
     if(operation->isTransfer() and operation->getDirection() == Direction::UP) {
         console << "UP1\n";
@@ -958,7 +991,7 @@ void MetaModuleBlockCode::probeGreenLight() {
     
     if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(2, 0, 2)  and
         lattice->cellHasBlock(module->position.offsetX(1)) and
-        operation->getDirection() == Direction::UP and operation->isTransfer()) {
+        operation->getDirection() == Direction::UP /*and operation->isTransfer()*/) {
             console << "UP2\n";
         (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, 0, 2);
     }
@@ -1674,7 +1707,7 @@ bool MetaModuleBlockCode::setGreenLight(bool onoff) {
     if (onoff) {
         info << "green: ";
         greenLightIsOn = true;
-        module->setColor(initialColor);
+        // module->setColor(initialColor);
 
         // Resume flow if needed
         if (moduleAwaitingGo) {
@@ -1704,7 +1737,7 @@ bool MetaModuleBlockCode::setGreenLight(bool onoff) {
     } else {
         info << "red: ";
         greenLightIsOn = false;
-        module->setColor(RED);
+        // module->setColor(RED);
     }
 
     getScheduler()->trace(info.str(),module->blockId, onoff ? GREEN : RED);
@@ -1775,7 +1808,7 @@ void MetaModuleBlockCode::updateState() {
    
     mvt_it = 0;
     isCoordinator = false;
-    module->setColor(initialColor);
+    // module->setColor(initialColor);
     if(not greenLightIsOn) {
         setGreenLight(true);
     }
@@ -1944,6 +1977,9 @@ void MetaModuleBlockCode::onMotionEnd() {
         mvt_it++;
         probeGreenLight();
     } else if (movingState == WAITING or movingState == IN_POSITION) {
+        if(module->blockId == 47 and module->position == Cell3DPosition(8,29,32)){
+            module->setColor(GREEN);
+        }
         transferCount = 0;
         rotating = false;
         if (operation->mustSendCoordinateBack(this)) {
@@ -2141,16 +2177,16 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                     // VS_ASSERT(++notFindingPivotCount < 10);
                     VS_ASSERT(operation->localRules.get());
                     probeGreenLight();  // the seed starts the algorithm
-                    module->setColor(MAGENTA);
+                    // module->setColor(MAGENTA);
                 } break;
 
                 case IT_MODE_TRANSFERBACK: {
                     getScheduler()->trace("TransferBack", module->blockId, RED);
-                    if(not awaitingCoordinator) return;
+                    if(not awaitingCoordinator or not operation) return;
                     Cell3DPosition targetModule =
                         seedPosition + (*operation->localRules)[mvt_it].currentPosition;
 
-                    if (not lattice->cellHasBlock(targetModule)) {
+                    if (not lattice->cellHasBlock(targetModule) and isCoordinator) {
                         getScheduler()->schedule(
                             new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
                                                   module, IT_MODE_TRANSFERBACK));
@@ -2348,6 +2384,31 @@ void MetaModuleBlockCode::processLocalEvent(EventPtr pev) {
                         probeGreenLight();
                     }
                 } break;
+
+                case IT_MODE_NBMOVEMENTS: {
+                    if(reconfigurationStep != DONE) {
+                       
+                        timeStep++;
+                        int nbOfModulesInMvt = 0;
+                        for(auto id_block: BaseSimulator::getWorld()->buildingBlocksMap) {
+                            MetaModuleBlockCode* MMBlock = static_cast<MetaModuleBlockCode*>(id_block.second->blockCode);
+                            
+                            if(MMBlock->movingState == MOVING or MMBlock->movingState == WAITING) {
+                                nbOfModulesInMvt++;
+                            }
+                            
+                        }
+                      
+                        ofstream file;
+                        file.open("nbMovementsPerTimeStep.txt", ios::out | ios::app);
+                        file << timeStep << ',' << nbOfModulesInMvt << ',' << NbOfStreamlines << '\n';
+                        getScheduler()->schedule(
+                                            new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
+                                                                module, IT_MODE_NBMOVEMENTS));
+                        
+                    }
+                    
+                } break;
             }
         }
     }
@@ -2420,8 +2481,18 @@ void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
                     block->module->setColor(RED);
                 } else if(block->isDestination) {
                     block->getModule()->setColor(GREEN);
+                    if(block->shapeState == FRONTBACK) {
+                        for(auto p:FrontBackMM) {
+                            BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition + p)->setColor(GREEN);
+                        }
+                    } else {
+                        for(auto p:BackFrontMM) {
+                            BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition + p)->setColor(GREEN);
+                        }
+                    }
                 } else {
-                    block->getModule()->setColor(WHITE);
+                    if( not static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)->isDestination)
+                        block->getModule()->setColor(WHITE);
                 }
             } else {
                 block->module->setColor(block->initialColor);
@@ -2446,8 +2517,8 @@ void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
         file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
         return;
     }
-    file.open("BF_Build_Up.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(20,22,14);
+    file.open("FB_Transfer_Down.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(20,19,14);
     if(!file.is_open()) return;
 
     if(c == 'o') {
@@ -2456,6 +2527,32 @@ void MetaModuleBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     if(c == 'p') {
         file << ", Cell3DPosition" << block->module->position - block->seedPosition
                 << ", MOVING)},\n";
+    }
+}
+
+void MetaModuleBlockCode::switchModulesColors() {
+    showSrcAndDst = true;
+    // color sources in RED, destinations in GREEN in other MMs in White
+    for(auto id_block: BaseSimulator::getWorld()->buildingBlocksMap) {
+        MetaModuleBlockCode* block = static_cast<MetaModuleBlockCode*>(id_block.second->blockCode);
+        
+        if(static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)->isSource) {
+            block->module->setColor(RED);
+        } else if(block->isDestination or static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)->isDestination) {
+            block->module->setColor(GREEN);
+            // if(block->shapeState == FRONTBACK) {
+            //     for(auto p:FrontBackMM) {
+            //         BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition + p)->setColor(GREEN);
+            //     }
+            // } else {
+            //     for(auto p:BackFrontMM) {
+            //         BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition + p)->setColor(GREEN);
+            //     }
+            // }
+        } else {
+            if( not static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)->isDestination)
+                block->getModule()->setColor(GREY);
+        }
     }
 }
 
@@ -2507,8 +2604,8 @@ bool MetaModuleBlockCode::parseUserCommandLineArgument(int &argc, char **argv[])
 
 void MetaModuleBlockCode::parseUserElements(TiXmlDocument *config) {
     TiXmlElement *worldElement = 
-        config->RootElement();
-    TiXmlElement *MMblocksElement = worldElement->FirstChildElement()->NextSiblingElement();
+        config->RootElement()->NextSiblingElement();
+    TiXmlElement *MMblocksElement = worldElement->FirstChildElement()->NextSiblingElement()->NextSiblingElement()->NextSiblingElement();
     TiXmlElement *blockElement = MMblocksElement->FirstChildElement();
     cerr << "Parsing MM positions\n";
     for (; blockElement != NULL; blockElement = blockElement->NextSiblingElement()) {
@@ -2574,7 +2671,7 @@ void MetaModuleBlockCode::parseUserElements(TiXmlDocument *config) {
 
 string MetaModuleBlockCode::onInterfaceDraw() {
     stringstream trace;
-    trace << "Nb of modules " << BaseSimulator::getWorld()->getNbBlocks();
+    // trace << "Nb of modules " << BaseSimulator::getWorld()->getNbBlocks();
     return trace.str();
 }
  

@@ -330,7 +330,8 @@ Transfer_Operation::Transfer_Operation(Direction _direction, MMShape _mmShape, b
 
     case Direction::DOWN: {
         if(mmShape == FRONTBACK) {
-            localRules.reset(&LocalRules_FB_Transfer_Down);
+            (Zeven) ? localRules.reset(&LocalRules_FB_Transfer_Down_Zeven):
+                localRules.reset(&LocalRules_FB_Transfer_Down_Zodd);
         } else {
             VS_ASSERT_MSG(false, "Not implemented");
         }

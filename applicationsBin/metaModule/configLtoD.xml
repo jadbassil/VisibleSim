@@ -1,8 +1,11 @@
 <?xml version="1.0" standalone="no" ?>
-
+<visuals enableShadows="false" showGrid="false" windowSize="1800,1000"
+         backgroundColor="#ffffff" backgroundGradientColor="#eeeeee" /> 
 <world gridSize="50,50,40" windowSize="1800,900">
+<camera target="99.7739,207.101,45.0787" directionSpherical="-1.35211,1.35211,380" angle="35.000000" near="75.000000" far="1500.000000" />
+    <spotlight target="200,200,100" directionSpherical="60,30,900" angle="33.690068" />
 	<blockList color="0,255,0" size="1,1,1" blockSize="40,40,41" >
-		<block position="20,20,10"/>
+		<block position="8,8,4"/>
 	</blockList>
 
 	<MMBlockList>

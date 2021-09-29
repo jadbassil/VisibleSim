@@ -1,4 +1,5 @@
 #include "init.hpp"
+#include <ctime>
 #include <fstream>
 
 Init::Init(/* args */) {
@@ -15,6 +16,7 @@ void Init::buildInitialMap(Cell3DPosition firstSeedPos, vector<array<int, 4>> &m
         return;
     }
     cerr << "Number of Meta-Modules: " << map.size() << endl;
+    srand(2);
     for (int i = 1; i < map.size(); i++) {
         int x, y, z;
         x = firstSeedPos.pt[0] + 4 * map[i][0];
@@ -23,10 +25,13 @@ void Init::buildInitialMap(Cell3DPosition firstSeedPos, vector<array<int, 4>> &m
         if(map[i][2] % 2 != 0) {
             y -= 1;
         }
-        BaseSimulator::getWorld()->addBlock(0, MetaModuleBlockCode::buildNewBlockCode, Cell3DPosition(x,y,z),  Colors[i % NB_COLORS] );
+        int col = rand() % NB_COLORS;
+        BaseSimulator::getWorld()->addBlock(0, MetaModuleBlockCode::buildNewBlockCode, Cell3DPosition(x,y,z),  Colors[col] );
+
         MetaModuleBlockCode *newSeed = static_cast<MetaModuleBlockCode*>(
             BaseSimulator::getWorld()->getBlockByPosition(Cell3DPosition(x,y,z))->blockCode
         );
+   
       
         newSeed->MMPosition = Cell3DPosition(map[i][0],map[i][1],map[i][2]);
        // if(newSeed->MMPosition.pt[2] % 2 == 0)
@@ -40,8 +45,19 @@ void Init::buildInitialMap(Cell3DPosition firstSeedPos, vector<array<int, 4>> &m
         //     else
         //         newSeed->shapeState = FRONTBACK;
         newSeed->seedPosition = newSeed->module->position;
-
-        buildMM(newSeed->module, newSeed->shapeState, Colors[i % NB_COLORS]);
+             vector<Color> neighborsColors;
+        for(auto neighSeedPos: newSeed->getAdjacentMMSeeds()) {
+            MetaModuleBlockCode *neighbSeed = static_cast<MetaModuleBlockCode*>(
+                BaseSimulator::getWorld()->getBlockByPosition(neighSeedPos)->blockCode
+            );
+            cerr << neighSeedPos << endl;
+            neighborsColors.push_back(neighbSeed->module->color);
+        }
+        while(isIn(neighborsColors, newSeed->module->color)) {
+            col = rand() % NB_COLORS;
+            newSeed->module->setColor( Colors[col]);
+        }
+        buildMM(newSeed->module, newSeed->shapeState, Colors[col]);
         if(map[i][3] == 1)
             fillMM(newSeed->module);
     }

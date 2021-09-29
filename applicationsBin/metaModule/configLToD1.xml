@@ -13,14 +13,23 @@
 		<block position="1,0,0"/>
 		<block position="2,0,0" />
 
+		<block position="0,0,1" />
+		<block position="0,0,2" />
+
+
 	</MMBlockList>
 	<MMTargetList>
+		
 		<block position="0,0,0" />
-		<!-- <block position="2,0,0"/> -->
-		<block position="0,0,1" />
+		<!-- <block position="1,0,0"/>
+		<block position="2,0,0" /> -->
 
-		<block position="1,0,0" />
-	
+		<block position="0,0,1" />
+		<block position="0,0,2" />
+
+		<block position="0,1,0" />
+
+		<block position="0,1,2" />
 		
 	</MMTargetList>
 </world>

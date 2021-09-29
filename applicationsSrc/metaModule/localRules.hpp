@@ -1032,13 +1032,22 @@ static vector<LocalMovement> LocalRules_BF_Transfer_Up_Zodd = {
     {LocalMovement(Cell3DPosition(2, 1, 4), Cell3DPosition(1, 1, 5), IN_POSITION)},
 };
 
-static vector<LocalMovement> LocalRules_FB_Transfer_Down = {
+static vector<LocalMovement>  LocalRules_FB_Transfer_Down_Zeven = {
     {LocalMovement(Cell3DPosition(1, -1, 1), Cell3DPosition(2, -1, 0), MOVING)},
     {LocalMovement(Cell3DPosition(2, -1, 0), Cell3DPosition(1, -2, -1), MOVING)},
      {LocalMovement(Cell3DPosition(1, -2, -1), Cell3DPosition(2, -1, -2), MOVING)},
     {LocalMovement(Cell3DPosition(2, -1, -2), Cell3DPosition(1, -2, -3), IN_POSITION)},
-
 };
+
+static vector<LocalMovement>  LocalRules_FB_Transfer_Down_Zodd = {
+    
+    {LocalMovement(Cell3DPosition(1,-1,1), Cell3DPosition(1,-1,0), MOVING)},
+    {LocalMovement(Cell3DPosition(1,-1,0), Cell3DPosition(1,-1,-1), MOVING)},
+    {LocalMovement(Cell3DPosition(1,-1,-1), Cell3DPosition(1,0,-1), MOVING)},
+    {LocalMovement(Cell3DPosition(1,0,-1), Cell3DPosition(2,1,-2), MOVING)},
+    {LocalMovement(Cell3DPosition(2,1,-2), Cell3DPosition(1,0,-3), IN_POSITION)},
+};
+
 
 static vector<LocalMovement>
     LocalRules_FB_Transfer_Back = {

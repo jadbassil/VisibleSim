@@ -16,6 +16,7 @@ static const int IT_MODE_DISMANTLEBACK = 2005;
 static const int IT_MODE_TRANSFEREBACK_COMINGFROMBACK = 2006;
 static const int IT_MODE_TRANSFERELEFT = 2007;
 static const int IT_MODE_TRANSFEREBACK_FRONTBACK = 2008;
+static const int IT_MODE_NBMOVEMENTS = 2009;
 /* ------------------------- COORDINATION TREE MSGS ------------------------- */
 static const int GO_MSG_ID = 1001;
 static const int BACK_MSG_ID = 1002;
@@ -111,7 +112,7 @@ static vector<Cell3DPosition> FillingPositions_BackFront_Zeven = {
 
 enum PathState {NONE, BFS, ConfPath, Streamline};
 enum ProcessState {PASSIVE, ACTIVE};
-enum RenconfigurationStep {SRCDEST, MAXFLOW, TRANSPORT};
+enum RenconfigurationStep {SRCDEST, MAXFLOW, TRANSPORT, DONE};
 
 static vector<Cell3DPosition> OpenedPositions = {
     Cell3DPosition(-1, 0, 0), Cell3DPosition(-1, 0, 4), Cell3DPosition(2, 0, 0), Cell3DPosition(2, 0, 4)};
@@ -126,6 +127,12 @@ static RenconfigurationStep reconfigurationStep;
 static int NbOfStreamlines = 0;
 static int NbOfDestinationsReached = 0;
 static vector<Cell3DPosition> destinations;
+
+static int timeStep = 0;
+static int MaxMsgMoving = INT32_MAX;
+static int MaxMsgOperationCoordinator = INT32_MAX;
+static int MaxMsgCoordinator = INT32_MAX;
+static int MaxMsgFixed = INT32_MAX;
 
 class MetaModuleBlockCode : public Catoms3DBlockCode {
 private:
@@ -366,6 +373,8 @@ public:
      * @note call is made from GlutContext::keyboardFunc (openglViewer.h)
      */
     void onUserKeyPressed(unsigned char c, int x, int y) override;
+
+    void switchModulesColors();
 
     /**
      * Call by world during GL drawing phase, can be used by a user
