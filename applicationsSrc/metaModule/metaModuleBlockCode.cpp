@@ -267,6 +267,7 @@ void MetaModuleBlockCode::startup() {
 
     if(module->blockId == seed->blockId) {
         reconfigurationStep = SRCDEST;
+        nbOfIterations++;
         nbWaitedAnswers = 0;
         distance = 0;
                  cerr << "Building coordination tree\n";
@@ -581,6 +582,7 @@ void MetaModuleBlockCode::handleBackTermMessage(std::shared_ptr<Message> _msg,
                         
                     if(end) {
                         reconfigurationStep = DONE;
+                        cout << "Nb of iterations: " << nbOfIterations-1 << "\n";
                     }
                 } else {
                     start_wave();
@@ -2013,6 +2015,7 @@ void MetaModuleBlockCode::onMotionEnd() {
                     reinitialize();
                     MetaModuleBlockCode* seedMM = static_cast<MetaModuleBlockCode*>(seed->blockCode);
                     reconfigurationStep = SRCDEST;
+                    nbOfIterations++;
                     seedMM->nbWaitedAnswers = 0;
                     seedMM->distance = 0;
                     for (auto p : seedMM->getAdjacentMMSeeds()) {
@@ -2535,7 +2538,7 @@ void MetaModuleBlockCode::switchModulesColors() {
     // color sources in RED, destinations in GREEN in other MMs in White
     for(auto id_block: BaseSimulator::getWorld()->buildingBlocksMap) {
         MetaModuleBlockCode* block = static_cast<MetaModuleBlockCode*>(id_block.second->blockCode);
-        
+        //if(block->module->position == Cell3DPosition(20,25,58)) continue;
         if(static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)->isSource) {
             block->module->setColor(RED);
         } else if(block->isDestination or static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)->isDestination) {

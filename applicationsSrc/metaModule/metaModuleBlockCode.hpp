@@ -129,10 +129,7 @@ static int NbOfDestinationsReached = 0;
 static vector<Cell3DPosition> destinations;
 
 static int timeStep = 0;
-static int MaxMsgMoving = INT32_MAX;
-static int MaxMsgOperationCoordinator = INT32_MAX;
-static int MaxMsgCoordinator = INT32_MAX;
-static int MaxMsgFixed = INT32_MAX;
+static int nbOfIterations = 0;
 
 class MetaModuleBlockCode : public Catoms3DBlockCode {
 private:
