@@ -2,10 +2,13 @@
 #include "init.hpp"
 #include "messages.hpp"
 #include "routing.hpp"
+#include "initMessages.hpp"
 #include <fstream>
 #include "robots/catoms3D/catoms3DMotionEngine.h"
 
 using namespace Catoms3D;
+
+Catoms3DBlock* RePoStBlockCode::GC = nullptr; 
 
 RePoStBlockCode::RePoStBlockCode(Catoms3DBlock *host) : Catoms3DBlockCode(host) {
     // @warning Do not remove block below, as a blockcode with a NULL host might be created
@@ -13,12 +16,12 @@ RePoStBlockCode::RePoStBlockCode(Catoms3DBlock *host) : Catoms3DBlockCode(host) 
     if (not host) return;
 
     // Register callbacks to all messages
-    addMessageEventFunc2(GO_MSG_ID,
-                         std::bind(&RePoStBlockCode::handleGoMessage, this,
-                                   std::placeholders::_1, std::placeholders::_2));
-    addMessageEventFunc2(BACK_MSG_ID,
-                         std::bind(&RePoStBlockCode::handleBackMessage, this,
-                                   std::placeholders::_1, std::placeholders::_2));
+    // addMessageEventFunc2(GO_MSG_ID,
+    //                      std::bind(&RePoStBlockCode::handleGoMessage, this,
+    //                                std::placeholders::_1, std::placeholders::_2));
+    // addMessageEventFunc2(BACK_MSG_ID,
+    //                      std::bind(&RePoStBlockCode::handleBackMessage, this,
+    //                                std::placeholders::_1, std::placeholders::_2));
     addMessageEventFunc2(GOTERM_MSG_ID,
                          std::bind(&RePoStBlockCode::handleGoTermMessage, this,
                                    std::placeholders::_1, std::placeholders::_2));
@@ -76,13 +79,13 @@ void RePoStBlockCode::startup() {
         initialized = false;
         MMPosition = Cell3DPosition(0,0,0);
         shapeState = FRONTBACK;
-        seed = module;
-        cerr << seed->position << endl;
+        GC = module;
+        cerr << GC->position << endl;
         Init::buildMM(module, FRONTBACK, Color(GREEN));
         if(initialMap[0][3] == 1) {
-            Init::fillMM(seed);
+            Init::fillMM(GC);
         }
-        Init::buildInitialMap(seed->position, initialMap);
+        Init::buildInitialMap(GC->position, initialMap);
         setGreenLight(true);
         rotating = false;
         seedPosition = module->position;
@@ -265,7 +268,7 @@ void RePoStBlockCode::startup() {
     VS_ASSERT(Init::initialMapBuildDone);
       if(targetMap.empty()) return;
 
-    if(module->blockId == seed->blockId) {
+    if(module->blockId == GC->blockId) {
         reconfigurationStep = SRCDEST;
         nbOfIterations++;
         nbWaitedAnswers = 0;
@@ -277,11 +280,13 @@ void RePoStBlockCode::startup() {
                 static_cast<RePoStBlockCode*>(
                     BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
                     ->MMPosition;
-   
-            sendMessage(
-                "Go msg",
-                new MessageOf<GOdata>(GO_MSG_ID, GOdata(MMPosition, toMMPosition, distance)),
-                interfaceTo(MMPosition, toMMPosition), 100, 200);
+            console<< toMMPosition << "\n";
+            sendHandleableMessage(new GoMessage(MMPosition, toMMPosition, distance),
+                                  interfaceTo(MMPosition, toMMPosition), 100, 200);
+            // sendMessage(
+            //     "Go msg",
+            //     new MessageOf<GOdata>(GO_MSG_ID, GOdata(MMPosition, toMMPosition, distance)),
+            //     interfaceTo(MMPosition, toMMPosition), 100, 200);
             nbWaitedAnswers++;
         }
     }
@@ -313,177 +318,177 @@ void RePoStBlockCode::startup() {
 /* -------------------------------------------------------------------------- */
 /*                           COORDINATION TREE BUILD                          */
 /* -------------------------------------------------------------------------- */
-void RePoStBlockCode::handleGoMessage(std::shared_ptr<Message> _msg,
-                                                  P2PNetworkInterface* sender) {
-    MessageOf<GOdata>* msg = static_cast<MessageOf<GOdata>*>(_msg.get());
-    GOdata *data = msg->getData();
-    console << "Rec. Go msg <" << data->fromMMPosition << "," << data->toMMPosition << ","
-            << data->distance << "> from " << sender->getConnectedBlockId() << "\n";
-    Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(data->toMMPosition);
-    if(module->position != toSeedPosition) {
-        if( not interfaceTo(data->fromMMPosition, data->toMMPosition)) VS_ASSERT(false);
-        sendMessage(
-            "Go msg",
-            new MessageOf<GOdata>(GO_MSG_ID, *data),
-            interfaceTo(data->fromMMPosition, data->toMMPosition), 100, 200);
-        return;
-    }
+// void RePoStBlockCode::handleGoMessage(std::shared_ptr<Message> _msg,
+//                                                   P2PNetworkInterface* sender) {
+//     MessageOf<GOdata>* msg = static_cast<MessageOf<GOdata>*>(_msg.get());
+//     GOdata *data = msg->getData();
+//     console << "Rec. Go msg <" << data->fromMMPosition << "," << data->toMMPosition << ","
+//             << data->distance << "> from " << sender->getConnectedBlockId() << "\n";
+//     Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(data->toMMPosition);
+//     if(module->position != toSeedPosition) {
+//         if( not interfaceTo(data->fromMMPosition, data->toMMPosition)) VS_ASSERT(false);
+//         sendMessage(
+//             "Go msg",
+//             new MessageOf<GOdata>(GO_MSG_ID, *data),
+//             interfaceTo(data->fromMMPosition, data->toMMPosition), 100, 200);
+//         return;
+//     }
     
-    if(parentPosition == Cell3DPosition(-1,-1,-1) and module->blockId != seed->blockId) {
-        parentPosition = data->fromMMPosition;
-        // distance = data->distance + 1;
-        isPotentialSource() ? distance = data->distance + 1: 
-            distance = data->distance;
-        console << "distance1: " << distance << "\n";
-        nbWaitedAnswers = 0;
-        for(auto p: getAdjacentMMSeeds()) {
-            Cell3DPosition toMMPosition =
-                static_cast<RePoStBlockCode*>(
-                    BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
-                    ->MMPosition;
-            if (toMMPosition == data->fromMMPosition) continue;
-            sendMessage(
-                "Go msg",
-                new MessageOf<GOdata>(GO_MSG_ID, GOdata(MMPosition, toMMPosition, distance)),
-                interfaceTo(MMPosition, toMMPosition), 100, 200);
-            nbWaitedAnswers++;
-        }
-        if(nbWaitedAnswers == 0) {
-            Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(parentPosition);
-            sendMessage(
-                "Back msg",
-                new MessageOf<Backdata>(BACK_MSG_ID, Backdata(MMPosition, parentPosition, true)),
-                interfaceTo(MMPosition, parentPosition), 100, 200);
-        } 
-    } else if( (not isPotentialSource() and data->distance < distance) or (isPotentialSource() and data->distance + 1 < distance)) {
-        Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(parentPosition);
-        sendMessage(
-                "Back msg",
-                new MessageOf<Backdata>(BACK_MSG_ID, Backdata(MMPosition, parentPosition, false)),
-                interfaceTo(MMPosition, parentPosition), 100, 200);
-        parentPosition = data->fromMMPosition;
-        childrenPositions.clear();
-        isPotentialSource() ? distance = data->distance + 1: 
-            distance = data->distance;
-        console << "distance2 : " << distance << "\n";
+//     if(parentPosition == Cell3DPosition(-1,-1,-1) and module->blockId != GC->blockId) {
+//         parentPosition = data->fromMMPosition;
+//         // distance = data->distance + 1;
+//         isPotentialSource() ? distance = data->distance + 1: 
+//             distance = data->distance;
+//         console << "distance1: " << distance << "\n";
+//         nbWaitedAnswers = 0;
+//         for(auto p: getAdjacentMMSeeds()) {
+//             Cell3DPosition toMMPosition =
+//                 static_cast<RePoStBlockCode*>(
+//                     BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
+//                     ->MMPosition;
+//             if (toMMPosition == data->fromMMPosition) continue;
+//             sendMessage(
+//                 "Go msg",
+//                 new MessageOf<GOdata>(GO_MSG_ID, GOdata(MMPosition, toMMPosition, distance)),
+//                 interfaceTo(MMPosition, toMMPosition), 100, 200);
+//             nbWaitedAnswers++;
+//         }
+//         if(nbWaitedAnswers == 0) {
+//             Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(parentPosition);
+//             sendMessage(
+//                 "Back msg",
+//                 new MessageOf<Backdata>(BACK_MSG_ID, Backdata(MMPosition, parentPosition, true)),
+//                 interfaceTo(MMPosition, parentPosition), 100, 200);
+//         } 
+//     } else if( (not isPotentialSource() and data->distance < distance) or (isPotentialSource() and data->distance + 1 < distance)) {
+//         Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(parentPosition);
+//         sendMessage(
+//                 "Back msg",
+//                 new MessageOf<Backdata>(BACK_MSG_ID, Backdata(MMPosition, parentPosition, false)),
+//                 interfaceTo(MMPosition, parentPosition), 100, 200);
+//         parentPosition = data->fromMMPosition;
+//         childrenPositions.clear();
+//         isPotentialSource() ? distance = data->distance + 1: 
+//             distance = data->distance;
+//         console << "distance2 : " << distance << "\n";
 
-        // nbWaitedAnswers = 0;
-        for(auto p: getAdjacentMMSeeds()) {
-            Cell3DPosition toMMPosition =
-                static_cast<RePoStBlockCode*>(
-                    BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
-                    ->MMPosition;
-            if(toMMPosition == data->fromMMPosition) continue;
-            sendMessage(
-                "Go msg",
-                new MessageOf<GOdata>(GO_MSG_ID, GOdata(MMPosition, toMMPosition, distance)),
-                interfaceTo(MMPosition, toMMPosition), 100, 200);
-            nbWaitedAnswers++;
-        }
-        if(nbWaitedAnswers == 0) {
-            Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(parentPosition);
-            sendMessage(
-                "Back msg",
-                new MessageOf<Backdata>(BACK_MSG_ID, Backdata(MMPosition, parentPosition, true)),
-                interfaceTo(MMPosition, parentPosition), 100, 200);
-        }
-    } else {
-        Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(data->fromMMPosition);
-        sendMessage(
-            "Back msg1",
-            new MessageOf<Backdata>(BACK_MSG_ID, Backdata(MMPosition, data->fromMMPosition, false)),
-            interfaceTo(MMPosition, data->fromMMPosition), 100, 200);
-    }
-    console << "parent: " << parentPosition << "\n";
-}
+//         // nbWaitedAnswers = 0;
+//         for(auto p: getAdjacentMMSeeds()) {
+//             Cell3DPosition toMMPosition =
+//                 static_cast<RePoStBlockCode*>(
+//                     BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
+//                     ->MMPosition;
+//             if(toMMPosition == data->fromMMPosition) continue;
+//             sendMessage(
+//                 "Go msg",
+//                 new MessageOf<GOdata>(GO_MSG_ID, GOdata(MMPosition, toMMPosition, distance)),
+//                 interfaceTo(MMPosition, toMMPosition), 100, 200);
+//             nbWaitedAnswers++;
+//         }
+//         if(nbWaitedAnswers == 0) {
+//             Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(parentPosition);
+//             sendMessage(
+//                 "Back msg",
+//                 new MessageOf<Backdata>(BACK_MSG_ID, Backdata(MMPosition, parentPosition, true)),
+//                 interfaceTo(MMPosition, parentPosition), 100, 200);
+//         }
+//     } else {
+//         Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(data->fromMMPosition);
+//         sendMessage(
+//             "Back msg1",
+//             new MessageOf<Backdata>(BACK_MSG_ID, Backdata(MMPosition, data->fromMMPosition, false)),
+//             interfaceTo(MMPosition, data->fromMMPosition), 100, 200);
+//     }
+//     console << "parent: " << parentPosition << "\n";
+// }
 
-void RePoStBlockCode::handleBackMessage(std::shared_ptr<Message> _msg,
-                                                  P2PNetworkInterface* sender) {
-    MessageOf<Backdata>* msg = static_cast<MessageOf<Backdata>*>(_msg.get());
-    Backdata *data = msg->getData();
-    console << "Rec. Back msg <" << data->fromMMPosition << "," << data->toMMPosition << ","
-            << data->isChild << "> from " << sender->getConnectedBlockId() << "\n";
-    Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(data->toMMPosition);
-    if(module->position != toSeedPosition) {
-        sendMessage(
-            "Back msg",
-            new MessageOf<Backdata>(BACK_MSG_ID, *data),
-            interfaceTo(data->fromMMPosition, data->toMMPosition), 100, 200);
-        return;
-    }
-    nbWaitedAnswers--;
-    console << "nbWaitedAnswers: " << nbWaitedAnswers << "\n";
-    vector<Cell3DPosition>::iterator it =
-            find(childrenPositions.begin(), childrenPositions.end(), data->fromMMPosition);
-    if(data->isChild and it == childrenPositions.end()) {
-        childrenPositions.push_back(data->fromMMPosition);
-    } else if(not data->isChild){  
-        if(it != childrenPositions.end()) {
-            childrenPositions.erase(it);
-        }
-    }
-    if(nbWaitedAnswers == 0) {
-        if(parentPosition == Cell3DPosition(-1,-1,-1) and module->position == seed->position) {
-            cerr << module->blockId << ": Coordination Tree is Built\n";
-            reconfigurationStep = MAXFLOW;
+// void RePoStBlockCode::handleBackMessage(std::shared_ptr<Message> _msg,
+//                                                   P2PNetworkInterface* sender) {
+//     MessageOf<Backdata>* msg = static_cast<MessageOf<Backdata>*>(_msg.get());
+//     Backdata *data = msg->getData();
+//     console << "Rec. Back msg <" << data->fromMMPosition << "," << data->toMMPosition << ","
+//             << data->isChild << "> from " << sender->getConnectedBlockId() << "\n";
+//     Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(data->toMMPosition);
+//     if(module->position != toSeedPosition) {
+//         sendMessage(
+//             "Back msg",
+//             new MessageOf<Backdata>(BACK_MSG_ID, *data),
+//             interfaceTo(data->fromMMPosition, data->toMMPosition), 100, 200);
+//         return;
+//     }
+//     nbWaitedAnswers--;
+//     console << "nbWaitedAnswers: " << nbWaitedAnswers << "\n";
+//     vector<Cell3DPosition>::iterator it =
+//             find(childrenPositions.begin(), childrenPositions.end(), data->fromMMPosition);
+//     if(data->isChild and it == childrenPositions.end()) {
+//         childrenPositions.push_back(data->fromMMPosition);
+//     } else if(not data->isChild){  
+//         if(it != childrenPositions.end()) {
+//             childrenPositions.erase(it);
+//         }
+//     }
+//     if(nbWaitedAnswers == 0) {
+//         if(parentPosition == Cell3DPosition(-1,-1,-1) and module->position == GC->position) {
+//             cerr << module->blockId << ": Coordination Tree is Built\n";
+//             reconfigurationStep = MAXFLOW;
             
-            for (auto block : BaseSimulator::getWorld()->buildingBlocksMap) {
-                RePoStBlockCode *MMblock = static_cast<RePoStBlockCode*>(block.second->blockCode);
-                if (MMblock->isPotentialSource() and
-                    MMblock->seedPosition == MMblock->module->position and
-                    MMblock->childrenPositions.empty()) {
+//             for (auto block : BaseSimulator::getWorld()->buildingBlocksMap) {
+//                 RePoStBlockCode *MMblock = static_cast<RePoStBlockCode*>(block.second->blockCode);
+//                 if (MMblock->isPotentialSource() and
+//                     MMblock->seedPosition == MMblock->module->position and
+//                     MMblock->childrenPositions.empty()) {
 
-                    MMblock->isSource = true;
-                    cerr << MMblock->MMPosition << ": is source\n";
-                    // VS_ASSERT(mainPathState == NONE);
-                    MMblock->state = ACTIVE;
-                    MMblock->mainPathState = BFS;
-                    MMblock->mainPathIn = MMblock->MMPosition;
-                    MMblock->mainPathsOld.push_back(MMblock->MMPosition);
-                    for (auto p : MMblock->getAdjacentMMSeeds()) {
-                        // cerr << MMPosition << ": " << p << endl;
-                        RePoStBlockCode* toSeed = static_cast<RePoStBlockCode*>(
-                            BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode);
-                        MMblock->deficit++;
-                        MMblock->sendMessage(
-                            "BFS msg",
-                            new MessageOf<BFSdata>(BFS_MSG_ID, BFSdata(MMblock->MMPosition, MMblock->MMPosition, toSeed->MMPosition)),
-                            MMblock->interfaceTo(MMblock->MMPosition, toSeed->MMPosition), 100, 200);
-                    }
-                }
-                if (MMblock->isPotentialDestination() and MMblock->seedPosition == MMblock->module->position) {
-                    if(find(destinations.begin(), destinations.end(), MMblock->destinationOut) == destinations.end()){
-                        cerr << MMblock->MMPosition << ": is destination\n";
-                        MMblock->isDestination = true;
-                        destinations.push_back(MMblock->destinationOut);
-                        // if (MMblock->shapeState == FRONTBACK) {
-                        //     for (auto p : FrontBackMM) {
-                        //         static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()
-                        //             ->getBlockByPosition(MMblock->seedPosition + p)->blockCode)
-                        //             ->isDestination = true;
-                        //     }
-                        // } else {
-                        //     for (auto p : BackFrontMM) {
-                        //       if(lattice->cellHasBlock(MMblock->seedPosition+p))
-                        //        static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()
-                        //             ->getBlockByPosition(MMblock->seedPosition + p)->blockCode)
-                        //             ->isDestination = true;
-                        //     }
-                        // }
-                    }
-                }
-            }
-            start_wave();
-            switchModulesColors();
-        } else {
-            Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(parentPosition);
-            sendMessage(
-                "Back msg",
-                new MessageOf<Backdata>(BACK_MSG_ID, Backdata(MMPosition, parentPosition, true)),
-                interfaceTo(MMPosition, parentPosition), 100, 200);
-        }
-    }
-}
+//                     MMblock->isSource = true;
+//                     cerr << MMblock->MMPosition << ": is source\n";
+//                     // VS_ASSERT(mainPathState == NONE);
+//                     MMblock->state = ACTIVE;
+//                     MMblock->mainPathState = BFS;
+//                     MMblock->mainPathIn = MMblock->MMPosition;
+//                     MMblock->mainPathsOld.push_back(MMblock->MMPosition);
+//                     for (auto p : MMblock->getAdjacentMMSeeds()) {
+//                         // cerr << MMPosition << ": " << p << endl;
+//                         RePoStBlockCode* toSeed = static_cast<RePoStBlockCode*>(
+//                             BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode);
+//                         MMblock->deficit++;
+//                         MMblock->sendMessage(
+//                             "BFS msg",
+//                             new MessageOf<BFSdata>(BFS_MSG_ID, BFSdata(MMblock->MMPosition, MMblock->MMPosition, toSeed->MMPosition)),
+//                             MMblock->interfaceTo(MMblock->MMPosition, toSeed->MMPosition), 100, 200);
+//                     }
+//                 }
+//                 if (MMblock->isPotentialDestination() and MMblock->seedPosition == MMblock->module->position) {
+//                     if(find(destinations.begin(), destinations.end(), MMblock->destinationOut) == destinations.end()){
+//                         cerr << MMblock->MMPosition << ": is destination\n";
+//                         MMblock->isDestination = true;
+//                         destinations.push_back(MMblock->destinationOut);
+//                         // if (MMblock->shapeState == FRONTBACK) {
+//                         //     for (auto p : FrontBackMM) {
+//                         //         static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()
+//                         //             ->getBlockByPosition(MMblock->seedPosition + p)->blockCode)
+//                         //             ->isDestination = true;
+//                         //     }
+//                         // } else {
+//                         //     for (auto p : BackFrontMM) {
+//                         //       if(lattice->cellHasBlock(MMblock->seedPosition+p))
+//                         //        static_cast<MetaModuleBlockCode*>(BaseSimulator::getWorld()
+//                         //             ->getBlockByPosition(MMblock->seedPosition + p)->blockCode)
+//                         //             ->isDestination = true;
+//                         //     }
+//                         // }
+//                     }
+//                 }
+//             }
+//             start_wave();
+//             switchModulesColors();
+//         } else {
+//             Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(parentPosition);
+//             sendMessage(
+//                 "Back msg",
+//                 new MessageOf<Backdata>(BACK_MSG_ID, Backdata(MMPosition, parentPosition, true)),
+//                 interfaceTo(MMPosition, parentPosition), 100, 200);
+//         }
+//     }
+//}
 
 void RePoStBlockCode::handleGoTermMessage(std::shared_ptr<Message> _msg,
                                                   P2PNetworkInterface* sender) {
@@ -647,7 +652,10 @@ void RePoStBlockCode::start_wave() {
     nbWaitedAnswers = 0;
     for (auto child : childrenPositions) {
         Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(child);
-        sendMessage("GoTerm Msg", new MessageOf<FromToMsg>(GOTERM_MSG_ID, FromToMsg(MMPosition, child)),
+        // sendHandleableMessage(new GoTermMessage(MMPosition, child), interfaceTo(MMPosition, child),
+        //                       100, 200);
+        sendMessage("GoTerm Msg", new MessageOf<FromToMsg>(GOTERM_MSG_ID, FromToMsg(MMPosition,
+        child)),
                     interfaceTo(MMPosition, child), 100, 200);
         nbWaitedAnswers++;
     }
@@ -679,7 +687,7 @@ void RePoStBlockCode::handleCoordinateMessage(std::shared_ptr<Message> _msg,
         } 
         if(bridgeStop) return;
         probeGreenLight();
-    } else {        
+    } else {    
         if(module->getInterface(nearestPositionTo(coordinateData->position, sender))->isConnected()) {
             sendMessage("Coordinate Msg1",
                      new MessageOf<Coordinate>(COORDINATE_MSG_ID, *coordinateData),
@@ -692,16 +700,17 @@ void RePoStBlockCode::handleCoordinateMessage(std::shared_ptr<Message> _msg,
     }
 }
 
-void RePoStBlockCode::  handleCoordinateBackMessage(std::shared_ptr<Message> _msg,
+void RePoStBlockCode::handleCoordinateBackMessage(std::shared_ptr<Message> _msg,
                                                P2PNetworkInterface* sender) {
     MessageOf<CoordinateBack> *msg = static_cast<MessageOf<CoordinateBack>*>(_msg.get());
     CoordinateBack *coordinateBackData = msg->getData();
-    console << "Received coordinateBack from: " << sender->getConnectedBlockId() << " " << coordinateBackData->coordinatorPosition << "\n";
-    RePoStBlockCode* senderMM = static_cast<RePoStBlockCode*>(
-        BaseSimulator::getWorld()->getBlockById(sender->getConnectedBlockId())->blockCode);
-    if(senderMM->sendingCoordinateBack) {
-            senderMM->sendingCoordinateBack = false;
-    } 
+    //console << "Received coordinateBack from: " << sender->getConnectedBlockId() << " " << coordinateBackData->coordinatorPosition << "\n";
+    
+    // RePoStBlockCode* senderMM = static_cast<RePoStBlockCode*>(
+    //     BaseSimulator::getWorld()->getBlockById(sender->getConnectedBlockId())->blockCode);
+    // if(senderMM->sendingCoordinateBack) {
+    //         senderMM->sendingCoordinateBack = false;
+    // } 
     if(module->position == coordinateBackData->coordinatorPosition) {
         console << "mvt_it: " << mvt_it << "\n";
         console << "steps: " << coordinateBackData->steps << "\n";
@@ -807,7 +816,7 @@ void RePoStBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
     MessageOf<PLS>* msg = static_cast<MessageOf<PLS>*>(_msg.get());
     Cell3DPosition srcPos = msg->getData()->srcPos;
     Cell3DPosition targetPos = msg->getData()->targetPos;
-    console << "Received PLS from: " << sender->getConnectedBlockId() << srcPos <<',' << targetPos << "\n";
+    //console << "Received PLS from: " << sender->getConnectedBlockId() << srcPos <<',' << targetPos << "\n";
     if(movingState != MOVING) {
         bool nextToSender = isAdjacentToPosition(srcPos);
         bool nextToTarget = isAdjacentToPosition(targetPos);
@@ -901,7 +910,7 @@ void RePoStBlockCode::handleGLOMessage(std::shared_ptr<Message> _msg,
     MessageOf<PLS> *msg = static_cast<MessageOf<PLS>*>(_msg.get());
     Cell3DPosition srcPos = msg->getData()->srcPos;
     Cell3DPosition targetPos = msg->getData()->targetPos;
-    console << "Received GLO from: " << sender->getConnectedBlockId() << "\n";
+    //console << "Received GLO from: " << sender->getConnectedBlockId() << "\n";
     if (!rotating) { // module is pivot
         bool nextToDest = isAdjacentToPosition(targetPos);
         P2PNetworkInterface* itf;
@@ -960,7 +969,7 @@ void RePoStBlockCode::handleGLOMessage(std::shared_ptr<Message> _msg,
 void RePoStBlockCode::handleFTRMessage(std::shared_ptr<Message> _msg,
                                                P2PNetworkInterface* sender) {
     MessageOf<Cell3DPosition>* msg = static_cast<MessageOf<Cell3DPosition>*>(_msg.get());
-    console << "Received FTR from " << sender->getConnectedBlockId() << "\n";
+    //console << "Received FTR from " << sender->getConnectedBlockId() << "\n";
     Cell3DPosition finalPos = *msg->getData();
     VS_ASSERT(lattice->cellsAreAdjacent(module->position, finalPos));
     if (not greenLightIsOn) {
@@ -1199,7 +1208,7 @@ void RePoStBlockCode::handleBFSMessage(std::shared_ptr<Message> _msg,
     console << "Rec. BFS <" << data.MMPosition << ", " << data.fromMMPosition << ", " << data.toMMPosition << "> from "
             << sender->getConnectedBlockId() << "\n";
     if(module->position != getSeedPositionFromMMPosition(data.toMMPosition)) {
-        //forward the message to seed target
+        //forward the message to GC target
         sendMessage("BFS msg", new MessageOf<BFSdata>(BFS_MSG_ID, data),
                     interfaceTo(data.fromMMPosition, data.toMMPosition), 100, 200);
         return;
@@ -1922,8 +1931,8 @@ Cell3DPosition RePoStBlockCode::nextInBorder(P2PNetworkInterface* sender = nullp
 
 Cell3DPosition RePoStBlockCode::getSeedPositionFromMMPosition(Cell3DPosition &MMPos) {
     Cell3DPosition seedPos = Cell3DPosition();
-    seedPos.set(seed->position.pt[0] + (MMPos.pt[0] * 4), seed->position.pt[1] + (MMPos.pt[1] * 3),
-                seed->position.pt[2] + (MMPos.pt[2] * 4));
+    seedPos.set(GC->position.pt[0] + (MMPos.pt[0] * 4), GC->position.pt[1] + (MMPos.pt[1] * 3),
+                GC->position.pt[2] + (MMPos.pt[2] * 4));
     if (MMPos.pt[2] % 2 != 0) 
         seedPos =  seedPos.offsetY(-1);
     return seedPos;
@@ -1962,6 +1971,7 @@ P2PNetworkInterface * RePoStBlockCode::interfaceTo(Cell3DPosition& fromMM, Cell3
     } else {
         VS_ASSERT(false);
     }
+    VS_ASSERT(module->getInterface(nextPos + fromSeedPosition));
     return module->getInterface(nextPos + fromSeedPosition);
 
 }
@@ -2013,7 +2023,7 @@ void RePoStBlockCode::onMotionEnd() {
 
                     cerr << "REINITIALIZE" << endl;
                     reinitialize();
-                    RePoStBlockCode* seedMM = static_cast<RePoStBlockCode*>(seed->blockCode);
+                    RePoStBlockCode* seedMM = static_cast<RePoStBlockCode*>(GC->blockCode);
                     reconfigurationStep = SRCDEST;
                     nbOfIterations++;
                     seedMM->nbWaitedAnswers = 0;
@@ -2023,10 +2033,12 @@ void RePoStBlockCode::onMotionEnd() {
                             static_cast<RePoStBlockCode*>(
                                 BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
                                 ->MMPosition;
-                        seedMM->sendMessage(
-                            "Go msg",
-                            new MessageOf<GOdata>(GO_MSG_ID, GOdata(seedMM->MMPosition,toMMPosition, seedMM->distance)),
-                            seedMM->interfaceTo(seedMM->MMPosition, toMMPosition), 100, 200);
+                        seedMM->sendHandleableMessage(new GoMessage(seedMM->MMPosition, toMMPosition, seedMM->distance),
+                        seedMM->interfaceTo(seedMM->MMPosition, toMMPosition), 100, 200);
+                        // seedMM->sendMessage(
+                        //     "Go msg",
+                        //     new MessageOf<GOdata>(GO_MSG_ID, GOdata(seedMM->MMPosition,toMMPosition, seedMM->distance)),
+                        //     seedMM->interfaceTo(seedMM->MMPosition, toMMPosition), 100, 200);
                         seedMM->nbWaitedAnswers++;
                     }
                     
@@ -2037,13 +2049,27 @@ void RePoStBlockCode::onMotionEnd() {
     }
 }
 
+int RePoStBlockCode::sendHandleableMessage(HandleableMessage* msg, P2PNetworkInterface* dest,
+                                           Time t0, Time dt) {
+    return BlockCode::sendMessage(msg, dest, t0, dt);
+}
+
 void RePoStBlockCode::processLocalEvent(EventPtr pev) {
     std::shared_ptr<Message> message;
     stringstream info;
     switch (pev->eventType) {
+  
         case EVENT_RECEIVE_MESSAGE: {
             message =
                 (std::static_pointer_cast<NetworkInterfaceReceiveEvent>(pev))->message;
+            if(message->isMessageHandleable()) {
+                std::shared_ptr<HandleableMessage> hMsg =
+                    (std::static_pointer_cast<HandleableMessage>(message));
+                console << " received " << hMsg->getName() << " from "
+                        << message->sourceInterface->hostBlock->blockId
+                        << " at " << getScheduler()->now() << "\n";
+                hMsg->handle(this);
+            }
             if(message->type >= 1008 and message->type <= 1013 and module->position == seedPosition) {
                 state = ACTIVE;
                 cont_passive = false;
@@ -2070,24 +2096,24 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
         return;
     } 
     switch (pev->eventType) {
-        // case EVENT_RECEIVE_MESSAGE: {
-        //     message =
-        //         (std::static_pointer_cast<NetworkInterfaceReceiveEvent>(pev))->message;
-        //     if(message->type >= 1008 and message->type <= 1013 and module->position == seedPosition) {
-        //         state = ACTIVE;
-        //         cont_passive = false;
-        //         Cell3DPosition fromMMPosition;
-        //         if(message->type == 1008) {
-        //             MessageOf<BFSdata>* msg = static_cast<MessageOf<BFSdata>*>(message.get());
-        //             fromMMPosition = msg->getData()->fromMMPosition;
-        //         } else {
-        //             MessageOf<MaxFlowMsgData>* msg = static_cast<MessageOf<MaxFlowMsgData>*>(message.get());
-        //             fromMMPosition = msg->getData()->fromMMPosition;
-        //         }
-        //         Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(fromMMPosition);
-        //         sendMessage("Ack Msg", new MessageOf<Cell3DPosition>(ACK_MSG_ID, fromMMPosition), interfaceTo(toSeedPosition), 100, 200);
-        //     }
-        // } break;
+        case EVENT_RECEIVE_MESSAGE: {
+            // message =
+            //     (std::static_pointer_cast<NetworkInterfaceReceiveEvent>(pev))->message;
+            // if(message->type >= 1008 and message->type <= 1013 and module->position == seedPosition) {
+            //     state = ACTIVE;
+            //     cont_passive = false;
+            //     Cell3DPosition fromMMPosition;
+            //     if(message->type == 1008) {
+            //         MessageOf<BFSdata>* msg = static_cast<MessageOf<BFSdata>*>(message.get());
+            //         fromMMPosition = msg->getData()->fromMMPosition;
+            //     } else {
+            //         MessageOf<MaxFlowMsgData>* msg = static_cast<MessageOf<MaxFlowMsgData>*>(message.get());
+            //         fromMMPosition = msg->getData()->fromMMPosition;
+            //     }
+            //     Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(fromMMPosition);
+            //     sendMessage("Ack Msg", new MessageOf<Cell3DPosition>(ACK_MSG_ID, fromMMPosition), interfaceTo(toSeedPosition), 100, 200);
+            // }
+        } break;
 
         case EVENT_ROTATION3D_START: {
             VS_ASSERT(module->pivot);
@@ -2179,7 +2205,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                     if (!rotating or module->getState() == BuildingBlock::State::MOVING) return;
                     // VS_ASSERT(++notFindingPivotCount < 10);
                     VS_ASSERT(operation->localRules.get());
-                    probeGreenLight();  // the seed starts the algorithm
+                    probeGreenLight();  // the GC starts the algorithm
                     // module->setColor(MAGENTA);
                 } break;
 
@@ -2538,7 +2564,7 @@ void RePoStBlockCode::switchModulesColors() {
     // color sources in RED, destinations in GREEN in other MMs in White
     for(auto id_block: BaseSimulator::getWorld()->buildingBlocksMap) {
         RePoStBlockCode* block = static_cast<RePoStBlockCode*>(id_block.second->blockCode);
-        //if(block->module->position == Cell3DPosition(20,25,58)) continue;
+        if(block->module->position == Cell3DPosition(12,9,24)) continue;
         if(static_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)->isSource) {
             block->module->setColor(RED);
         } else if(block->isDestination or static_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)->isDestination) {

@@ -16,7 +16,7 @@ APPDIR = ../../applicationsBin/$(current_dir)
 #
 # SRCS contains all the sources of your codeBlocks
 # SRCS contains all the sources of your codeBlocks
-SRCS = rePoSt.cpp rePoStBlockCode.cpp init.cpp operations.cpp
+SRCS = rePoSt.cpp rePoStBlockCode.cpp init.cpp operations.cpp initMessages.cpp
 #
 # OUT is the output binary, where APPDIR is its enclosing directory
 OUT = $(APPDIR)/rePoSt

@@ -96,7 +96,7 @@ void Init::buildMMon(Catoms3DBlock *s, Direction pos) {
     Cell3DPosition neighborSeedPos;
      RePoStBlockCode *block = static_cast<RePoStBlockCode*>(s->blockCode);
     getNeighborMMSeedPos(s->position, block->MMPosition, pos, neighborSeedPos);
-    BaseSimulator::getWorld()->addBlock(0, seed->buildNewBlockCode, neighborSeedPos, Color(RED));
+    BaseSimulator::getWorld()->addBlock(0, RePoStBlockCode::GC->buildNewBlockCode, neighborSeedPos, Color(RED));
     RePoStBlockCode* neighborSeed = static_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(neighborSeedPos)->blockCode);
    
     if(block->getShapeState() == FRONTBACK) {

@@ -74,6 +74,11 @@ int BlockCode::sendMessage(HandleableMessage*msg,
         throw InterfaceNotConnectedException(this, msg, dest);
     }
 
+    if (not dest->hostBlock) {
+        VS_ASSERT(false);
+        throw InterfaceNotConnectedException(this, msg, dest);
+    }
+
     console << " sends " << msg->getName() << " to "
             << dest->getConnectedBlockId() << " at " << t1 << "\n";
 #ifdef DEBUG_MESSAGES
@@ -95,6 +100,11 @@ int BlockCode::sendMessage(const char*msgString, Message*msg,
         // + (Time)(((double)dt*hostBlock->getRandomUint())/((double)uintRNG::max()));
 
     if (not dest->connectedInterface) {
+        throw InterfaceNotConnectedException(this, msg, dest);
+    }
+
+    if (not dest->hostBlock) {
+        VS_ASSERT(false);
         throw InterfaceNotConnectedException(this, msg, dest);
     }
 

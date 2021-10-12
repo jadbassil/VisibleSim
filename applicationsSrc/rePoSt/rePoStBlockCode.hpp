@@ -121,7 +121,7 @@ static vector<array<int, 4>> initialMap;
 static vector<array<int, 4>> targetMap;
 static bool showSrcAndDst = false;
 
-static Catoms3DBlock *seed;
+
 static RenconfigurationStep reconfigurationStep;
 
 static int NbOfStreamlines = 0;
@@ -135,7 +135,7 @@ class RePoStBlockCode : public Catoms3DBlockCode {
 private:
     
 public:
-
+    static Catoms3DBlock *GC;
 /* ----------------------- COORDINATION TREE VARIABLES ---------------------- */
     Cell3DPosition parentPosition = Cell3DPosition(-1,-1,-1);
     vector<Cell3DPosition> childrenPositions;
@@ -309,12 +309,13 @@ public:
      */
     void onMotionEnd() override;
 
+    int sendHandleableMessage(HandleableMessage *msg, P2PNetworkInterface *dest, Time t0, Time dt);
     /**
      * @brief Sample message handler for this instance of the blockcode
      * @param _msg Pointer to the message received by the module, requires casting
      * @param sender Connector of the module that has received the message and that is connected to the sender */
-    void handleGoMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-    void handleBackMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+    // void handleGoMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+    //void handleBackMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     void handleGoTermMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     void handleBackTermMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     void handleAckMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);

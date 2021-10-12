@@ -125,6 +125,7 @@ public:
     void send();
     void connect(P2PNetworkInterface *ni);
     int getConnectedBlockId() {
+        cerr << hostBlock->blockId << "\n";
         return (connectedInterface!=NULL && connectedInterface->hostBlock!=NULL)?connectedInterface->hostBlock->blockId:-1;
     }
     bID getConnectedBlockBId() {
