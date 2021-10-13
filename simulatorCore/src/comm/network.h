@@ -62,6 +62,7 @@ public:
      * @example virtual Message* clone() { return new MyMessageType(*this); }*/
     virtual Message* clone() const;
     virtual bool isMessageHandleable() const { return false; };
+    virtual bool mustSendAck() const {return false; };
 };
 
 class HandleableMessage:public Message {
@@ -125,7 +126,6 @@ public:
     void send();
     void connect(P2PNetworkInterface *ni);
     int getConnectedBlockId() {
-        cerr << hostBlock->blockId << "\n";
         return (connectedInterface!=NULL && connectedInterface->hostBlock!=NULL)?connectedInterface->hostBlock->blockId:-1;
     }
     bID getConnectedBlockBId() {

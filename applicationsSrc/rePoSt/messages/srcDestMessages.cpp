@@ -1,4 +1,5 @@
-#include "initMessages.hpp"
+#include "srcDestMessages.hpp"
+#include "maxFlowMessages.hpp"
 #include "rePoStBlockCode.hpp"
 #include "messages.hpp"
 
@@ -57,9 +58,7 @@ void GoMessage::handle(BaseSimulator::BlockCode *bc) {
                     BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
                     ->MMPosition;
             if(toMMPosition1 == fromMMPosition) continue;
-            rbc->sendMessage(
-                "Go msg",
-                new MessageOf<GOdata>(GO_MSG_ID, GOdata(rbc->MMPosition, toMMPosition1, rbc->distance)),
+            rbc->sendHandleableMessage(new GoMessage(rbc->MMPosition, toMMPosition1, rbc->distance),
                 rbc->interfaceTo(rbc->MMPosition, toMMPosition1), 100, 200);
             rbc->nbWaitedAnswers++;
         }
@@ -116,14 +115,16 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
                     MMblock->mainPathIn = MMblock->MMPosition;
                     MMblock->mainPathsOld.push_back(MMblock->MMPosition);
                     for (auto p : MMblock->getAdjacentMMSeeds()) {
-                        // cerr << MMPosition << ": " << p << endl;
+                        cerr << "MMPosition" << ": " << p << endl;
                         RePoStBlockCode* toSeed = static_cast<RePoStBlockCode*>(
                             BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode);
                         MMblock->deficit++;
-                        MMblock->sendMessage(
-                            "BFS msg",
-                            new MessageOf<BFSdata>(BFS_MSG_ID, BFSdata(MMblock->MMPosition, MMblock->MMPosition, toSeed->MMPosition)),
-                            MMblock->interfaceTo(MMblock->MMPosition, toSeed->MMPosition), 100, 200);
+                        MMblock->sendHandleableMessage(new BFSMessage(MMblock->MMPosition, toSeed->MMPosition, MMblock->MMPosition),
+                             MMblock->interfaceTo(MMblock->MMPosition, toSeed->MMPosition), 100, 200);
+                        // MMblock->sendMessage(
+                        //     "BFS msg",
+                        //     new MessageOf<BFSdata>(BFS_MSG_ID, BFSdata(MMblock->MMPosition, MMblock->MMPosition, toSeed->MMPosition)),
+                        //     MMblock->interfaceTo(MMblock->MMPosition, toSeed->MMPosition), 100, 200);
                     }
                 }
                 if (MMblock->isPotentialDestination() and MMblock->seedPosition == MMblock->module->position) {
@@ -140,42 +141,6 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
             Cell3DPosition toSeedPosition = rbc->getSeedPositionFromMMPosition(rbc->parentPosition);
             rbc->sendHandleableMessage(new BackMessage(rbc->MMPosition, rbc->parentPosition, true), 
                 rbc->interfaceTo(rbc->MMPosition, rbc->parentPosition), 100, 200);
-        }
-    }
-}
-
-void GoTermMessage::handle(BaseSimulator::BlockCode *bc) {
-    RePoStBlockCode *rbc = static_cast<RePoStBlockCode*>(bc);
- 
-    Cell3DPosition toSeedPosition = rbc->getSeedPositionFromMMPosition(toMMPosition);
-    if (rbc->module->position != toSeedPosition) {
-        rbc->sendHandleableMessage(static_cast<HandleableMessage *>(this->clone()),
-                                   rbc->interfaceTo(fromMMPosition, toMMPosition), 100, 200);
-        // sendMessage("GoTerm Msg", new MessageOf<FromToMsg>(GOTERM_MSG_ID,
-        // FromToMsg(fromMMPosition, toMMPosition)),
-        //             interfaceTo(fromMMPosition, toMMPosition), 100, 200);
-        return;
-    }
-    rbc->nbWaitedAnswers = 0;
-    for (auto child : rbc->childrenPositions) {
-        Cell3DPosition toSeedPosition = rbc->getSeedPositionFromMMPosition(child);
-        rbc->sendHandleableMessage(new GoTermMessage(rbc->MMPosition, child), rbc->interfaceTo(rbc->MMPosition, child), 100, 200);
-        // sendMessage("GoTerm Msg", new MessageOf<FromToMsg>(GOTERM_MSG_ID, FromToMsg(MMPosition, child)),
-        //             interfaceTo(MMPosition, child), 100, 200);
-        rbc->nbWaitedAnswers++;
-    }
-    if(rbc->nbWaitedAnswers == 0) {
-        if(rbc->state == PASSIVE and rbc->deficit == 0) {
-            rbc->b = rbc->cont_passive;
-            Cell3DPosition parentSeedPosition = rbc->getSeedPositionFromMMPosition(rbc->parentPosition);
-            rbc->sendMessage("BackTerm Msg1",
-                        new MessageOf<pair<FromToMsg, bool>>(
-                            BACKTERM_MSG_ID, make_pair(FromToMsg(rbc->MMPosition, rbc->parentPosition), rbc->b)),
-                        rbc->interfaceTo(rbc->MMPosition, rbc->parentPosition), 100, 200);
-            rbc->cont_passive = true;
-        } else {
-            getScheduler()->schedule(
-                new InterruptionEvent(getScheduler()->now() + 500, rbc->module, IT_MODE_TERMINATION));
         }
     }
 }
