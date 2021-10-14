@@ -311,29 +311,6 @@ public:
     void onMotionEnd() override;
 
     int sendHandleableMessage(HandleableMessage *msg, P2PNetworkInterface *dest, Time t0, Time dt);
-    /**
-     * @brief Sample message handler for this instance of the blockcode
-     * @param _msg Pointer to the message received by the module, requires casting
-     * @param sender Connector of the module that has received the message and that is connected to the sender */
-    // void handleGoMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-    //void handleBackMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-    // void handleGoTermMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-    // void handleBackTermMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-    //void handleAckMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-
-    void handleCoordinateMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-    void handleCoordinateBackMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-
-    void handlePLSMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-    void handleGLOMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-    void handleFTRMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-
-    //void handleBFSMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-    // void handleConfirmEdgeMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-    //void handleConfirmPathMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-    //void handleConfirmStreamlineMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-    //void handleAvailableMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-    //void handleCutOffMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
 
     /// Advanced blockcode handlers below
 

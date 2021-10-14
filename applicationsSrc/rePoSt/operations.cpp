@@ -1,7 +1,7 @@
 #include "rePoStBlockCode.hpp"
-#include "messages.hpp"
 #include "operations.hpp"
 #include "init.hpp"
+#include "messages/transportMessages.hpp"
 
 /************************************************************************
  *************************  OPERATION  **********************************
@@ -191,12 +191,10 @@ void Fill_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const 
                 if(rbc->transferCount == 3) {
                     Cell3DPosition targetModule =
                         rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
-                    rbc->sendMessage(
-                    "Coordinate Msg",
-                    new MessageOf<Coordinate>(COORDINATE_MSG_ID,
-                                            Coordinate(rbc->operation, targetModule,
-                                                        rbc->module->position, rbc->mvt_it)),
-                    rbc->module->getInterface(pos), 100, 200);
+                    rbc->sendHandleableMessage(
+                        new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                              rbc->mvt_it),
+                        rbc->module->getInterface(pos), 100, 200);
                     setMvtItToNextModule(bc);
                 }
             }
@@ -213,12 +211,10 @@ void Fill_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const 
                      setMvtItToNextModule(bc);
                 }
             }
-            rbc->sendMessage(
-                "Coordinate Msg",
-                new MessageOf<Coordinate>(COORDINATE_MSG_ID,
-                                          Coordinate(rbc->operation, targetModule,
-                                                     rbc->module->position, rbc->mvt_it)),
-                rbc->module->getInterface(pos), 100, 200);
+            rbc->sendHandleableMessage(
+                        new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                              rbc->mvt_it),
+                        rbc->module->getInterface(pos), 100, 200);
             if( rbc->transferCount < 9) {
                 setMvtItToNextModule(bc);
             } 
@@ -230,12 +226,10 @@ void Fill_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const 
                 if(rbc->transferCount >= 5) return;
                 Cell3DPosition targetModule =
                     rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
-                rbc->sendMessage(
-                    "Coordinate Msg",
-                    new MessageOf<Coordinate>(COORDINATE_MSG_ID,
-                                              Coordinate(rbc->operation, targetModule,
-                                                         rbc->module->position, rbc->mvt_it)),
-                    rbc->module->getInterface(pos), 100, 200);
+                rbc->sendHandleableMessage(
+                        new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                              rbc->mvt_it),
+                        rbc->module->getInterface(pos), 100, 200);
                 if (rbc->transferCount < 9 and rbc->transferCount != 4) {
                     setMvtItToNextModule(bc);
                 }             
@@ -378,12 +372,10 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                     // skip to avoid unsupported motion
                     return;
                 }
-                rbc->sendMessage(
-                    "Coordinate Msg",
-                    new MessageOf<Coordinate>(COORDINATE_MSG_ID,
-                                              Coordinate(rbc->operation, targetModule,
-                                                         rbc->module->position, rbc->mvt_it)),
-                    rbc->module->getInterface(pos), 100, 200);
+                rbc->sendHandleableMessage(
+                        new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                              rbc->mvt_it),
+                        rbc->module->getInterface(pos), 100, 200);
 
                 if (rbc->transferCount <= 2) {
                     setMvtItToNextModule(bc);
@@ -408,12 +400,10 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                 
                 Cell3DPosition targetModule =
                     rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
-                rbc->sendMessage(
-                    "Coordinate Msg",
-                    new MessageOf<Coordinate>(COORDINATE_MSG_ID,
-                                              Coordinate(rbc->operation, targetModule,
-                                                         rbc->module->position, rbc->mvt_it)),
-                    rbc->module->getInterface(pos), 100, 200);
+                rbc->sendHandleableMessage(
+                        new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                              rbc->mvt_it),
+                        rbc->module->getInterface(pos), 100, 200);
                 if (rbc->transferCount <= 2) {
                     setMvtItToNextModule(bc);
                 } else if (rbc->transferCount < 10) {
@@ -439,12 +429,10 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                 Cell3DPosition targetModule =
                     rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
                 rbc->console << "targetModule: " << targetModule << "\n";
-                rbc->sendMessage(
-                    "Coordinate Msg",
-                    new MessageOf<Coordinate>(COORDINATE_MSG_ID,
-                                              Coordinate(rbc->operation, targetModule,
-                                                         rbc->module->position, rbc->mvt_it)),
-                    rbc->module->getInterface(pos), 100, 200);
+                rbc->sendHandleableMessage(
+                        new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                              rbc->mvt_it),
+                        rbc->module->getInterface(pos), 100, 200);
             }
         } break;
 
@@ -462,25 +450,20 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                     }
                     Cell3DPosition targetModule =
                         rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
-                    rbc->sendMessage(
-                        "Coordinate Msg",
-                        new MessageOf<Coordinate>(COORDINATE_MSG_ID,
-                                                  Coordinate(rbc->operation, targetModule,
-                                                             rbc->module->position, rbc->mvt_it)),
-                        rbc->module->getInterface(rbc->nearestPositionTo(targetModule)), 100,
-                        200);
+                    rbc->sendHandleableMessage(
+                        new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                              rbc->mvt_it),
+                        rbc->module->getInterface(targetModule), 100, 200);
 
                     if (rbc->transferCount <= 3) {
                         setMvtItToNextModule(bc);                        
                         if (rbc->transferCount == 3) {
                             targetModule =
                                 rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
-                            rbc->sendMessage("Coordinate Msg",
-                                              new MessageOf<Coordinate>(
-                                                  COORDINATE_MSG_ID,
-                                                  Coordinate(rbc->operation, targetModule,
-                                                             rbc->module->position, rbc->mvt_it)),
-                                              rbc->module->getInterface(pos), 100, 200);
+                            rbc->sendHandleableMessage(
+                                new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                                    rbc->mvt_it),
+                                rbc->module->getInterface(pos), 100, 200);  
                         }
                     } else if (rbc->transferCount < 10) {
                         rbc->mvt_it = 7;
@@ -500,14 +483,10 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                             rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
                         if(rbc->transferCount == 10)
                             return;
-                        rbc->sendMessage(
-                            "Coordinate Msg",
-                            new MessageOf<Coordinate>(
-                                COORDINATE_MSG_ID,
-                                Coordinate(rbc->operation, targetModule, rbc->module->position,
-                                           rbc->mvt_it)),
-                            rbc->module->getInterface(rbc->nearestPositionTo(targetModule)), 100,
-                            200);
+                        rbc->sendHandleableMessage(
+                            new CoordinateMessage(rbc->operation, targetModule,
+                                                  rbc->module->position, rbc->mvt_it),
+                            rbc->module->getInterface(targetModule), 100, 200);
                         if(rbc->transferCount < 8)
                             setMvtItToNextModule(bc);
                     }
@@ -525,13 +504,10 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                         //Wait for coordinateBack to avoid blocking
                         return; 
                     }
-                    rbc->sendMessage(
-                        "Coordinate Msg",
-                        new MessageOf<Coordinate>(COORDINATE_MSG_ID,
-                                                  Coordinate(rbc->operation, targetModule,
-                                                             rbc->module->position, rbc->mvt_it)),
-                        rbc->module->getInterface(rbc->nearestPositionTo(targetModule)), 100,
-                        200);
+                    rbc->sendHandleableMessage(
+                        new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                              rbc->mvt_it),
+                        rbc->module->getInterface(targetModule), 100, 200);
                     if (rbc->transferCount < 2) {
                         setMvtItToNextModule(bc);
                     } else if (rbc->transferCount < 11) {
@@ -562,12 +538,8 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
               getMMShape() == BACKFRONT and comingFromBack and
               (direction == Direction::BACK or
                direction == Direction::FRONT)))) {  // when all modules passed the bridge
-            rbc->sendMessage(
-                "CoordinateBack Msg",
-                new MessageOf<CoordinateBack>(COORDINATEBACK_MSG_ID,
-                                              CoordinateBack(0, rbc->coordinatorPosition)),
-                rbc->module->getInterface(rbc->nearestPositionTo(rbc->coordinatorPosition)), 100,
-                200);
+               rbc->sendHandleableMessage(new CoordinateBackMessage(0, rbc->coordinatorPosition),
+                rbc->module->getInterface(rbc->nearestPositionTo(rbc->coordinatorPosition)), 100,200);
         }
     }
 }
@@ -644,9 +616,8 @@ bool Transfer_Operation::handleBridgeMovements(BaseSimulator::BlockCode* bc) {
         rbc->mvt_it++;
         rbc->movingState = IN_POSITION;
        // rbc->updateState();
-        rbc->sendMessage("CoordinateBack Msg3", 
-                        new MessageOf<CoordinateBack>(COORDINATEBACK_MSG_ID, CoordinateBack(1, rbc->coordinatorPosition)),
-                        rbc->module->getInterface(rbc->nearestPositionTo(rbc->coordinatorPosition)) ,100, 200);
+       rbc->sendHandleableMessage(new CoordinateBackMessage(1, rbc->coordinatorPosition),
+        rbc->module->getInterface(rbc->nearestPositionTo(rbc->coordinatorPosition)) ,100, 200);;
 
         rbc->module->getInterface(rbc->module->position.offsetY(-1))->isConnected()
             ? rbc->coordinatorPosition = rbc->module->position.offsetY(-1)
@@ -658,10 +629,8 @@ bool Transfer_Operation::handleBridgeMovements(BaseSimulator::BlockCode* bc) {
             static_cast<Transfer_Operation*>(coordinatorBlock->operation)->isComingFromBack()) {
             return true;
         }
-        rbc->sendMessage("CoordinateBack Msg4",
-                          new MessageOf<CoordinateBack>(
-                              COORDINATEBACK_MSG_ID, CoordinateBack(0, rbc->coordinatorPosition)),
-                          rbc->module->getInterface(rbc->coordinatorPosition), 100, 200);
+        rbc->sendHandleableMessage(new CoordinateBackMessage(0, rbc->coordinatorPosition),
+            rbc->module->getInterface(rbc->coordinatorPosition), 100, 200);
 
         return true;
     } else {
@@ -748,13 +717,10 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
                 setMvtItToNextModule(bc);
             }
         }
-
-        rbc->sendMessage(
-            "Coordinate Msg",
-            new MessageOf<Coordinate>(
-                COORDINATE_MSG_ID,
-                Coordinate(rbc->operation, targetModule, rbc->module->position, rbc->mvt_it)),
-            rbc->module->getInterface(pos), 100, 200);
+        rbc->sendHandleableMessage(
+                        new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                              rbc->mvt_it),
+                        rbc->module->getInterface(pos), 100, 200);
         setMvtItToNextModule(bc);
 
         rbc->console << "mvt_it: " << rbc->mvt_it << "\n";
@@ -765,12 +731,10 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
         getScheduler()->trace("transferCount: " + to_string(rbc->transferCount), rbc->module->blockId, Color(MAGENTA));
         Cell3DPosition targetModule =
             rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
-        rbc->sendMessage(
-            "Coordinate Msg",
-            new MessageOf<Coordinate>(
-                COORDINATE_MSG_ID,
-                Coordinate(rbc->operation, targetModule, rbc->module->position, rbc->mvt_it)),
-            rbc->module->getInterface(pos), 100, 200);
+        rbc->sendHandleableMessage(
+                        new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                              rbc->mvt_it),
+                        rbc->module->getInterface(pos), 100, 200);
         if(rbc->transferCount < 10)
             setMvtItToNextModule(bc);
     }
@@ -779,20 +743,13 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
         rbc->scheduler->trace("transferCount: " + to_string(rbc->transferCount),
                                rbc->module->blockId, Color(CYAN));
         if (direction == Direction::BACK and mmShape == FRONTBACK and rbc->transferCount == 27) {
-                rbc->sendMessage(
-                    "CoordinateBack Msg",
-                    new MessageOf<CoordinateBack>(COORDINATEBACK_MSG_ID,
-                                                  CoordinateBack(0, rbc->coordinatorPosition)),
+                rbc->sendHandleableMessage(new CoordinateBackMessage(0, rbc->coordinatorPosition),
                     rbc->interfaceTo(rbc->coordinatorPosition), 100, 200);
             }
         else if (direction == Direction::BACK and mmShape == BACKFRONT and
                  rbc->transferCount == 19) {
-            rbc->sendMessage(
-                "CoordinateBack Msg",
-                new MessageOf<CoordinateBack>(COORDINATEBACK_MSG_ID,
-                                              CoordinateBack(0, rbc->coordinatorPosition)),
-                rbc->interfaceTo(rbc->coordinatorPosition), 100,
-                200);
+                rbc->sendHandleableMessage(new CoordinateBackMessage(0, rbc->coordinatorPosition),
+                   rbc->interfaceTo(rbc->coordinatorPosition), 100,200 );
         }
     }
 }

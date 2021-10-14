@@ -195,8 +195,8 @@ class AvailableMessage : public HandleableMessage {
     virtual void handle(BaseSimulator::BlockCode*) override;
     virtual Message* clone() const override { return new AvailableMessage(*this); }
     virtual string getName() const override {
-        return "AvailableMessage{" + fromMMPosition.to_string() + ", " +
-               toMMPosition.to_string() + "}";
+        return "AvailableMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() +
+               "}";
     }
 };
 
@@ -218,11 +218,10 @@ class CutOffMessage : public HandleableMessage {
     virtual void handle(BaseSimulator::BlockCode*) override;
     virtual Message* clone() const override { return new CutOffMessage(*this); }
     virtual string getName() const override {
-        return "CutOffMessage{" + fromMMPosition.to_string() + ", " +
-               toMMPosition.to_string() + "}";
+        return "CutOffMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() +
+               "}";
     }
 };
-
 
 /* -------------------------------------------------------------------------- */
 

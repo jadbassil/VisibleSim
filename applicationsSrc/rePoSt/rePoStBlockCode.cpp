@@ -1,9 +1,9 @@
 #include "rePoStBlockCode.hpp"
 #include "init.hpp"
-#include "messages.hpp"
 #include "routing.hpp"
 #include "./messages/srcDestMessages.hpp"
 #include "./messages/maxFlowMessages.hpp"
+#include "./messages/transportMessages.hpp"
 #include <fstream>
 #include "robots/catoms3D/catoms3DMotionEngine.h"
 
@@ -16,24 +16,6 @@ RePoStBlockCode::RePoStBlockCode(Catoms3DBlock *host) : Catoms3DBlockCode(host) 
     // @warning Do not remove block below, as a blockcode with a NULL host might be created
     //  for command line parsing
     if (not host) return;
-
-    // Register callbacks to all messages
-    addMessageEventFunc2(COORDINATE_MSG_ID,
-                         std::bind(&RePoStBlockCode::handleCoordinateMessage, this,
-                                   std::placeholders::_1, std::placeholders::_2));
-    addMessageEventFunc2(COORDINATEBACK_MSG_ID,
-                         std::bind(&RePoStBlockCode::handleCoordinateBackMessage, this,
-                                   std::placeholders::_1, std::placeholders::_2));
-
-    addMessageEventFunc2(PLS_MSG_ID,
-                         std::bind(&RePoStBlockCode::handlePLSMessage, this,
-                                   std::placeholders::_1, std::placeholders::_2));
-    addMessageEventFunc2(GLO_MSG_ID,
-                         std::bind(&RePoStBlockCode::handleGLOMessage, this,
-                                   std::placeholders::_1, std::placeholders::_2));
-    addMessageEventFunc2(FTR_MSG_ID,
-                         std::bind(&RePoStBlockCode::handleFTRMessage, this,
-                                   std::placeholders::_1, std::placeholders::_2));
 
     // Set the module pointer
     module = static_cast<Catoms3DBlock*>(hostBlock);
@@ -252,10 +234,6 @@ void RePoStBlockCode::startup() {
             console<< toMMPosition << "\n";
             sendHandleableMessage(new GoMessage(MMPosition, toMMPosition, distance),
                                   interfaceTo(MMPosition, toMMPosition), 100, 200);
-            // sendMessage(
-            //     "Go msg",
-            //     new MessageOf<GOdata>(GO_MSG_ID, GOdata(MMPosition, toMMPosition, distance)),
-            //     interfaceTo(MMPosition, toMMPosition), 100, 200);
             nbWaitedAnswers++;
         }
     }
@@ -322,9 +300,6 @@ void RePoStBlockCode::start_wave() {
         Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(child);
         sendHandleableMessage(new GoTermMessage(MMPosition, child), interfaceTo(MMPosition, child),
                               100, 200);
-        // sendMessage("GoTerm Msg", new MessageOf<FromToMsg>(GOTERM_MSG_ID, FromToMsg(MMPosition,
-        // child)),
-        //             interfaceTo(MMPosition, child), 100, 200);
         nbWaitedAnswers++;
     }
 }
@@ -335,104 +310,6 @@ void RePoStBlockCode::return_wave(bool b) {
 
 /* -------------------------------------------------------------------------- */
 
-
-void RePoStBlockCode::handleCoordinateMessage(std::shared_ptr<Message> _msg,
-                                               P2PNetworkInterface* sender) {                                 
-    MessageOf<Coordinate>* msg = static_cast<MessageOf<Coordinate>*>(_msg.get());
-    Coordinate *coordinateData = msg->getData();
-    // console << "Received Coordinate Msg from: " << sender->getConnectedBlockId() 
-        // << " " << coordinateData->coordinatorPosition   << " " << coordinateData->position<< "\n";
-    
-    if(module->position == coordinateData->position) {
-        console << "Can start moving\n";
-        mvt_it = coordinateData->it; 
-        coordinatorPosition = coordinateData->coordinatorPosition;
-        operation = coordinateData->operation;
-        bool bridgeStop = false;
-        if(operation->isTransfer() or (operation->isDismantle() and static_cast<Dismantle_Operation*>(operation)->filled)) {
-            //Special logic to avoid unsupported motions of bridging modules
-            bridgeStop = static_cast<Transfer_Operation*>(operation)->handleBridgeMovements(this);
-        } 
-        if(bridgeStop) return;
-        probeGreenLight();
-    } else {    
-        if(module->getInterface(nearestPositionTo(coordinateData->position, sender))->isConnected()) {
-            sendMessage("Coordinate Msg1",
-                     new MessageOf<Coordinate>(COORDINATE_MSG_ID, *coordinateData),
-                     module->getInterface(nearestPositionTo(coordinateData->position, sender)), 100, 200);
-        } else {
-            sendMessage("Coordinate Msg2",
-                     new MessageOf<Coordinate>(COORDINATE_MSG_ID, *coordinateData),
-                     sender, 100, 200);
-        }
-    }
-}
-
-void RePoStBlockCode::handleCoordinateBackMessage(std::shared_ptr<Message> _msg,
-                                               P2PNetworkInterface* sender) {
-    MessageOf<CoordinateBack> *msg = static_cast<MessageOf<CoordinateBack>*>(_msg.get());
-    CoordinateBack *coordinateBackData = msg->getData();
-    //console << "Received coordinateBack from: " << sender->getConnectedBlockId() << " " << coordinateBackData->coordinatorPosition << "\n";
-    
-    // RePoStBlockCode* senderMM = static_cast<RePoStBlockCode*>(
-    //     BaseSimulator::getWorld()->getBlockById(sender->getConnectedBlockId())->blockCode);
-    // if(senderMM->sendingCoordinateBack) {
-    //         senderMM->sendingCoordinateBack = false;
-    // } 
-    if(module->position == coordinateBackData->coordinatorPosition) {
-        console << "mvt_it: " << mvt_it << "\n";
-        console << "steps: " << coordinateBackData->steps << "\n";
-
-        //Add the number of steps to get to the next module's movements
-        for(int i=0; i<coordinateBackData->steps; i++) {
-            mvt_it++;
-        }
-   
-        
-        if(mvt_it >= operation->localRules->size()) {
-            // operation ended
-            isCoordinator = false;
-            console << "Movement Done\n";
-            return;
-        }
-        if((*operation->localRules)[mvt_it].currentPosition + seedPosition == module->position) {
-            // The coordinator must start its motions (In Dismantle operations)
-            LocalMovement lmvt = (*operation->localRules)[mvt_it];
-            probeGreenLight();
-            return;
-        } 
-
-        if((*operation->localRules)[mvt_it-1].state == MOVING and operation->isTransfer()) {
-            operation->setMvtItToNextModule(module->blockCode);
-        }
-        console << mvt_it << ": Movement ended must switch to next one " 
-                << (*operation->localRules)[mvt_it].currentPosition << "\n";
-        Cell3DPosition targetModule = seedPosition + (*operation->localRules)[mvt_it].currentPosition;
-
-        if (lattice->cellsAreAdjacent(module->position, targetModule) and
-            not module->getInterface(targetModule)->isConnected()) {
-            // Received coordinateBack and no module is connected
-            // Must wait until the module arrives to the starting position
-            awaitingCoordinator = true;
-            getScheduler()->schedule(
-                new InterruptionEvent(getScheduler()->now() +
-                                      getRoundDuration(),
-                                      module, IT_MODE_TRANSFERBACK));
-            return;
-        }
-        sendMessage("Coordinate Msg", new MessageOf<Coordinate>(
-                COORDINATE_MSG_ID, Coordinate(operation, targetModule, module->position, mvt_it)),
-                module->getInterface(nearestPositionTo(targetModule)), 100, 200
-        );
-
-    } else { // Forward the message to the coordinator
-        sendMessage("CoordinateBack Msg1", 
-                    new MessageOf<CoordinateBack>(COORDINATEBACK_MSG_ID, *coordinateBackData),
-                    module->getInterface(
-                        nearestPositionTo(coordinateBackData->coordinatorPosition, sender)),
-                    100, 200);
-    }                     
-}
 
 void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition outPosition) {
     Direction direction;
@@ -477,182 +354,6 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
  /* -------------------------------------------------------------------------- */
  /*                             MOTION COORDINATION                            */
  /* -------------------------------------------------------------------------- */
-
-
-void RePoStBlockCode::handlePLSMessage(std::shared_ptr<Message> _msg,
-                                               P2PNetworkInterface* sender) {
-    MessageOf<PLS>* msg = static_cast<MessageOf<PLS>*>(_msg.get());
-    Cell3DPosition srcPos = msg->getData()->srcPos;
-    Cell3DPosition targetPos = msg->getData()->targetPos;
-    //console << "Received PLS from: " << sender->getConnectedBlockId() << srcPos <<',' << targetPos << "\n";
-    if(movingState != MOVING) {
-        bool nextToSender = isAdjacentToPosition(srcPos);
-        bool nextToTarget = isAdjacentToPosition(targetPos);
-        bool targetNextToSrc = false;
-        console << (module->getState() == BuildingBlock::State::ACTUATING) << "\n";
-
-        if (module->getState() == BuildingBlock::State::ACTUATING) {
-            getScheduler()->trace("light turned orange1", module->blockId, ORANGE);
-            if (moduleAwaitingGo) setGreenLight(true);
-            moduleAwaitingGo = true;
-            awaitingModulePos = srcPos;
-            awaitingModuleProbeItf = sender;
-            setGreenLight(false);
-            // module->setColor(DARKORANGE);
-            return;
-        }
-        Catoms3DBlock* targetLightNeighbor = findTargetLightAmongNeighbors(targetPos, srcPos, sender);
-        
-        if(targetLightNeighbor) { //Check if targetLightNeighbor has already received this msg
-            for(const auto cell: lattice->getActiveNeighborCells(targetLightNeighbor->position)) {
-                if(module->getInterface(cell) == sender or cell == module->position) continue;
-                if(lattice->cellsAreAdjacent(cell, srcPos)) {
-                    targetNextToSrc = true;
-                }
-            }
-            if(!targetNextToSrc) {
-                if(lattice->cellsAreAdjacent(targetLightNeighbor->position, srcPos)) {
-                    targetNextToSrc = true;
-                }
-            }
-            RePoStBlockCode *targetLightNeighborMM = static_cast<RePoStBlockCode*>(targetLightNeighbor->blockCode);
-            if(targetLightNeighborMM->isCoordinator and targetLightNeighborMM->operation->getDirection() == Direction::UP) {
-                targetNextToSrc = false;
-            }
-            console << "targetNextToSrc: " << targetNextToSrc << "\n";
-        }
-        if (targetLightNeighbor
-            and targetLightNeighbor->position != srcPos and !targetNextToSrc) { // neighbor is target light
-            console << "Neighbor is target light: " << targetLightNeighbor->position << "\n";
-            console << "target pos: " << targetPos << "\n";
-            P2PNetworkInterface* tlitf = module->getInterface(
-                targetLightNeighbor->position);
-
-            VS_ASSERT(tlitf and tlitf->isConnected());
-
-            sendMessage("PLS Msg", new MessageOf<PLS>(PLS_MSG_ID, PLS(srcPos, targetPos)), tlitf,  100, 200);
-        } else if((not targetLightNeighbor and nextToTarget) or targetNextToSrc) {
-            bool mustAvoidBlocking = false;
-            if (targetPos - seedPosition == Cell3DPosition(1, 0, 2) and
-                lattice->cellHasBlock(seedPosition + Cell3DPosition(1, 1, 2))) {
-                // Special test to avoid blocking when a BF meta-module is filling back
-                RePoStBlockCode *x = static_cast<RePoStBlockCode *>(
-                    BaseSimulator::getWorld()
-                        ->getBlockByPosition(seedPosition + Cell3DPosition(1, 1, 2))
-                        ->blockCode);
-                if (x->movingState == MOVING) {
-                    mustAvoidBlocking = true;
-                }
-            }
-            console << "mustAvoidBlocking: " << mustAvoidBlocking << "\n\n"; 
-            if (greenLightIsOn
-                or (nextToSender
-                    and module->getState() != BuildingBlock::State::ACTUATING and not mustAvoidBlocking)) {
-                
-                P2PNetworkInterface* itf = nextToSender ?
-                    module->getInterface(srcPos) : sender;
-                VS_ASSERT(itf and itf->isConnected());
-                console << "test\n";
-                sendMessage("GLO Msg", new MessageOf<PLS>(GLO_MSG_ID, PLS(targetPos, srcPos)),itf, 100, 0);
-            } else {
-
-                getScheduler()->trace("light turned orange2", module->blockId, ORANGE);
-                if (moduleAwaitingGo) setGreenLight(true);
-                moduleAwaitingGo = true;
-                awaitingModulePos = srcPos;
-                awaitingModuleProbeItf = sender;
-                // module->setColor(DARKORANGE);
-            }
-        }else { // not neighborNextToTarget and not nextToSender
-            module->setColor(BLACK);
-            VS_ASSERT_MSG(false, "error: not neighborNextToTarget and not nextToSender");
-        }
-    } else {
-        module->setColor(BLACK);
-        VS_ASSERT_MSG(false, "Module is moving. Should not receive this message");
-    }                                              
-}
-
-void RePoStBlockCode::handleGLOMessage(std::shared_ptr<Message> _msg,
-                                               P2PNetworkInterface* sender) {
-    MessageOf<PLS> *msg = static_cast<MessageOf<PLS>*>(_msg.get());
-    Cell3DPosition srcPos = msg->getData()->srcPos;
-    Cell3DPosition targetPos = msg->getData()->targetPos;
-    //console << "Received GLO from: " << sender->getConnectedBlockId() << "\n";
-    if (!rotating) { // module is pivot
-        bool nextToDest = isAdjacentToPosition(targetPos);
-        P2PNetworkInterface* itf;
-        Cell3DPosition nnCell = Cell3DPosition(0,0,0);
-        if (not nextToDest) {
-            for (const auto &nCell: lattice->getActiveNeighborCells(module->position)){
-                if (lattice->cellsAreAdjacent(nCell, targetPos)) {
-                    nnCell = nCell;
-                    continue;
-                }
-            }
-        }
-        if (nextToDest) {
-            itf = module->getInterface(targetPos);
-
-        } else if (nnCell != Cell3DPosition(0,0,0)) {
-            itf = module->getInterface(nnCell);
-        } else {
-            itf = module->getInterface(nearestPositionTo(targetPos));
-        }
-        console << "ERROR: " << targetPos << "\n";
-        //VS_ASSERT(itf and itf->isConnected());
-
-        setGreenLight(false);
-        if(itf->isConnected())
-        sendMessage("GLO Msg", new MessageOf<PLS>(GLO_MSG_ID, PLS(srcPos, targetPos)), itf, 100, 0);
-    } else if(module->position == targetPos){
-        VS_ASSERT(module->position == targetPos);
-        Cell3DPosition targetPosition =
-            (*operation->localRules)[mvt_it].nextPosition + seedPosition;
-        
-        if (module->canRotateToPosition(targetPosition) /**and not lattice->cellIsBlocked(targetPosition)**/) {
-            if ((relativePos() == Cell3DPosition(-1, 1, 2) /**or
-                              /ùùrelativePos() == Cell3DPosition(-1, -1, 2)**/) or
-                relativePos() == Cell3DPosition(1, 0, 1) or
-                relativePos() == Cell3DPosition(1, -1, 1) or
-                relativePos() == Cell3DPosition(2, 0, 2) or relativePos() == Cell3DPosition(1,2,2) or relativePos() == Cell3DPosition(1,0,2)) {
-                // if(relativePos() == Cell3DPosition(1,2,2)) VS_ASSERT(false);
-                getScheduler()->schedule(
-                    new Catoms3DRotationStartEvent(getScheduler()->now(), module, targetPosition,
-                                                   RotationLinkType::OctaFace, false));
-            } else {
-                getScheduler()->schedule(new Catoms3DRotationStartEvent(
-                    getScheduler()->now(), module, targetPosition, RotationLinkType::Any, false));
-            }
-
-        } else {
-            // retry rotating to next position
-//            VS_ASSERT_MSG(false, "Can not rotate to next position");
-            probeGreenLight();
-            
-        }
-    }
-}
-
-void RePoStBlockCode::handleFTRMessage(std::shared_ptr<Message> _msg,
-                                               P2PNetworkInterface* sender) {
-    MessageOf<Cell3DPosition>* msg = static_cast<MessageOf<Cell3DPosition>*>(_msg.get());
-    //console << "Received FTR from " << sender->getConnectedBlockId() << "\n";
-    Cell3DPosition finalPos = *msg->getData();
-    VS_ASSERT(lattice->cellsAreAdjacent(module->position, finalPos));
-    if (not greenLightIsOn) {
-
-        setGreenLight(true);
-        // for (auto n : lattice->getActiveNeighborCells(module->position)) {
-        //     if (n == finalPos) continue;
-        //     if (lattice->cellsAreAdjacent(n, finalPos) and module->getInterface(n) != sender) {
-        //         sendMessage("FTR message", new MessageOf<Cell3DPosition>(FTR_MSG_ID, finalPos),
-        //                     module->getInterface(n), 100, 200);
-        //     }
-        // }
-    }
-}
-
 void RePoStBlockCode::probeGreenLight() {
     VS_ASSERT(operation->localRules != NULL);
     if (operation->getDirection() == Direction::UP /*and operation->isTransfer()*/ and
@@ -812,9 +513,8 @@ void RePoStBlockCode::probeGreenLight() {
     // VS_ASSERT(pivot);
     console << "pivot: " << pivot->position << "\n";
     if (module->getInterface(pivot->position)->isConnected())
-        sendMessage("PLS Msg",
-                    new MessageOf<PLS>(PLS_MSG_ID, PLS(module->position, targetPosition)),
-                    module->getInterface(pivot->position), 100, 200);
+        sendHandleableMessage(new PLSMessage(module->position, targetPosition),
+             module->getInterface(pivot->position), 100, 200);
 }
 
 bool RePoStBlockCode::isAdjacentToPosition(const Cell3DPosition& pos) const {
@@ -904,9 +604,7 @@ bool RePoStBlockCode::setGreenLight(bool onoff) {
                                                     // Move the message up the branch
                                            awaitingModuleProbeItf;
             VS_ASSERT(itf and itf->isConnected());
-            sendMessage("GLO Msg",
-                        new MessageOf<PLS>(GLO_MSG_ID, PLS(module->position, awaitingModulePos)),
-                        itf, 100, 0);
+            sendHandleableMessage(new GLOMessage(module->position, awaitingModulePos), itf, 100, 0);
             moduleAwaitingGo = false;
             awaitingModuleProbeItf = NULL;
         }
@@ -1154,29 +852,24 @@ void RePoStBlockCode::onMotionEnd() {
         mvt_it++;
         probeGreenLight();
     } else if (movingState == WAITING or movingState == IN_POSITION) {
-        if(module->blockId == 47 and module->position == Cell3DPosition(8,29,32)){
-            module->setColor(GREEN);
-        }
         transferCount = 0;
         rotating = false;
         if (operation->mustSendCoordinateBack(this)) {
             sendingCoordinateBack = true;
-            sendMessage(
-                "CoordinateBack Msg",
-                new MessageOf<CoordinateBack>(COORDINATEBACK_MSG_ID,
-                                              CoordinateBack(movingSteps, coordinatorPosition)),
+            sendHandleableMessage(new CoordinateBackMessage(movingSteps, coordinatorPosition),
                 module->getInterface(nearestPositionTo(coordinatorPosition)), 100, 200);
         }
         console << "coordinator position: " << coordinatorPosition << "\n";
         movingSteps = 0;
         P2PNetworkInterface* pivotItf = module->getInterface(pivotPosition);  
         if (operation->isFill() or operation->isBuild() ) {
-            sendMessageToAllNeighbors("FTR msg",
-                                      new MessageOf<Cell3DPosition>(FTR_MSG_ID, module->position),
-                                      100, 200, 0);
+            for(auto neighbor: module->getNeighbors()) {
+                sendHandleableMessage(new FTRMessage(), module->getP2PNetworkInterfaceByBlockRef(neighbor),
+                    100, 200);
+            }
         } else if (pivotItf and pivotItf->isConnected()) {
-                sendMessage("FTR msg", new MessageOf<Cell3DPosition>(FTR_MSG_ID, module->position),
-                            module->getInterface(pivotPosition), 100, 200);
+            sendHandleableMessage(new FTRMessage(), module->getInterface(pivotPosition), 100, 200);
+                
         }
         if (movingState == IN_POSITION) {
             console << "mvt_it in pos: " << mvt_it << "\n";
@@ -1200,10 +893,6 @@ void RePoStBlockCode::onMotionEnd() {
                                 ->MMPosition;
                         seedMM->sendHandleableMessage(new GoMessage(seedMM->MMPosition, toMMPosition, seedMM->distance),
                         seedMM->interfaceTo(seedMM->MMPosition, toMMPosition), 100, 200);
-                        // seedMM->sendMessage(
-                        //     "Go msg",
-                        //     new MessageOf<GOdata>(GO_MSG_ID, GOdata(seedMM->MMPosition,toMMPosition, seedMM->distance)),
-                        //     seedMM->interfaceTo(seedMM->MMPosition, toMMPosition), 100, 200);
                         seedMM->nbWaitedAnswers++;
                     }
                     
@@ -1222,74 +911,55 @@ int RePoStBlockCode::sendHandleableMessage(HandleableMessage* msg, P2PNetworkInt
 void RePoStBlockCode::processLocalEvent(EventPtr pev) {
     std::shared_ptr<Message> message;
     stringstream info;
-    switch (pev->eventType) { // TODO: Replace with an if statement
-  
-        case EVENT_RECEIVE_MESSAGE: {
-            message =
-                (std::static_pointer_cast<NetworkInterfaceReceiveEvent>(pev))->message;
-          
-            if(message->type >= 1008 and message->type <= 1013 and module->position == seedPosition) {
-                state = ACTIVE;
-                cont_passive = false;
-                Cell3DPosition fromMMPosition;
-                HandleableMessage *msg;
-                switch(message->type) {
-                    case 1008:
-                        fromMMPosition =
-                            static_cast<BFSMessage*>(message.get())->getFromMMPosition();
-                        break;
-                    case 1009:
-                        fromMMPosition =
-                            static_cast<ConfirmEdgeMessage*>(message.get())->getFromMMPosition();
-                        break;
-                    case 1010:
-                        fromMMPosition =
-                            static_cast<ConfirmPathMessage*>(message.get())->getFromMMPosition();
-                        break;
-                    case 1011:
-                        fromMMPosition =
-                            static_cast<ConfirmStreamlineMessage*>(message.get())->getFromMMPosition();
-                        break;
-                    case 1012:
-                        fromMMPosition =
-                            static_cast<AvailableMessage*>(message.get())->getFromMMPosition();
-                        break;
-                       case 1013:
-                        fromMMPosition =
-                            static_cast<CutOffMessage*>(message.get())->getFromMMPosition();
-                        break;
-                    
-                    default: {
-                        MessageOf<MaxFlowMsgData>* msg1 =
-                            static_cast<MessageOf<MaxFlowMsgData>*>(message.get());
-                        fromMMPosition = msg1->getData()->fromMMPosition;
-                    }
+    if (pev->eventType == EVENT_RECEIVE_MESSAGE) {
+        message = (std::static_pointer_cast<NetworkInterfaceReceiveEvent>(pev))->message;
+
+        if (message->type >= 1008 and message->type <= 1013 and module->position == seedPosition) {
+            state = ACTIVE;
+            cont_passive = false;
+            Cell3DPosition fromMMPosition;
+            HandleableMessage* msg;
+            switch (message->type) {
+                case 1008:
+                    fromMMPosition = static_cast<BFSMessage*>(message.get())->getFromMMPosition();
+                    break;
+                case 1009:
+                    fromMMPosition =
+                        static_cast<ConfirmEdgeMessage*>(message.get())->getFromMMPosition();
+                    break;
+                case 1010:
+                    fromMMPosition =
+                        static_cast<ConfirmPathMessage*>(message.get())->getFromMMPosition();
+                    break;
+                case 1011:
+                    fromMMPosition =
+                        static_cast<ConfirmStreamlineMessage*>(message.get())->getFromMMPosition();
+                    break;
+                case 1012:
+                    fromMMPosition =
+                        static_cast<AvailableMessage*>(message.get())->getFromMMPosition();
+                    break;
+                case 1013:
+                    fromMMPosition =
+                        static_cast<CutOffMessage*>(message.get())->getFromMMPosition();
+                    break;
+
+                default: {
+                    VS_ASSERT(false);
                 }
-                // if(message->type == 1008 or message->type == 1009) {
-                //     //MessageOf<BFSdata>* msg = static_cast<MessageOf<BFSdata>*>(message.get());
-                //     fromMMPosition = msg->getFromMMPosition();
-                // } else {
-                //     MessageOf<MaxFlowMsgData>* msg1 = static_cast<MessageOf<MaxFlowMsgData>*>(message.get());
-                //     fromMMPosition = msg1->getData()->fromMMPosition;
-                // }
-                Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(fromMMPosition);
-                console << "defecit: " << deficit << "\n";
-                sendHandleableMessage(new AckMessage(MMPosition, fromMMPosition),
-                                      interfaceTo(MMPosition, fromMMPosition), 100, 200);
-                // sendMessage(
-                //     "Ack Msg",
-                //     new MessageOf<FromToMsg>(ACK_MSG_ID, FromToMsg(MMPosition, fromMMPosition)),
-                //     interfaceTo(MMPosition, fromMMPosition), 100, 200);
             }
-            if(message->isMessageHandleable()) {
-                std::shared_ptr<HandleableMessage> hMsg =
-                    (std::static_pointer_cast<HandleableMessage>(message));
-                console << " received " << hMsg->getName() << " from "
-                        << message->sourceInterface->hostBlock->blockId
-                        << " at " << getScheduler()->now() << "\n";
-                hMsg->handle(this);
-            }
-        } break;
+            console << "defecit: " << deficit << "\n";
+            sendHandleableMessage(new AckMessage(MMPosition, fromMMPosition),
+                                  interfaceTo(MMPosition, fromMMPosition), 100, 200);
+        }
+        if (message->isMessageHandleable()) {
+            std::shared_ptr<HandleableMessage> hMsg =
+                (std::static_pointer_cast<HandleableMessage>(message));
+            console << " received " << hMsg->getName() << " from "
+                    << message->sourceInterface->hostBlock->blockId << " at "
+                    << getScheduler()->now() << "\n";
+            hMsg->handle(this);
+        }
     }
     // Do not remove line below
     
@@ -1298,24 +968,6 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
         return;
     } 
     switch (pev->eventType) {
-        case EVENT_RECEIVE_MESSAGE: {
-            // message =
-            //     (std::static_pointer_cast<NetworkInterfaceReceiveEvent>(pev))->message;
-            // if(message->type >= 1008 and message->type <= 1013 and module->position == seedPosition) {
-            //     state = ACTIVE;
-            //     cont_passive = false;
-            //     Cell3DPosition fromMMPosition;
-            //     if(message->type == 1008) {
-            //         MessageOf<BFSdata>* msg = static_cast<MessageOf<BFSdata>*>(message.get());
-            //         fromMMPosition = msg->getData()->fromMMPosition;
-            //     } else {
-            //         MessageOf<MaxFlowMsgData>* msg = static_cast<MessageOf<MaxFlowMsgData>*>(message.get());
-            //         fromMMPosition = msg->getData()->fromMMPosition;
-            //     }
-            //     Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(fromMMPosition);
-            //     sendMessage("Ack Msg", new MessageOf<Cell3DPosition>(ACK_MSG_ID, fromMMPosition), interfaceTo(toSeedPosition), 100, 200);
-            // }
-        } break;
 
         case EVENT_ROTATION3D_START: {
             VS_ASSERT(module->pivot);
@@ -1423,11 +1075,8 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                                                   module, IT_MODE_TRANSFERBACK));
                     } else {
                         if(lattice->cellHasBlock(targetModule) and mvt_it < operation->localRules->size()) {
-                            sendMessage(
-                                "Coordinate Msg",
-                                new MessageOf<Coordinate>(
-                                    COORDINATE_MSG_ID,
-                                    Coordinate(operation, targetModule, module->position, mvt_it)),
+                            VS_ASSERT(operation);
+                            sendHandleableMessage(new CoordinateMessage(operation, targetModule, module->position, mvt_it),
                                 module->getInterface(targetModule), 100, 200);
                         }
                         awaitingCoordinator = false;
@@ -1458,12 +1107,6 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                             sendHandleableMessage(
                                 new BackTermMessage(MMPosition, parentPosition, res and b),
                                 interfaceTo(MMPosition, parentPosition), 100, 200);
-                            // sendMessage("BackTerm Msg4",
-                            //             new MessageOf<pair<FromToMsg, bool>>(BACKTERM_MSG_ID,
-                            //                                                     make_pair(FromToMsg(MMPosition,
-                            //                                                     parentPosition),
-                            //                                                     res and b)),
-                            //             interfaceTo(MMPosition, parentPosition), 100, 200);
                         } else {
                             start_wave();
                             //VS_ASSERT(false);

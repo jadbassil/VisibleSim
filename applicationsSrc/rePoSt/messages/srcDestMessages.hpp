@@ -15,9 +15,7 @@ class GoMessage : public HandleableMessage {
         : HandleableMessage(),
           fromMMPosition(_fromMMPosition),
           toMMPosition(_toMMPosition),
-          distance(_distance){
-              //type = 1000;
-          };
+          distance(_distance){};
 
     virtual ~GoMessage(){};
 
@@ -40,9 +38,7 @@ class BackMessage : public HandleableMessage {
         : HandleableMessage(),
           fromMMPosition(_fromMMPosition),
           toMMPosition(_toMMPosition),
-          isChild(_isChild){
-              //ype = 1001;
-          };
+          isChild(_isChild){};
 
     ~BackMessage(){};
 

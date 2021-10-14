@@ -1,6 +1,5 @@
 #include "maxFlowMessages.hpp"
-
-#include "messages.hpp"
+#include "transportMessages.hpp"
 #include "rePoStBlockCode.hpp"
 
 /* -------------------------------------------------------------------------- */
@@ -83,14 +82,21 @@ void BackTermMessage::handle(BaseSimulator::BlockCode *bc) {
                             coord->console
                                 << "targetModule: " << coord->nearestPositionTo(targetModule)
                                 << "\n";
-                            coord->sendMessage(
-                                "Coordinate Msg1",
-                                new MessageOf<Coordinate>(
-                                    COORDINATE_MSG_ID,
-                                    Coordinate(coord->operation, targetModule,
-                                               coord->module->position, coord->mvt_it)),
+
+                            VS_ASSERT(coord->operation);
+                            coord->sendHandleableMessage(
+                                new CoordinateMessage(coord->operation, targetModule,
+                                                      coord->module->position, coord->mvt_it),
                                 coord->module->getInterface(coord->nearestPositionTo(targetModule)),
                                 100, 200);
+                            // coord->sendMessage(
+                            //     "Coordinate Msg1",
+                            //     new MessageOf<Coordinate>(
+                            //         COORDINATE_MSG_ID,
+                            //         Coordinate(coord->operation, targetModule,
+                            //                    coord->module->position, coord->mvt_it)),
+                            //     coord->module->getInterface(coord->nearestPositionTo(targetModule)),
+                            //     100, 200);
                         }
                     }
 
