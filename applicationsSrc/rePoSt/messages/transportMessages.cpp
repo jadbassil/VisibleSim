@@ -37,10 +37,16 @@ void CoordinateMessage::handle(BaseSimulator::BlockCode *bc) {
 
 void CoordinateBackMessage::handle(BaseSimulator::BlockCode *bc) {
     RePoStBlockCode *rbc = static_cast<RePoStBlockCode *>(bc);
+    P2PNetworkInterface *sender = this->destinationInterface;
+    RePoStBlockCode *senderMM = static_cast<RePoStBlockCode *>(
+        BaseSimulator::getWorld()->getBlockById(sender->getConnectedBlockId())->blockCode);
+    if (senderMM->sendingCoordinateBack) {
+        senderMM->sendingCoordinateBack = false;
+    }
     if (rbc->module->position == coordinatorPosition) {
         rbc->console << "mvt_it: " << rbc->mvt_it << "\n";
         rbc->console << "steps: " << steps << "\n";
-
+     
         // Add the number of steps to get to the next module's movements
         for (int i = 0; i < steps; i++) {
             rbc->mvt_it++;

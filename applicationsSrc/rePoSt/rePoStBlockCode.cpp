@@ -808,35 +808,39 @@ P2PNetworkInterface * RePoStBlockCode::interfaceTo(Cell3DPosition& dstPos, P2PNe
         return module->getInterface(nearestPositionTo(dstPos));
 }
 
-P2PNetworkInterface * RePoStBlockCode::interfaceTo(Cell3DPosition& fromMM, Cell3DPosition& toMM, P2PNetworkInterface *sender) {
+P2PNetworkInterface* RePoStBlockCode::interfaceTo(Cell3DPosition& fromMM, Cell3DPosition& toMM,
+                                                  P2PNetworkInterface* sender) {
     Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(toMM);
-    if(not lattice->cellHasBlock(toSeedPosition)) {
+    if (not lattice->cellHasBlock(toSeedPosition)) {
+        cerr << toSeedPosition << "\n";
         VS_ASSERT_MSG(false, "not connected");
     }
-    if(lattice->cellsAreAdjacent(module->position, toSeedPosition))
+    if (lattice->cellsAreAdjacent(module->position, toSeedPosition))
         return module->getInterface(toSeedPosition);
     Cell3DPosition fromSeedPosition = getSeedPositionFromMMPosition(fromMM);
     Direction direction;
-    Cell3DPosition directionVector = toMM-fromMM;
+    Cell3DPosition directionVector = toMM - fromMM;
     if (directionVector.pt[0] == -1) direction = Direction::LEFT;
     if (directionVector.pt[0] == 1) direction = Direction::RIGHT;
     if (directionVector.pt[1] == -1) direction = Direction::FRONT;
     if (directionVector.pt[1] == 1) direction = Direction::BACK;
     if (directionVector.pt[2] == -1) direction = Direction::DOWN;
     if (directionVector.pt[2] == 1) direction = Direction::UP;
-    RePoStBlockCode *fromSeed = static_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(fromSeedPosition)->blockCode);
-    vector<Cell3DPosition> routingVector = getRoutingVector(direction, fromSeed->shapeState, fromSeed->MMPosition.pt[2]);
+    RePoStBlockCode* fromSeed = static_cast<RePoStBlockCode*>(
+        BaseSimulator::getWorld()->getBlockByPosition(fromSeedPosition)->blockCode);
+    vector<Cell3DPosition> routingVector =
+        getRoutingVector(direction, fromSeed->shapeState, fromSeed->MMPosition.pt[2]);
     Cell3DPosition relativePosition = module->position - fromSeedPosition;
-    vector<Cell3DPosition>::iterator it = find(routingVector.begin(), routingVector.end(), relativePosition);
+    vector<Cell3DPosition>::iterator it =
+        find(routingVector.begin(), routingVector.end(), relativePosition);
     Cell3DPosition nextPos;
-    if(it != routingVector.end()) {
-        nextPos = *(it+1);
+    if (it != routingVector.end()) {
+        nextPos = *(it + 1);
     } else {
         VS_ASSERT(false);
     }
     VS_ASSERT(module->getInterface(nextPos + fromSeedPosition));
     return module->getInterface(nextPos + fromSeedPosition);
-
 }
 
 void RePoStBlockCode::onMotionEnd() {
