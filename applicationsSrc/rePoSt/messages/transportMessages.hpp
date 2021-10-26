@@ -52,39 +52,74 @@ class CoordinateBackMessage : public HandleableMessage {
     }
 };
 
+// class PLSMessage : public HandleableMessage {
+//    private:
+//     Cell3DPosition srcPos;
+//     Cell3DPosition targetPos;
+
+//    public:
+//     PLSMessage(Cell3DPosition _srcPos, Cell3DPosition _targetPos)
+//         : HandleableMessage(), srcPos(_srcPos), targetPos(_targetPos){};
+
+//     ~PLSMessage(){};
+
+//     virtual void handle(BaseSimulator::BlockCode *) override;
+//     virtual Message *clone() const override { return new PLSMessage(*this); }
+//     virtual string getName() const override {
+//         return "PLSMessage{" + srcPos.to_string() + ", " + targetPos.to_string() + "}";
+//     }
+// };
+
 class PLSMessage : public HandleableMessage {
    private:
     Cell3DPosition srcPos;
-    Cell3DPosition targetPos;
+    Cell3DPosition destPos;
 
    public:
-    PLSMessage(Cell3DPosition _srcPos, Cell3DPosition _targetPos)
-        : HandleableMessage(), srcPos(_srcPos), targetPos(_targetPos){};
+    PLSMessage(Cell3DPosition _srcPos, Cell3DPosition _destPos)
+        : HandleableMessage(), srcPos(_srcPos), destPos(_destPos){};
 
     ~PLSMessage(){};
 
     virtual void handle(BaseSimulator::BlockCode *) override;
     virtual Message *clone() const override { return new PLSMessage(*this); }
     virtual string getName() const override {
-        return "PLSMessage{" + srcPos.to_string() + ", " + targetPos.to_string() + "}";
+        return "PLSMessage{" + srcPos.to_string() + ", " + destPos.to_string() + "}";
     }
 };
+
+// class GLOMessage : public HandleableMessage {
+//    private:
+//     Cell3DPosition srcPos;
+//     Cell3DPosition targetPos;
+
+//    public:
+//     GLOMessage(Cell3DPosition _srcPos, Cell3DPosition _targetPos)
+//         : HandleableMessage(), srcPos(_srcPos), targetPos(_targetPos){};
+
+//     ~GLOMessage(){};
+
+//     virtual void handle(BaseSimulator::BlockCode *) override;
+//     virtual Message *clone() const override { return new GLOMessage(*this); }
+//     virtual string getName() const override {
+//         return "GLOMessage{" + srcPos.to_string() + ", " + targetPos.to_string() + "}";
+//     }
+// };
 
 class GLOMessage : public HandleableMessage {
    private:
     Cell3DPosition srcPos;
-    Cell3DPosition targetPos;
 
    public:
-    GLOMessage(Cell3DPosition _srcPos, Cell3DPosition _targetPos)
-        : HandleableMessage(), srcPos(_srcPos), targetPos(_targetPos){};
+    GLOMessage(Cell3DPosition _srcPos)
+        : HandleableMessage(), srcPos(_srcPos){};
 
     ~GLOMessage(){};
 
     virtual void handle(BaseSimulator::BlockCode *) override;
     virtual Message *clone() const override { return new GLOMessage(*this); }
     virtual string getName() const override {
-        return "GLOMessage{" + srcPos.to_string() + ", " + targetPos.to_string() + "}";
+        return "GLOMessage{" + srcPos.to_string() + "}";
     }
 };
 

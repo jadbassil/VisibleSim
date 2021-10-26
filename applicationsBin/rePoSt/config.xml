@@ -1,6 +1,6 @@
 <?xml version="1.0" standalone="no" ?>
 <visuals enableShadows="false" showGrid="false" windowSize="1800,1000"
-         backgroundColor="#ffffff" backgroundGradientColor="#eeeeee" /> 
+         backgroundColor="#ffffff" backgroundGradientColor="#32a8a2" /> 
 <world gridSize="40,40,40" windowSize="1800,900">
       <camera target="99.7739,207.101,45.0787" directionSpherical="-1.35211,1.35211,380" angle="35.000000" near="75.000000" far="1500.000000" />
     <spotlight target="-200,-200,-100" directionSpherical="60,30,900" angle="33.690068" />
@@ -11,9 +11,16 @@
 	<MMBlockList>
 
 
-		<block position="0,0,0" filled="true"/>
-		<!-- <block position="1,0,0" />
+		<block position="0,0,0"/>
+		<block position="1,0,0" />
 		<block position="2,0,0" />
+		<block position="3,0,0" />
+
+		<block position="0,0,1"/>
+		<block position="0,0,2"/>
+		<block position="0,0,3"/>
+
+		<!-- <block position="2,0,0" />
 
 		<block position="0,0,1"  />
 		<block position="1,0,1" />
@@ -21,12 +28,20 @@
 
 		<block position="0,0,-1"  />
 		<block position="1,0,-1"  />
-		<block position="2,0,-1" /> -->
+		<block position="2,0,-1" />  -->
 
 
 
 	</MMBlockList>
 	
+	<MMTargetList>
+		<block position="0,0,0"/>
+		<block position="1,0,0" />
+		<block position="2,0,0" />
+		<block position="1,2,0" />
+		<block position="1,1,0"/>
+		<block position="1,1,1"/>
+	</MMTargetList>
 	
 
 </world>

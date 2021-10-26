@@ -89,14 +89,6 @@ void BackTermMessage::handle(BaseSimulator::BlockCode *bc) {
                                                       coord->module->position, coord->mvt_it),
                                 coord->module->getInterface(coord->nearestPositionTo(targetModule)),
                                 100, 200);
-                            // coord->sendMessage(
-                            //     "Coordinate Msg1",
-                            //     new MessageOf<Coordinate>(
-                            //         COORDINATE_MSG_ID,
-                            //         Coordinate(coord->operation, targetModule,
-                            //                    coord->module->position, coord->mvt_it)),
-                            //     coord->module->getInterface(coord->nearestPositionTo(targetModule)),
-                            //     100, 200);
                         }
                     }
 

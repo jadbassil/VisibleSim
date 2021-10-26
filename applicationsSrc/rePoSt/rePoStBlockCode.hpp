@@ -4,6 +4,7 @@
 #include "robots/catoms3D/catoms3DWorld.h"
 #include "robots/catoms3D/catoms3DBlockCode.h"
 #include "operations.hpp"
+#include <set>
 
 using namespace Catoms3D;
 
@@ -181,6 +182,7 @@ public:
     Cell3DPosition awaitingModulePos;
     P2PNetworkInterface *awaitingModuleProbeItf{NULL};
     P2PNetworkInterface *coordinateItf{NULL};
+    set<Cell3DPosition> awaitingSources;
     bool initialized{false};
     Operation *operation = NULL;
     bool sendingCoordinateBack{false};
@@ -284,6 +286,9 @@ public:
     Catoms3DBlock* findTargetLightAmongNeighbors(const Cell3DPosition& targetPos,
                                                 const Cell3DPosition& srcPos,
                                                 P2PNetworkInterface *sender=NULL) const;
+    
+    vector<Catoms3DBlock*> findNextLatchingPoints(const Cell3DPosition& targetPos,
+                                                    const Cell3DPosition& pivotPos);
     /**
      * @return module's position relative to the meta-module seedPosition
     **/
