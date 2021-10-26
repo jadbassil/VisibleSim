@@ -374,133 +374,12 @@ void RePoStBlockCode::probeGreenLight() {
      LocalMovement lmvt = (*operation->localRules)[mvt_it];
     console << "mvt_it: " << mvt_it << "\n";
 
-    // else if((lmvt.nextPosition == Cell3DPosition(1, 0, 2) and
-    //     not lattice->cellHasBlock(module->position.offsetX(1)) and
-    //     operation->getDirection() == Direction::UP and operation->isTransfer()) ){
-    //         cerr << "UP3 \n";
-    //         getScheduler()->toggle_pause();
-    //     (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(2, 0, 2);
-    // }
-
     Cell3DPosition targetPosition = lmvt.nextPosition + seedPosition;
     console << "probeGreenLight: " << targetPosition << "\n";
     if(not greenLightIsOn) setGreenLight(true);
 
-/* ---------------------------- Avoiding Blocking --------------------------- */
-    // if(operation->isDismantle() and shapeState == FRONTBACK and operation->getDirection() == Direction::BACK){
-    //     if(lmvt.nextPosition == Cell3DPosition(1,2,2) and lattice->cellHasBlock(seedPosition + Cell3DPosition(1,3,2))) {
-    //         getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
-    //                                                    module, IT_MODE_DISMANTLEBACK));
-    //         return;
-    //     }
-    // }
-    // if (operation->isTransfer() and
-    //     /**static_cast<Transfer_Operation*>(operation)->isComingFromBack() and**/
-    //     operation->getMMShape() == BACKFRONT and
-    //     lattice->cellHasBlock(seedPosition + Cell3DPosition(1, 3, 1)) and
-    //     operation->getDirection() == Direction::BACK ) {
-    //     RePoStBlockCode* nextCoordinator = static_cast<RePoStBlockCode*>(
-    //         BaseSimulator::getWorld()
-    //             ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 1))
-    //             ->blockCode);
-    //     RePoStBlockCode* nextModule = static_cast<RePoStBlockCode*>(
-    //         BaseSimulator::getWorld()
-    //             ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 0))
-    //             ->blockCode);
-    //     if ((not nextCoordinator->greenLightIsOn or not nextModule->greenLightIsOn) and
-    //         not lattice->cellsAreAdjacent(module->position, nextModule->module->position) and module->blockId != 48) {
-    //         console << "schedule\n";
-    //         getScheduler()->schedule(
-    //             new InterruptionEvent(getScheduler()->now() + getRoundDuration(), module,
-    //                                   IT_MODE_TRANSFEREBACK_COMINGFROMBACK));
-    //         return;
-    //     }
-    // }
 
-    // if (operation->isTransfer() and operation->getDirection() == Direction::LEFT) {
-    //     if (operation->getMMShape() == FRONTBACK and
-    //         lmvt.nextPosition == Cell3DPosition(-2, 1, 2) and
-    //         lattice->cellHasBlock(seedPosition + Cell3DPosition(-3, 0, 2)) ) {
-    //         RePoStBlockCode* nextModule = static_cast<RePoStBlockCode*>(
-    //             BaseSimulator::getWorld()
-    //                 ->getBlockByPosition(seedPosition + Cell3DPosition(-3, 0, 2))
-    //                 ->blockCode);
-    //         RePoStBlockCode* nextCoordinator = static_cast<RePoStBlockCode*>(
-    //             BaseSimulator::getWorld()
-    //                 ->getBlockByPosition(seedPosition + Cell3DPosition(-3, -1, 1))
-    //                 ->blockCode);
-    //         if (not nextCoordinator->greenLightIsOn or
-    //             nextModule->module->getState() == BuildingBlock::State::ACTUATING) {
-    //             getScheduler()->schedule(new InterruptionEvent(
-    //                 getScheduler()->now() + getRoundDuration(), module, IT_MODE_TRANSFERELEFT));
-    //             return;
-    //         }
-    //     } else if (operation->getMMShape() == BACKFRONT and
-    //                lmvt.nextPosition == Cell3DPosition(-2, -1, 2)) {
-    //         RePoStBlockCode* nextCoordinator = static_cast<RePoStBlockCode*>(
-    //             BaseSimulator::getWorld()
-    //                 ->getBlockByPosition(seedPosition + Cell3DPosition(-3, 0, 1))
-    //                 ->blockCode);
-    //         if (not nextCoordinator->greenLightIsOn) {
-    //             getScheduler()->schedule(new InterruptionEvent(
-    //                 getScheduler()->now() + getRoundDuration(), module, IT_MODE_TRANSFERELEFT));
-    //             return;
-    //         }
-    //     } else if (operation->getMMShape() == BACKFRONT and
-    //                lmvt.nextPosition == Cell3DPosition(0, -1, 1) and
-    //                lattice->cellHasBlock(seedPosition + Cell3DPosition(-1, -1, 1))) {
-    //         getScheduler()->schedule(new InterruptionEvent(
-    //             getScheduler()->now() + getRoundDuration(), module, IT_MODE_TRANSFERELEFT));
-    //         return;
-    //     }
-    // }
-
-    // if (operation->isTransfer() and operation->getDirection() == Direction::BACK and
-    //     operation->getMMShape() == FRONTBACK and
-    //     lattice->cellHasBlock(seedPosition + Cell3DPosition(1, 3, 0)) and lattice->cellHasBlock(seedPosition + Cell3DPosition(1,2,1))) {
-    //     RePoStBlockCode* nextCoordinator = static_cast<RePoStBlockCode*>(
-    //         BaseSimulator::getWorld()
-    //             ->getBlockByPosition(seedPosition + Cell3DPosition(1, 2, 1))
-    //             ->blockCode);
-    //     RePoStBlockCode* nextModule = static_cast<RePoStBlockCode*>(
-    //         BaseSimulator::getWorld()
-    //             ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 0))
-    //             ->blockCode);
-    //     RePoStBlockCode* nextModule1 = static_cast<RePoStBlockCode*>(
-    //         BaseSimulator::getWorld()
-    //             ->getBlockByPosition(seedPosition + Cell3DPosition(0, 3, 0))
-    //             ->blockCode);
-    //     bool frontBackModule = false;
-    //     if (lattice->cellHasBlock(seedPosition + Cell3DPosition(1, 4, 0))) {
-    //         RePoStBlockCode* nextModule2 = static_cast<RePoStBlockCode*>(
-    //             BaseSimulator::getWorld()
-    //                 ->getBlockByPosition(seedPosition + Cell3DPosition(1, 4, 0))
-    //                 ->blockCode);
-    //         if (nextModule2->module->getState() == BuildingBlock::ACTUATING or
-    //             not nextModule2->greenLightIsOn) {
-    //             frontBackModule = true;
-    //         }
-    //     }
-
-    //     if (lmvt.nextPosition == Cell3DPosition(1, 3, 2) and
-    //         (nextModule->module->getState() == BuildingBlock::State::ACTUATING or
-    //          nextCoordinator->module->getState() == BuildingBlock::State::ACTUATING or
-    //          not nextModule1->greenLightIsOn)) {
-    //         // Avoid blocking on FB transfer back op
-    //         getScheduler()->schedule(
-    //             new InterruptionEvent(getScheduler()->now() + getRoundDuration(), module,
-    //                                   IT_MODE_TRANSFEREBACK_FRONTBACK));
-    //         return;
-    //     }
-    // }
-/* -------------------------------------------------------------------------- */
     Catoms3DBlock* pivot = customFindMotionPivot(module, targetPosition);
-    // bool targetIsFree = true;
-    // for(auto &cell: lattice->getActiveNeighborCells(targetPosition)) {
-    //     RePoStBlockCode &rbc = *static_cast<RePoStBlockCode*>(lattice->getBlock(cell)->blockCode);
-    //     if(rbc.rotating)
-    //         targetIsFree = false;
-    // }
     if (not pivot or pivot->getState() == BuildingBlock::State::ACTUATING) {
         notFindingPivot = true;
         getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
@@ -587,8 +466,8 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
     vector<Catoms3DBlock*> latchingPoints;
     for (auto lp : lattice->getActiveNeighborCells(targetPos)) {
         RePoStBlockCode& rlp = *static_cast<RePoStBlockCode*>(lattice->getBlock(lp)->blockCode);
-        if(rlp.operation) {
-            if(rlp.operation->isDismantle() and rlp.movingState == WAITING) {
+        if (rlp.operation) {
+            if (rlp.operation->isDismantle() and rlp.movingState == WAITING) {
                 continue;
             }
         }
@@ -597,9 +476,9 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
         }
     }
     if (targetPos - seedPosition == Cell3DPosition(-2, 1, 2) and
-        lattice->cellHasBlock(seedPosition + Cell3DPosition(-3, 0, 2))and 
+        lattice->cellHasBlock(seedPosition + Cell3DPosition(-3, 0, 2)) and
         operation->isTransfer() and operation->getDirection() == Direction::LEFT) {
-        //Avoid blocking when passing the bridge if the next operation direction is back
+        // Avoid blocking when passing the bridge if the next operation direction is back
         RePoStBlockCode& rlp = *static_cast<RePoStBlockCode*>(
             lattice->getBlock(seedPosition + Cell3DPosition(-3, 0, 2))->blockCode);
         if (rlp.movingState == WAITING) {
@@ -608,46 +487,40 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
         }
     }
     /* ------------------ Avoid blocking when coming from back ------------------ */
-    if (relativePos() == Cell3DPosition(0, 2, 2) and
-        lattice->cellHasBlock(module->position + Cell3DPosition(1, 1, -1)) and
-        operation->getDirection() == Direction::BACK and shapeState == BACKFRONT) {
-       
-        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-            lattice->getBlock(module->position + Cell3DPosition(1, 1, -1))));
-    }
-    if(relativePos() == Cell3DPosition(0,2,1) and operation->isTransfer() and
-         operation->getDirection() == Direction::BACK and shapeState == BACKFRONT){
-             latchingPoints.clear();
-    }
-    /* -------------------------------------------------------------------------- */
-
-    if (relativePos() == Cell3DPosition(-1, 3, 3) and shapeState == BACKFRONT and
-        operation->getDirection() == Direction::BACK) {
-        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-            lattice->getBlock(module->position + Cell3DPosition(2, 0, -2))));
-    }
-    /* ------- Avoid deadlock when transfering left and coming from below ------- */
-
-    if (relativePos() == Cell3DPosition(1, 0, 2) and operation->isTransfer() and
-        operation->getDirection() == Direction::LEFT and
-        (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(0, -1, 1)) {
-        //BACKFRONG
-        latchingPoints.clear();
-        latchingPoints.push_back(static_cast<Catoms3DBlock*>(lattice->getBlock(seedPosition)));
-        if (lattice->cellHasBlock(seedPosition.offsetY(-1))) {
-            latchingPoints.push_back(
-                static_cast<Catoms3DBlock*>(lattice->getBlock(seedPosition.offsetY(-1))));
+    if (operation->getDirection() == BACK and shapeState == BACKFRONT) {
+        if (relativePos() == Cell3DPosition(0, 2, 2) and
+            lattice->cellHasBlock(module->position + Cell3DPosition(1, 1, -1))) {
+            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                lattice->getBlock(module->position + Cell3DPosition(1, 1, -1))));
+        }
+        if (relativePos() == Cell3DPosition(0, 2, 1) and operation->isTransfer()) {
+            latchingPoints.clear();
+        }
+        if (relativePos() == Cell3DPosition(-1, 3, 3)) {
+            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                lattice->getBlock(module->position + Cell3DPosition(2, 0, -2))));
         }
     }
-    if (relativePos() == Cell3DPosition(1, 0, 2) and operation->isTransfer() and
-        operation->getDirection() == Direction::LEFT and
-        (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(0, 0, 1)) {
-        //FRONTBACK
-        latchingPoints.clear();
-        latchingPoints.push_back(static_cast<Catoms3DBlock*>(lattice->getBlock(seedPosition)));
-        if (lattice->cellHasBlock(seedPosition.offsetY(1))) {
-            latchingPoints.push_back(
-                static_cast<Catoms3DBlock*>(lattice->getBlock(seedPosition.offsetY(1))));
+    /* -------------------------------------------------------------------------- */
+    /* ------- Avoid deadlock when transfering left and coming from below ------- */
+
+    if (operation->isTransfer() and operation->getDirection() == Direction::LEFT) {
+        if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(0, -1, 1)) {
+            // BACKFRONG
+            latchingPoints.clear();
+            latchingPoints.push_back(static_cast<Catoms3DBlock*>(lattice->getBlock(seedPosition)));
+            if (lattice->cellHasBlock(seedPosition.offsetY(-1))) {
+                latchingPoints.push_back(
+                    static_cast<Catoms3DBlock*>(lattice->getBlock(seedPosition.offsetY(-1))));
+            }
+        } else if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(0, 0, 1)) {
+            // FRONTBACK
+            latchingPoints.clear();
+            latchingPoints.push_back(static_cast<Catoms3DBlock*>(lattice->getBlock(seedPosition)));
+            if (lattice->cellHasBlock(seedPosition.offsetY(1))) {
+                latchingPoints.push_back(
+                    static_cast<Catoms3DBlock*>(lattice->getBlock(seedPosition.offsetY(1))));
+            }
         }
     }
     /* -------------------------------------------------------------------------- */
@@ -685,29 +558,6 @@ bool RePoStBlockCode::setGreenLight(bool onoff) {
             awaitingSources.clear();
         }
 
-        // if (moduleAwaitingGo) {
-           
-        //     console << "awaitingModulePosition = " << awaitingModulePos << "\n";
-        //     // if (module->getState() == BuildingBlock::State::ACTUATING or
-        //     //     (awaitingModulePos == seedPosition.offsetX(2) and
-        //     //      lattice->cellHasBlock(seedPosition + Cell3DPosition(2, -1, 1)))) {
-        //     //          VS_ASSERT(false);
-        //     //     return false;
-        //     // }
-        //     //  if(module->blockId == 63) {
-        //     //     VS_ASSERT(false);
-        //     // }
-
-        //     // bool nextToModule = isAdjacentToPosition(awaitingModulePos);
-
-        //     P2PNetworkInterface *itf = nextToModule ? module->getInterface(awaitingModulePos) :
-        //                                             // Move the message up the branch
-        //                                    awaitingModuleProbeItf;
-        //     VS_ASSERT(itf and itf->isConnected());
-        //     sendHandleableMessage(new GLOMessage(module->position, awaitingModulePos), itf, 100, 0);
-        //     moduleAwaitingGo = false;
-        //     awaitingModuleProbeItf = NULL;
-        // }
     } else {
         info << "red: ";
         greenLightIsOn = false;
@@ -1225,152 +1075,6 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                     } else {
                         getScheduler()->schedule(
                             new InterruptionEvent(getScheduler()->now() + 500, module, IT_MODE_TERMINATION));
-                    }
-                } break;
-                case IT_MODE_DISMANTLEBACK: {
-                      getScheduler()->trace("DismantleBack", module->blockId, RED);
-                    if (!rotating or module->getState() == BuildingBlock::State::MOVING) return;
-                    if(lattice->cellHasBlock(seedPosition + Cell3DPosition(1,3,2))) {
-                        console << "Schedule dismantleBack\n";
-                        getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
-                                                       module, IT_MODE_DISMANTLEBACK));
-                    } else {
-                        probeGreenLight();
-                    }
-                } break;
-
-                case IT_MODE_TRANSFEREBACK_COMINGFROMBACK: {
-                    // LocalMovement lmvt = (*operation->localRules)[mvt_it];
-                    // MetaModuleBlockCode* nextCoordinator = static_cast<MetaModuleBlockCode*>(
-                    //     BaseSimulator::getWorld()
-                    //         ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 1))
-                    //         ->blockCode);
-                    // console << "test1\n";
-                    // MetaModuleBlockCode* nextModule = static_cast<MetaModuleBlockCode*>(
-                    //     BaseSimulator::getWorld()
-                    //         ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 0))
-                    //         ->blockCode);
-                    // if (lmvt.nextPosition == Cell3DPosition(0, 2, 1) and
-                    //     (nextCoordinator->module->getState() == BuildingBlock::State::ACTUATING or
-                    //      nextModule->module->getState() == BuildingBlock::State::ACTUATING or
-                    //      lattice->cellHasBlock(nextCoordinator->module->position.offsetY(-1)) or
-                    //      lattice->cellHasBlock(nextCoordinator->module->position.offsetZ(1)))) {
-                    //     console << "schedule\n";
-                    //     getScheduler()->schedule(
-                    //         new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
-                    //                               module, IT_MODE_TRANSFEREBACK_COMINGFROMBACK));
-                    //     console << "test2\n";
-                        // VS_ASSERT(false);
-                    getScheduler()->trace("TRANSFERBACK_COMINGFROMBACK", module->blockId, RED);
-                    if (!rotating or module->getState() == BuildingBlock::State::MOVING) return;
-                    RePoStBlockCode* nextCoordinator = static_cast<RePoStBlockCode*>(
-                        BaseSimulator::getWorld()
-                            ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 1))
-                            ->blockCode);
-                    RePoStBlockCode* nextModule = static_cast<RePoStBlockCode*>(
-                        BaseSimulator::getWorld()
-                            ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 0))
-                            ->blockCode);
-                    if ((not nextCoordinator->greenLightIsOn or not nextModule->greenLightIsOn) and
-                        not lattice->cellsAreAdjacent(module->position,
-                                                      nextModule->module->position) and module->blockId != 48) {
-                        console << "schedule\n";
-                        getScheduler()->schedule(
-                            new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
-                                                  module, IT_MODE_TRANSFEREBACK_COMINGFROMBACK));
-                    } else {
-                        probeGreenLight();
-                    }
-                } break;
-
-                case IT_MODE_TRANSFERELEFT: {
-                      getScheduler()->trace("TRANSFERLEFT", module->blockId, RED);
-                    LocalMovement lmvt = (*operation->localRules)[mvt_it];
-                    // if (operation->isTransfer() and operation->getDirection() == Direction::LEFT
-                    // and
-                    //     lmvt.nextPosition == Cell3DPosition(-2, 1, 2)) {
-                    // Avoid collision on FB transfer left op
-                    if (!rotating or module->getState() == BuildingBlock::State::MOVING) return;
-                    if (operation->getMMShape() == FRONTBACK and
-                        lmvt.nextPosition == Cell3DPosition(-2, 1, 2) and
-                        lattice->cellHasBlock(seedPosition + Cell3DPosition(-3, 0, 2))) {
-                        RePoStBlockCode* nextModule = static_cast<RePoStBlockCode*>(
-                            BaseSimulator::getWorld()
-                                ->getBlockByPosition(seedPosition + Cell3DPosition(-3, 0, 2))
-                                ->blockCode);
-                        RePoStBlockCode* nextCoordinator = static_cast<RePoStBlockCode*>(
-                            BaseSimulator::getWorld()
-                                ->getBlockByPosition(seedPosition + Cell3DPosition(-3, -1, 1))
-                                ->blockCode);
-                        if (not nextCoordinator->greenLightIsOn or
-                            nextModule->module->getState() == BuildingBlock::State::ACTUATING) {
-                            getScheduler()->schedule(
-                                new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
-                                                      module, IT_MODE_TRANSFERELEFT));
-                        } else {
-                            probeGreenLight();
-                        }
-                    } else if (operation->getMMShape() == BACKFRONT and
-                               lmvt.nextPosition == Cell3DPosition(-2, -1, 2)) {
-                        RePoStBlockCode* nextCoordinator = static_cast<RePoStBlockCode*>(
-                            BaseSimulator::getWorld()
-                                ->getBlockByPosition(seedPosition + Cell3DPosition(-3, 0, 1))
-                                ->blockCode);
-                        if (not nextCoordinator->greenLightIsOn) {
-                            getScheduler()->schedule(
-                                new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
-                                                      module, IT_MODE_TRANSFERELEFT));
-                        } else {
-                            probeGreenLight();
-                        }
-                    } else if (operation->getMMShape() == BACKFRONT and
-                               lmvt.nextPosition == Cell3DPosition(0, -1, 1) and
-                               lattice->cellHasBlock(seedPosition + Cell3DPosition(-1, -1, 1))) {
-                        getScheduler()->schedule(
-                            new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
-                                                  module, IT_MODE_TRANSFERELEFT));
-                        
-                    } else {
-                        probeGreenLight();
-                    }
-                } break;
-
-                case IT_MODE_TRANSFEREBACK_FRONTBACK: {
-                      getScheduler()->trace("TRANSFERBACK_FRONTBACK", module->blockId, RED); 
-                    LocalMovement lmvt = (*operation->localRules)[mvt_it];
-                    if (!rotating or module->getState() == BuildingBlock::State::MOVING) return;
-                    RePoStBlockCode* nextModule = static_cast<RePoStBlockCode*>(
-                        BaseSimulator::getWorld()
-                            ->getBlockByPosition(seedPosition + Cell3DPosition(1, 3, 0))
-                            ->blockCode);
-                    RePoStBlockCode* nextModule1 = static_cast<RePoStBlockCode*>(
-                        BaseSimulator::getWorld()
-                            ->getBlockByPosition(seedPosition + Cell3DPosition(0, 3, 0))
-                            ->blockCode);
-                    RePoStBlockCode* nextCoordinator = static_cast<RePoStBlockCode*>(
-                BaseSimulator::getWorld()
-                    ->getBlockByPosition(seedPosition + Cell3DPosition(1, 2, 1))
-                    ->blockCode);
-                            bool frontBackModule = false;
-                    if(lattice->cellHasBlock(seedPosition + Cell3DPosition(1,4,0))) {
-                        RePoStBlockCode* nextModule2 = static_cast<RePoStBlockCode*>(
-                        BaseSimulator::getWorld()
-                            ->getBlockByPosition(seedPosition + Cell3DPosition(1, 4, 0))
-                            ->blockCode);
-                        if(nextModule2->module->getState() == BuildingBlock::ACTUATING or not nextModule2->greenLightIsOn) {
-                            frontBackModule = true;
-                        }
-                    }
-                    if (lmvt.nextPosition == Cell3DPosition(1, 3, 2) and
-                        (nextModule->module->getState() == BuildingBlock::State::ACTUATING or
-                        not nextModule1->greenLightIsOn or not nextCoordinator->greenLightIsOn or frontBackModule)) {
-                        // Avoid blocking on FB transfer back op
-                        getScheduler()->schedule(
-                            new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
-                                                  module, IT_MODE_TRANSFEREBACK_FRONTBACK));
-
-                    } else {
-                        probeGreenLight();
                     }
                 } break;
 

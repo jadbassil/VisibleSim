@@ -52,24 +52,6 @@ class CoordinateBackMessage : public HandleableMessage {
     }
 };
 
-// class PLSMessage : public HandleableMessage {
-//    private:
-//     Cell3DPosition srcPos;
-//     Cell3DPosition targetPos;
-
-//    public:
-//     PLSMessage(Cell3DPosition _srcPos, Cell3DPosition _targetPos)
-//         : HandleableMessage(), srcPos(_srcPos), targetPos(_targetPos){};
-
-//     ~PLSMessage(){};
-
-//     virtual void handle(BaseSimulator::BlockCode *) override;
-//     virtual Message *clone() const override { return new PLSMessage(*this); }
-//     virtual string getName() const override {
-//         return "PLSMessage{" + srcPos.to_string() + ", " + targetPos.to_string() + "}";
-//     }
-// };
-
 class PLSMessage : public HandleableMessage {
    private:
     Cell3DPosition srcPos;
@@ -87,24 +69,6 @@ class PLSMessage : public HandleableMessage {
         return "PLSMessage{" + srcPos.to_string() + ", " + destPos.to_string() + "}";
     }
 };
-
-// class GLOMessage : public HandleableMessage {
-//    private:
-//     Cell3DPosition srcPos;
-//     Cell3DPosition targetPos;
-
-//    public:
-//     GLOMessage(Cell3DPosition _srcPos, Cell3DPosition _targetPos)
-//         : HandleableMessage(), srcPos(_srcPos), targetPos(_targetPos){};
-
-//     ~GLOMessage(){};
-
-//     virtual void handle(BaseSimulator::BlockCode *) override;
-//     virtual Message *clone() const override { return new GLOMessage(*this); }
-//     virtual string getName() const override {
-//         return "GLOMessage{" + srcPos.to_string() + ", " + targetPos.to_string() + "}";
-//     }
-// };
 
 class GLOMessage : public HandleableMessage {
    private:
