@@ -101,6 +101,7 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
             cerr << rbc.module->blockId << ": Coordination Tree is Built\n";
             reconfigurationStep = MAXFLOW;
             destinations.clear();
+            //Start MaxFlow
             for (auto block : BaseSimulator::getWorld()->buildingBlocksMap) {
                 RePoStBlockCode *MMblock = static_cast<RePoStBlockCode *>(block.second->blockCode);
                 if (MMblock->isPotentialSource() and

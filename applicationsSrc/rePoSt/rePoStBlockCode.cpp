@@ -547,7 +547,7 @@ bool RePoStBlockCode::setGreenLight(bool onoff) {
     if (onoff) {
         info << "green: ";
         greenLightIsOn = true;
-        module->setColor(initialColor);
+        //module->setColor(initialColor);
 
         // Resume flow if needed
         if(not awaitingSources.empty()) {
@@ -561,7 +561,7 @@ bool RePoStBlockCode::setGreenLight(bool onoff) {
     } else {
         info << "red: ";
         greenLightIsOn = false;
-        module->setColor(RED);
+        //module->setColor(RED);
     }
 
     getScheduler()->trace(info.str(),module->blockId, onoff ? GREEN : RED);
@@ -663,6 +663,9 @@ Cell3DPosition RePoStBlockCode::nearestPositionTo(Cell3DPosition& targetPosition
                                                   P2PNetworkInterface* except) {
     int distance = INT32_MAX;
     Cell3DPosition nearest;
+    if(isAdjacentToPosition(targetPosition) and module->getInterface(targetPosition)) {
+        return targetPosition;
+    }
     for (auto neighPos : lattice->getActiveNeighborCells(module->position)) {
         RePoStBlockCode* neighBlock = static_cast<RePoStBlockCode*>(
             BaseSimulator::getWorld()->getBlockByPosition(neighPos)->blockCode);
@@ -673,11 +676,7 @@ Cell3DPosition RePoStBlockCode::nearestPositionTo(Cell3DPosition& targetPosition
             }
         }
         VS_ASSERT(neighBlock->module->getState() != BuildingBlock::State::MOVING);
-        int d;
-        // if(reconfigurationStep == TRANSPORT)
-        d = BaseSimulator::getWorld()->lattice->getCellDistance(neighPos, targetPosition);
-        // else
-        //     d = Init::getDistance(neighPos, targetPosition);
+        int d = BaseSimulator::getWorld()->lattice->getCellDistance(neighPos, targetPosition);
         if (d < distance) {
             distance = d;
             nearest = neighPos;
@@ -1069,9 +1068,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                                 interfaceTo(MMPosition, parentPosition), 100, 200);
                         } else {
                             start_wave();
-                            //VS_ASSERT(false);
                         }
-
                     } else {
                         getScheduler()->schedule(
                             new InterruptionEvent(getScheduler()->now() + 500, module, IT_MODE_TERMINATION));
@@ -1079,28 +1076,25 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                 } break;
 
                 case IT_MODE_NBMOVEMENTS: {
-                    if(reconfigurationStep != DONE) {
-                       
+                    if (reconfigurationStep != DONE) {
                         timeStep++;
                         int nbOfModulesInMvt = 0;
-                        for(auto id_block: BaseSimulator::getWorld()->buildingBlocksMap) {
-                            RePoStBlockCode* MMBlock = static_cast<RePoStBlockCode*>(id_block.second->blockCode);
-                            
-                            if(MMBlock->movingState == MOVING or MMBlock->movingState == WAITING) {
+                        for (auto id_block : BaseSimulator::getWorld()->buildingBlocksMap) {
+                            RePoStBlockCode* MMBlock =
+                                static_cast<RePoStBlockCode*>(id_block.second->blockCode);
+
+                            if (MMBlock->movingState == MOVING or MMBlock->movingState == WAITING) {
                                 nbOfModulesInMvt++;
                             }
-                            
                         }
-                      
                         ofstream file;
                         file.open("nbMovementsPerTimeStep.txt", ios::out | ios::app);
-                        file << timeStep << ',' << nbOfModulesInMvt << ',' << NbOfStreamlines << '\n';
+                        file << timeStep << ',' << nbOfModulesInMvt << ',' << NbOfStreamlines
+                             << '\n';
                         getScheduler()->schedule(
-                                            new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
-                                                                module, IT_MODE_NBMOVEMENTS));
-                        
+                            new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
+                                                  module, IT_MODE_NBMOVEMENTS));
                     }
-                    
                 } break;
             }
         }
@@ -1170,23 +1164,7 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
         for(auto id_block: BaseSimulator::getWorld()->buildingBlocksMap) {
             RePoStBlockCode* block = static_cast<RePoStBlockCode*>(id_block.second->blockCode);
             if(showSrcAndDst) {
-                if(block->isPotentialSource()) {
-                    block->module->setColor(RED);
-                } else if(block->isDestination) {
-                    block->getModule()->setColor(GREEN);
-                    if(block->shapeState == FRONTBACK) {
-                        for(auto p:FrontBackMM) {
-                            BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition + p)->setColor(GREEN);
-                        }
-                    } else {
-                        for(auto p:BackFrontMM) {
-                            BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition + p)->setColor(GREEN);
-                        }
-                    }
-                } else {
-                    if( not static_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)->isDestination)
-                        block->getModule()->setColor(WHITE);
-                }
+                switchModulesColors();
             } else {
                 block->module->setColor(block->initialColor);
             }
@@ -1226,24 +1204,23 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
 void RePoStBlockCode::switchModulesColors() {
     showSrcAndDst = true;
     // color sources in RED, destinations in GREEN in other MMs in White
-    for(auto id_block: BaseSimulator::getWorld()->buildingBlocksMap) {
+    for (auto id_block : BaseSimulator::getWorld()->buildingBlocksMap) {
         RePoStBlockCode* block = static_cast<RePoStBlockCode*>(id_block.second->blockCode);
-        if(block->module->position == Cell3DPosition(12,9,24)) continue;
-        if(static_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)->isSource) {
+        if (static_cast<RePoStBlockCode*>(
+                BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)
+                ->isSource) {
             block->module->setColor(RED);
-        } else if(block->isDestination or static_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)->isDestination) {
+        } else if (block->isDestination or
+                   static_cast<RePoStBlockCode*>(BaseSimulator::getWorld()
+                                                     ->getBlockByPosition(block->seedPosition)
+                                                     ->blockCode)
+                       ->isDestination) {
             block->module->setColor(GREEN);
-            // if(block->shapeState == FRONTBACK) {
-            //     for(auto p:FrontBackMM) {
-            //         BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition + p)->setColor(GREEN);
-            //     }
-            // } else {
-            //     for(auto p:BackFrontMM) {
-            //         BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition + p)->setColor(GREEN);
-            //     }
-            // }
         } else {
-            if( not static_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)->isDestination)
+            if (not static_cast<RePoStBlockCode*>(BaseSimulator::getWorld()
+                                                      ->getBlockByPosition(block->seedPosition)
+                                                      ->blockCode)
+                        ->isDestination)
                 block->getModule()->setColor(GREY);
         }
     }

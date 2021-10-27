@@ -25,10 +25,10 @@ void CoordinateMessage::handle(BaseSimulator::BlockCode *bc) {
         if (bridgeStop) return;
         rbc.probeGreenLight();
     } else {
-        if (rbc.module->getInterface(rbc.nearestPositionTo(position, sender))->isConnected()) {
+        if (rbc.interfaceTo(position, sender)->isConnected()) {
             rbc.sendHandleableMessage(
                 static_cast<CoordinateMessage *>(this->clone()),
-                rbc.module->getInterface(rbc.nearestPositionTo(position, sender)), 100, 200);
+                rbc.interfaceTo(position, sender), 100, 200);
         } else {
             rbc.sendHandleableMessage(static_cast<CoordinateMessage *>(this->clone()), sender, 100,
                                       200);
@@ -89,12 +89,12 @@ void CoordinateBackMessage::handle(BaseSimulator::BlockCode *bc) {
         VS_ASSERT(rbc.operation);
         rbc.sendHandleableMessage(
             new CoordinateMessage(rbc.operation, targetModule, rbc.module->position, rbc.mvt_it),
-            rbc.module->getInterface(rbc.nearestPositionTo(targetModule)), 100, 200);
+            rbc.interfaceTo(targetModule), 100, 200);
     } else {  // Forward the message to the coordinator
         P2PNetworkInterface *sender = this->destinationInterface;
         rbc.sendHandleableMessage(
             static_cast<CoordinateBackMessage *>(this->clone()),
-            rbc.module->getInterface(rbc.nearestPositionTo(coordinatorPosition, sender)), 100,
+            rbc.interfaceTo(coordinatorPosition, sender), 100,
             200);
     }
 }
@@ -105,7 +105,7 @@ void PLSMessage::handle(BaseSimulator::BlockCode *bc) {
   
     if(rbc.module->position != destPos) {
         rbc.sendHandleableMessage(static_cast<PLSMessage*>(this->clone()),
-            rbc.module->getInterface(rbc.nearestPositionTo(destPos, sender)), 100, 200);
+            rbc.interfaceTo(destPos, sender), 100, 200);
         return;
     }
 
@@ -123,13 +123,13 @@ void PLSMessage::handle(BaseSimulator::BlockCode *bc) {
                     and rbc.module->getState() != BuildingBlock::State::ACTUATING) {
         //send GLO to source
         rbc.sendHandleableMessage(new GLOMessage(srcPos),
-            rbc.module->getInterface(rbc.nearestPositionTo(srcPos)), 100, 200);
+            rbc.interfaceTo(srcPos), 100, 200);
     } else if(srcPos - rbc.seedPosition == Cell3DPosition(0, 0, 1) 
         and rbc.lattice->cellHasBlock(rbc.module->position + Cell3DPosition(1, 0, 1))){
             // avoid deadlock when coming from back and transfering left. 
             //VS_ASSERT(false);
             rbc.sendHandleableMessage(new GLOMessage(srcPos),
-                rbc.module->getInterface(rbc.nearestPositionTo(srcPos)), 100, 200);
+                rbc.interfaceTo(srcPos), 100, 200);
     }else {
         if(rbc.module->blockId == 45) {
             rbc.console << "Test orange\n";
@@ -145,7 +145,7 @@ void GLOMessage::handle(BaseSimulator::BlockCode *bc) {
     RePoStBlockCode &rbc = *static_cast<RePoStBlockCode *>(bc);
     if(rbc.module->position != srcPos) {
         rbc.sendHandleableMessage(static_cast<PLSMessage*>(this->clone()),
-            rbc.module->getInterface(rbc.nearestPositionTo(srcPos)), 100, 200);
+            rbc.interfaceTo(srcPos), 100, 200);
         return;
     }
     rbc.nbWaitedAnswers--;
@@ -159,7 +159,9 @@ void GLOMessage::handle(BaseSimulator::BlockCode *bc) {
                               relativePos() == Cell3DPosition(-1, -1, 2)**/) or
                 rbc.relativePos() == Cell3DPosition(1, 0, 1) or
                 rbc.relativePos() == Cell3DPosition(1, -1, 1) or
-                rbc.relativePos() == Cell3DPosition(2, 0, 2) or rbc.relativePos() == Cell3DPosition(1,2,2) or rbc.relativePos() == Cell3DPosition(1,0,2)) {
+                rbc.relativePos() == Cell3DPosition(2, 0, 2) or
+                rbc.relativePos() == Cell3DPosition(1,2,2) or
+                rbc.relativePos() == Cell3DPosition(1,0,2)) {
                 // if(relativePos() == Cell3DPosition(1,2,2)) VS_ASSERT(false);
                 getScheduler()->schedule(new Catoms3DRotationStartEvent(
                     getScheduler()->now(), rbc.module, targetPosition, RotationLinkType::OctaFace,

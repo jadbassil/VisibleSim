@@ -13,38 +13,7 @@ static const int IT_MODE_TRANSFERBACK = 2001;
 static const int IT_MODE_TRANSFERBACK_REACHCOORDINATOR = 2002;
 static const int IT_MODE_TERMINATION = 2003;
 static const int IT_MODE_STARTWAVE = 2004;
-static const int IT_MODE_DISMANTLEBACK = 2005;
-static const int IT_MODE_TRANSFEREBACK_COMINGFROMBACK = 2006;
-static const int IT_MODE_TRANSFERELEFT = 2007;
-static const int IT_MODE_TRANSFEREBACK_FRONTBACK = 2008;
 static const int IT_MODE_NBMOVEMENTS = 2009;
-/* ------------------------- COORDINATION TREE MSGS ------------------------- */
-static const int GO_MSG_ID = 1001;
-static const int BACK_MSG_ID = 1002;
-static const int GOTERM_MSG_ID = 1014;
-static const int BACKTERM_MSG_ID = 1015;
-static const int ACK_MSG_ID = 1016;
-/* -------------------------------------------------------------------------- */
-
-/* ----------------------- OPERATION COORDINATION MSGS ---------------------- */
-static const int COORDINATE_MSG_ID = 1003;
-static const int COORDINATEBACK_MSG_ID = 1004;
-/* -------------------------------------------------------------------------- */
-
-/* ------------------------ MOTION COORDINATION MSGS ------------------------ */
-static const int PLS_MSG_ID = 1005;
-static const int GLO_MSG_ID = 1006;
-static const int FTR_MSG_ID = 1007;
-/* -------------------------------------------------------------------------- */
-
-/* ------------------------------ MAX-FLOW MSGS ----------------------------- */
-static const int BFS_MSG_ID = 1008;
-static const int CONFIRMEDGE_MSG_ID = 1009;
-static const int CONFIRMPATH_MSG_ID = 1010;
-static const int CONFIRMSTREAMLINE_MSG_ID = 1011;
-static const int AVAILABLE_MSG_ID = 1012;
-static const int CUTOFF_MSG_ID = 1013;
-/* -------------------------------------------------------------------------- */
 
 static vector<Cell3DPosition> FrontBackMM = {Cell3DPosition(0, 0, 0),   Cell3DPosition(1, 0, 0),
                                              Cell3DPosition(1, 0, 1),   Cell3DPosition(2, 1, 2),
@@ -85,38 +54,10 @@ static vector<Cell3DPosition> FillingPositions_BackFront_Zeven = {
     Cell3DPosition(1, 0, 1), Cell3DPosition(2, 0, 2), Cell3DPosition(1, 0, 3),
     Cell3DPosition(0, 0, 3),
 };
-// static vector<Cell3DPosition> FillingPositions_FrontBack = {
-//     Cell3DPosition(0, -1, 1),
-//     Cell3DPosition(0, -1, 2),
-//     Cell3DPosition(1, -1, 2),
-//     Cell3DPosition(0, -1, 3),
-//     Cell3DPosition(1, 0, 2),
-//     Cell3DPosition(0, 0, 2),
-//     Cell3DPosition(0, 0, 3),
-//     Cell3DPosition(0, 1, 2),
-//     Cell3DPosition(1, 1, 2),
-//     Cell3DPosition(0, 0, 1),
-// };
-
-// static vector<Cell3DPosition> FillingPositions_BackFront = {
-//     Cell3DPosition(0, -1, 1),
-//     Cell3DPosition(0, -1, 2),
-//     Cell3DPosition(1, -1, 2),
-//     Cell3DPosition(0, -1, 3),
-//     Cell3DPosition(1, 0, 2),
-//     Cell3DPosition(0, 0, 2),
-//     Cell3DPosition(0, 0, 3),
-//     Cell3DPosition(0, 1, 2),
-//     Cell3DPosition(1, 1, 2),
-//     Cell3DPosition(0, 0, 1),
-// };
 
 enum PathState {NONE, BFS, ConfPath, Streamline};
 enum ProcessState {PASSIVE, ACTIVE};
 enum RenconfigurationStep {SRCDEST, MAXFLOW, TRANSPORT, DONE};
-
-static vector<Cell3DPosition> OpenedPositions = {
-    Cell3DPosition(-1, 0, 0), Cell3DPosition(-1, 0, 4), Cell3DPosition(2, 0, 0), Cell3DPosition(2, 0, 4)};
 
 static vector<array<int, 4>> initialMap;
 static vector<array<int, 4>> targetMap;
@@ -125,7 +66,6 @@ static bool showSrcAndDst = false;
 
 static RenconfigurationStep reconfigurationStep;
 
-// static int NbOfStreamlines = 0;
 static int NbOfDestinationsReached = 0;
 static vector<Cell3DPosition> destinations;
 
@@ -179,9 +119,6 @@ public:
     bool moduleAwaitingGo{false};
     bool notFindingPivot{false};
     Cell3DPosition pivotPosition;
-    Cell3DPosition awaitingModulePos;
-    P2PNetworkInterface *awaitingModuleProbeItf{NULL};
-    P2PNetworkInterface *coordinateItf{NULL};
     set<Cell3DPosition> awaitingSources;
     bool initialized{false};
     Operation *operation = NULL;

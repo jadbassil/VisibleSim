@@ -62,6 +62,7 @@ void BackTermMessage::handle(BaseSimulator::BlockCode *bc) {
             } else {
                 rbc.console << "res: " << rbc.res << "; b: " << rbc.b << "\n";
                 if (rbc.res and rbc.b) {
+                    //Start transportation phase
                     cerr << "MaxFlow Terminated!!" << endl;
                     cerr << "Starting Modules Transportation" << endl;
                     reconfigurationStep = TRANSPORT;

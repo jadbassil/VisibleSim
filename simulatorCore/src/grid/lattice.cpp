@@ -135,6 +135,7 @@ Lattice::getCellDistance(const Cell3DPosition &p1, const Cell3DPosition &p2) con
     while(not Q.empty()) {
         Cell3DPosition x = Q.front();
         Q.pop();
+        if(x == p2) return distance[x];
         for(auto pos: getActiveNeighborCells(x)) {
             if(visited[pos]) continue;
             if(distance.find(pos) == distance.end())
