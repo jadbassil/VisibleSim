@@ -362,7 +362,6 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
             if (pos == rbc->module->position.offsetY(-1) or
                 pos == rbc->module->position.offsetY(1)) {  // FB_Left and BF_LEFT
                 rbc->transferCount++;
-
                 stringstream sstream;
                 sstream << "TransferCount: " + to_string(rbc->transferCount) << "\n";
                 getScheduler()->trace(sstream.str(), rbc->module->blockId, Color(MAGENTA));

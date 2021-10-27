@@ -62,6 +62,7 @@ void BackTermMessage::handle(BaseSimulator::BlockCode *bc) {
             } else {
                 rbc.console << "res: " << rbc.res << "; b: " << rbc.b << "\n";
                 if (rbc.res and rbc.b) {
+                    //Start transportation phase
                     cerr << "MaxFlow Terminated!!" << endl;
                     cerr << "Starting Modules Transportation" << endl;
                     reconfigurationStep = TRANSPORT;
@@ -89,14 +90,6 @@ void BackTermMessage::handle(BaseSimulator::BlockCode *bc) {
                                                       coord->module->position, coord->mvt_it),
                                 coord->module->getInterface(coord->nearestPositionTo(targetModule)),
                                 100, 200);
-                            // coord->sendMessage(
-                            //     "Coordinate Msg1",
-                            //     new MessageOf<Coordinate>(
-                            //         COORDINATE_MSG_ID,
-                            //         Coordinate(coord->operation, targetModule,
-                            //                    coord->module->position, coord->mvt_it)),
-                            //     coord->module->getInterface(coord->nearestPositionTo(targetModule)),
-                            //     100, 200);
                         }
                     }
 

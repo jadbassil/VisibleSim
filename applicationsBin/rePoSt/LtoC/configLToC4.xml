@@ -6,7 +6,6 @@
     <spotlight target="200,200,100" directionSpherical="60,30,900" angle="33.690068" />
 	<blockList color="0,255,0" size="1,1,1" blockSize="40,40,41" >
 		<block position="20,20,10"/>
-        <block position="20,25,58"/>
 	</blockList>
 
 	<MMBlockList>
