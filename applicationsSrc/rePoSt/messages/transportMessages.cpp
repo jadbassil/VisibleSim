@@ -130,10 +130,11 @@ void PLSMessage::handle(BaseSimulator::BlockCode *bc) {
             //VS_ASSERT(false);
             rbc.sendHandleableMessage(new GLOMessage(srcPos),
                 rbc.interfaceTo(srcPos), 100, 200);
+    } else if(rbc.relativePos() == Cell3DPosition(2,1,2) and rbc.lattice->cellHasBlock(rbc.module->position + Cell3DPosition(0, -1, 1))) {
+            // avoid deadlock when FB transfering back and left MM is being dismantled
+            rbc.sendHandleableMessage(new GLOMessage(srcPos),
+                rbc.interfaceTo(srcPos), 100, 200);
     }else {
-        if(rbc.module->blockId == 45) {
-            rbc.console << "Test orange\n";
-        }
         getScheduler()->trace("light turned orange2\n", rbc.module->blockId, ORANGE);
         if(not rbc.awaitingSources.empty()) rbc.setGreenLight(true);
         rbc.awaitingSources.insert(srcPos);
@@ -194,7 +195,21 @@ void FTRMessage::handle(BaseSimulator::BlockCode *bc) {
     //         }
     //     }
     // }
+
+    if (rbc.movingState == WAITING and (rbc.relativePos() == Cell3DPosition(-2, 0, 1) or
+                                         rbc.relativePos() == Cell3DPosition(-2, -1, 1))) {
+        /**
+        * Transfer left
+        * Avoid blocking when passing the last bridge module. Must stay RED until the latest arrived
+        *   module starts its next operation 
+        * //TODO: might need to add the last bridge module when direction is right
+        */
+        
+        return;
+    }
     if (not rbc.greenLightIsOn and not haveMovingNeighbors) {
         rbc.setGreenLight(true);
+
     }
+   
 }

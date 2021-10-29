@@ -524,6 +524,14 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
         }
     }
     /* -------------------------------------------------------------------------- */
+
+    if(operation->isTransfer() and operation->getDirection() == Direction::DOWN
+        and relativePos() == Cell3DPosition(1,0,0)) {
+        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+            lattice->getBlock(module->position + Cell3DPosition(1, 2, -2))));
+        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+            lattice->getBlock(module->position + Cell3DPosition(0, 1, -3))));
+    }
     return latchingPoints;
 }
 
@@ -1181,15 +1189,15 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     );
     
     ofstream file;
-    if(c == 'J') {
-        seedPosition = Cell3DPosition(20,19,14);
-        file.open("routes.txt", ios::out | ios::app);
-        if(!file.is_open()) return;
-        file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
-        return;
-    }
-    file.open("FB_Transfer_Down.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(20,19,14);
+    // if(c == 'J') {
+    //     seedPosition = Cell3DPosition(2,19,14);
+    //     file.open("routes.txt", ios::out | ios::app);
+    //     if(!file.is_open()) return;
+    //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
+    //     return;
+    // }
+    file.open("FB_Transfer_Down_Zodd.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(2,5,8);
     if(!file.is_open()) return;
 
     if(c == 'o') {

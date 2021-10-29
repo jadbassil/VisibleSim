@@ -325,7 +325,7 @@ Transfer_Operation::Transfer_Operation(Direction _direction, MMShape _mmShape, b
     case Direction::DOWN: {
         if(mmShape == FRONTBACK) {
             (Zeven) ? localRules.reset(&LocalRules_FB_Transfer_Down_Zeven):
-                localRules.reset(&LocalRules_FB_Transfer_Down_Zodd);
+                    localRules.reset(&LocalRules_FB_Transfer_Down_Zodd);
         } else {
             VS_ASSERT_MSG(false, "Not implemented");
         }
@@ -414,7 +414,7 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
             }
         } break;
 
-        case Direction::UP: case Direction::DOWN: {
+        case Direction::UP: {
             // Same sequence of movements for all modules.
             if (pos == rbc->module->position.offsetY(-1) or
                 pos == rbc->module->position.offsetY(1)) {
@@ -435,6 +435,37 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
             }
         } break;
 
+        case Direction::DOWN: {
+            if (pos == rbc->module->position.offsetY(-1) or
+                pos == rbc->module->position.offsetY(1)) {
+                rbc->transferCount++;
+                stringstream sstream;
+                sstream << "TransferCount: " + to_string(rbc->transferCount);
+                getScheduler()->trace(sstream.str(), rbc->module->blockId, Color(MAGENTA));
+
+                if (mustHandleBridgeOnAdd(pos)) {  // suppose that there is a bridge
+                    VS_ASSERT(false);
+                    if (rbc->transferCount == 8)
+                        return;
+                    else if (rbc->transferCount == 9) {
+                        // msg so must jump to next module if previous operation requires bridging
+                        setMvtItToNextModule(bc);
+                    }
+                }
+                Cell3DPosition targetModule =
+                    rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
+                rbc->sendHandleableMessage(
+                    new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                          rbc->mvt_it),
+                    rbc->module->getInterface(pos), 100, 200);
+                if (rbc->transferCount > 1) {
+                    setMvtItToNextModule(bc);
+                    rbc->console << "mvt_itX: " << rbc->mvt_it << "\n";
+                }
+            }
+
+        } break;
+
         case Direction::BACK: case Direction::FRONT:  {
             if (pos == rbc->module->position.offsetY(-1) or
                 pos == rbc->module->position.offsetY(1)) {
@@ -447,23 +478,21 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                         // skip to avoid unsupported motion
                         return;
                     }
+                    if(rbc->transferCount == 3){
+                        rbc->console << "mvt_it3: " << rbc->mvt_it << "\n";
+                        return;
+                    } 
                     Cell3DPosition targetModule =
                         rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
                     rbc->sendHandleableMessage(
                         new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
                                               rbc->mvt_it),
                         rbc->module->getInterface(targetModule), 100, 200);
-
-                    if (rbc->transferCount <= 3) {
+                    if(rbc->transferCount == 2) 
+                        // mvt_it will be updated when the coordinateBack is received
+                        return;
+                    if (rbc->transferCount == 1) {
                         setMvtItToNextModule(bc);                        
-                        if (rbc->transferCount == 3) {
-                            targetModule =
-                                rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
-                            rbc->sendHandleableMessage(
-                                new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
-                                                    rbc->mvt_it),
-                                rbc->module->getInterface(pos), 100, 200);  
-                        }
                     } else if (rbc->transferCount < 10) {
                         rbc->mvt_it = 7;
                     }
@@ -571,6 +600,7 @@ void Transfer_Operation::updateState(BaseSimulator::BlockCode *bc) {
     } break;
 
     case Direction::DOWN: {
+        if(rbc->mvt_it == 2 and mmShape == FRONTBACK and Zeven) return;
         Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::DOWN,
                                     rbc->seedPosition);
         rbc->MMPosition = rbc->MMPosition.offsetZ(-1);
@@ -592,17 +622,18 @@ void Transfer_Operation::updateState(BaseSimulator::BlockCode *bc) {
 
 bool Transfer_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
     RePoStBlockCode* rbc = static_cast<RePoStBlockCode*>(bc);
-    if(rbc->isCoordinator) return false;
-    if((direction == Direction::LEFT or direction == Direction::RIGHT) and rbc->mvt_it >= 14) {
+    if (rbc->isCoordinator) return false;
+    if ((direction == Direction::LEFT or direction == Direction::RIGHT) and rbc->mvt_it >= 14) {
         return true;
     } else if (direction == Direction::BACK or direction == Direction::FRONT) {
-        if (not comingFromBack and mmShape == BACKFRONT and
-            (rbc->mvt_it >= 26 /*or rbc->mvt_it == 30 or rbc->mvt_it == 38 or
-             rbc->mvt_it == 40*/)) {
-            return true;
-        } else if (comingFromBack and mmShape == BACKFRONT and rbc->mvt_it > 8) {
-            return true;
+        if (mmShape == BACKFRONT) {
+            if (not comingFromBack and rbc->mvt_it >= 26) return true;
+            if (comingFromBack and rbc->mvt_it > 8) return true;
+        } else if (mmShape == FRONTBACK) {
+            if (not comingFromBack and rbc->mvt_it == 4 or rbc->mvt_it == 6) return true;
         }
+    } else if (direction == Direction::DOWN and rbc->mvt_it == 2) {
+        return true;
     }
     return false;
 }
