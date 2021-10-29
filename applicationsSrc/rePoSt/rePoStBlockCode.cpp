@@ -525,12 +525,42 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
     }
     /* -------------------------------------------------------------------------- */
 
-    if(operation->isTransfer() and operation->getDirection() == Direction::DOWN
-        and relativePos() == Cell3DPosition(1,0,0)) {
-        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-            lattice->getBlock(module->position + Cell3DPosition(1, 2, -2))));
-        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-            lattice->getBlock(module->position + Cell3DPosition(0, 1, -3))));
+    if(operation->isTransfer() and operation->getDirection() == Direction::DOWN) {
+        if(relativePos() == Cell3DPosition(1,0, 0)){
+            //Zeven
+            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                lattice->getBlock(module->position + Cell3DPosition(1, 2, -2))));
+            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                lattice->getBlock(module->position + Cell3DPosition(0, 1, -3))));
+        } else if(relativePos() == Cell3DPosition(1,-1,0)) {
+            //Zodd
+            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                lattice->getBlock(module->position + Cell3DPosition(1, 1, -2))));
+            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                lattice->getBlock(module->position + Cell3DPosition(0, 0, -3))));
+        }
+        
+    }
+
+    if (operation->isTransfer() and operation->getDirection() == Direction::BACK) {
+        if (not static_cast<Transfer_Operation*>(operation)->isComingFromBack() and
+            operation->getMMShape() == FRONTBACK) {
+            if (operation->isZeven() and mvt_it > 5 and
+                (*operation->localRules)[mvt_it].currentPosition == Cell3DPosition(1, 0, 2)) {
+                latchingPoints.clear();
+                latchingPoints.push_back(
+                    static_cast<Catoms3DBlock*>(lattice->getBlock(module->position.offsetY(2))));
+            } else if(not operation->isZeven() and mvt_it > 5 and
+                (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, 0, 2)) {
+                     latchingPoints.clear();
+                latchingPoints.push_back(
+                    static_cast<Catoms3DBlock*>(lattice->getBlock(seedPosition + Cell3DPosition(1, 2,2))));
+            }else if (mvt_it == 2) {
+                latchingPoints.clear();
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                    lattice->getBlock(seedPosition + Cell3DPosition(1, 1, 2))));
+            }
+        }
     }
     return latchingPoints;
 }
@@ -556,7 +586,7 @@ bool RePoStBlockCode::setGreenLight(bool onoff) {
         info << "green: ";
         greenLightIsOn = true;
         //module->setColor(initialColor);
-
+        module->setColor(GREY);
         // Resume flow if needed
         if(not awaitingSources.empty()) {
             for(auto as: awaitingSources) {
@@ -999,7 +1029,16 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                 
                 if (module->getNeighborPos(face, pos) and (module->getState() <= 3) ) {
                     console << "REMOVE NEIGHBOR: " << pos << "\n";
-                    setGreenLight(true);
+                    bool hasMovingNeighbors = false;;
+                    for(auto n: lattice->getActiveNeighborCells(module->position)) {
+                        if(n == pos) continue;
+                        if(static_cast<RePoStBlockCode*>(lattice->getBlock(n)->blockCode)->movingState == MOVING) {
+                            hasMovingNeighbors = true;
+                            break;
+                        }
+                    }
+                    if(not hasMovingNeighbors)
+                        setGreenLight(true);
                 }
             }
             break;
@@ -1131,38 +1170,38 @@ void RePoStBlockCode::onBlockSelected() {
     for(auto c: childrenPositions) cerr << c << "; ";
     cerr << endl;
     cerr << "distance: " << distance << endl;
-    cerr << "mainPathState: " << mainPathState << endl;
-    // cerr << "aug1PathState: " << aug1PathState << endl;
-    // cerr << "aug2PathState: " << aug2PathState << endl;
-    cerr << "mainPathIn: " << mainPathIn << endl;
-    cerr << "mainPathOut: ";
-    for(auto out: mainPathOut) cerr << out << " | "; 
-    cerr << endl;
-    if(isDestination) cerr << "destinationFor: " << destinationOut << endl;
-    if(operation) {
-        if(operation->isTransfer())
-        cerr << "comingFromBack: " << static_cast<Transfer_Operation*>(operation)->isComingFromBack() << endl;
-    }
-    cerr << endl;
-    cerr << "aug1PathIn: " << aug1PathIn << endl;
-    cerr << "aug1PathOut: ";
-    for(auto out: aug1PathOut) cerr << out << " | ";
-    cerr << endl;
-    cerr << "aug2PathIn: " << aug2PathIn << endl;
-    cerr << "aug2PathOut: ";
-    for(auto out: aug2PathOut) cerr << out << " | ";
-    cerr << endl;
-    cerr << "mainPathsOld: ";
-    for(auto old: mainPathsOld) cerr << old << " | ";
-    cerr << endl;
-    cerr << "aug1PathsOld: ";
-    for(auto old: aug1PathsOld) cerr << old << " | ";
-    cerr << endl;
-    cerr << "aug2PathsOld: ";
-    for(auto old: aug2PathsOld) cerr << old << " | ";
-    cerr << endl;
-    cerr << "deficit: " << deficit << endl;
-    cerr << "state: " << state << endl;
+    // cerr << "mainPathState: " << mainPathState << endl;
+    // // cerr << "aug1PathState: " << aug1PathState << endl;
+    // // cerr << "aug2PathState: " << aug2PathState << endl;
+    // cerr << "mainPathIn: " << mainPathIn << endl;
+    // cerr << "mainPathOut: ";
+    // for(auto out: mainPathOut) cerr << out << " | "; 
+    // cerr << endl;
+    // if(isDestination) cerr << "destinationFor: " << destinationOut << endl;
+    // if(operation) {
+    //     if(operation->isTransfer())
+    //     cerr << "comingFromBack: " << static_cast<Transfer_Operation*>(operation)->isComingFromBack() << endl;
+    // }
+    // cerr << endl;
+    // cerr << "aug1PathIn: " << aug1PathIn << endl;
+    // cerr << "aug1PathOut: ";
+    // for(auto out: aug1PathOut) cerr << out << " | ";
+    // cerr << endl;
+    // cerr << "aug2PathIn: " << aug2PathIn << endl;
+    // cerr << "aug2PathOut: ";
+    // for(auto out: aug2PathOut) cerr << out << " | ";
+    // cerr << endl;
+    // cerr << "mainPathsOld: ";
+    // for(auto old: mainPathsOld) cerr << old << " | ";
+    // cerr << endl;
+    // cerr << "aug1PathsOld: ";
+    // for(auto old: aug1PathsOld) cerr << old << " | ";
+    // cerr << endl;
+    // cerr << "aug2PathsOld: ";
+    // for(auto old: aug2PathsOld) cerr << old << " | ";
+    // cerr << endl;
+    // cerr << "deficit: " << deficit << endl;
+    // cerr << "state: " << state << endl;
 }
 
 void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {

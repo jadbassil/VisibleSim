@@ -119,24 +119,35 @@ void PLSMessage::handle(BaseSimulator::BlockCode *bc) {
     //     return;
     // }
 
-    if((rbc.greenLightIsOn or nextToSender)
-                    and rbc.module->getState() != BuildingBlock::State::ACTUATING) {
-        //send GLO to source
-        rbc.sendHandleableMessage(new GLOMessage(srcPos),
-            rbc.interfaceTo(srcPos), 100, 200);
-    } else if(srcPos - rbc.seedPosition == Cell3DPosition(0, 0, 1) 
-        and rbc.lattice->cellHasBlock(rbc.module->position + Cell3DPosition(1, 0, 1))){
-            // avoid deadlock when coming from back and transfering left. 
-            //VS_ASSERT(false);
-            rbc.sendHandleableMessage(new GLOMessage(srcPos),
-                rbc.interfaceTo(srcPos), 100, 200);
-    } else if(rbc.relativePos() == Cell3DPosition(2,1,2) and rbc.lattice->cellHasBlock(rbc.module->position + Cell3DPosition(0, -1, 1))) {
-            // avoid deadlock when FB transfering back and left MM is being dismantled
-            rbc.sendHandleableMessage(new GLOMessage(srcPos),
-                rbc.interfaceTo(srcPos), 100, 200);
-    }else {
+    if (rbc.isCoordinator and rbc.operation->isTransfer()) {
+        if (rbc.operation->getDirection() == Direction::BACK and
+            srcPos.pt[2] > rbc.module->position.pt[2] and
+            rbc.module->getInterface(rbc.module->position.offsetY(-1))->isConnected()) {
+            //Avoid blocking when transferring back and coming from above.
+            getScheduler()->trace("light turned orange2\n", rbc.module->blockId, ORANGE);
+            if (not rbc.awaitingSources.empty()) rbc.setGreenLight(true);
+            rbc.awaitingSources.insert(srcPos);
+            rbc.module->setColor(DARKORANGE);
+            return;
+        }
+    }
+
+    if ((rbc.greenLightIsOn or nextToSender) and
+        rbc.module->getState() != BuildingBlock::State::ACTUATING) {
+        // send GLO to source
+        rbc.sendHandleableMessage(new GLOMessage(srcPos), rbc.interfaceTo(srcPos), 100, 200);
+    } else if (srcPos - rbc.seedPosition == Cell3DPosition(0, 0, 1) and
+               rbc.lattice->cellHasBlock(rbc.module->position + Cell3DPosition(1, 0, 1))) {
+        // avoid deadlock when coming from back and transfering left.
+        // VS_ASSERT(false);
+        rbc.sendHandleableMessage(new GLOMessage(srcPos), rbc.interfaceTo(srcPos), 100, 200);
+    } else if (rbc.relativePos() == Cell3DPosition(2, 1, 2) and
+               rbc.lattice->cellHasBlock(rbc.module->position + Cell3DPosition(0, -1, 1))) {
+        // avoid deadlock when FB transfering back and left MM is being dismantled
+        rbc.sendHandleableMessage(new GLOMessage(srcPos), rbc.interfaceTo(srcPos), 100, 200);
+    } else {
         getScheduler()->trace("light turned orange2\n", rbc.module->blockId, ORANGE);
-        if(not rbc.awaitingSources.empty()) rbc.setGreenLight(true);
+        if (not rbc.awaitingSources.empty()) rbc.setGreenLight(true);
         rbc.awaitingSources.insert(srcPos);
         rbc.module->setColor(DARKORANGE);
     }
