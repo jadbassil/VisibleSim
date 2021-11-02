@@ -215,7 +215,6 @@ void FTRMessage::handle(BaseSimulator::BlockCode *bc) {
         *   module starts its next operation 
         * //TODO: might need to add the last bridge module when direction is right
         */
-        
         return;
     }
     if (not rbc.greenLightIsOn and not haveMovingNeighbors) {

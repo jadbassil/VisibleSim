@@ -525,23 +525,53 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
     }
     /* -------------------------------------------------------------------------- */
 
-    if(operation->isTransfer() and operation->getDirection() == Direction::DOWN) {
-        if(relativePos() == Cell3DPosition(1,0, 0)){
-            //Zeven
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(module->position + Cell3DPosition(1, 2, -2))));
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(module->position + Cell3DPosition(0, 1, -3))));
-        } else if(relativePos() == Cell3DPosition(1,-1,0)) {
-            //Zodd
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(module->position + Cell3DPosition(1, 1, -2))));
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(module->position + Cell3DPosition(0, 0, -3))));
-        }
-        
-    }
+     /* ------ Avoid blocking when FB dismantling left then transfering down ----- */
+    if (operation->isDismantle() and operation->getDirection() == Direction::LEFT) {
+        if (targetPos - seedPosition == Cell3DPosition(-1, 0, 2) and
+            lattice->cellHasBlock(seedPosition + Cell3DPosition(-2, 0,1))) {
 
+            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                lattice->getBlock(seedPosition + Cell3DPosition(-2, 0, 1))));
+        }
+    }
+    /* -------------------------------------------------------------------------- */
+
+    /* ------------------ Avoid blocking when transfering down ------------------ */
+    if(operation->isTransfer() and operation->getDirection() == Direction::DOWN) {
+        //FRONTBACK
+        if (operation->getMMShape() == FRONTBACK) {
+            if (relativePos() == Cell3DPosition(1, 0, 0)) {
+                // Zeven
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                    lattice->getBlock(module->position + Cell3DPosition(1, 2, -2))));
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                    lattice->getBlock(module->position + Cell3DPosition(0, 1, -3))));
+            } else if (relativePos() == Cell3DPosition(1, -1, 0)) {
+                // Zodd
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                    lattice->getBlock(module->position + Cell3DPosition(1, 1, -2))));
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                    lattice->getBlock(module->position + Cell3DPosition(0, 0, -3))));
+            }
+        } else { // operation.shape = BACKFRONT
+            if(relativePos() == Cell3DPosition(1, 0, 0)) {
+                // Zeven
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                    lattice->getBlock(module->position + Cell3DPosition(1, -2, -2))));
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                    lattice->getBlock(module->position + Cell3DPosition(0, -2, -3))));
+            }else if(relativePos() == Cell3DPosition(1, 1, 0)) {
+                // Zodd
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                    lattice->getBlock(module->position + Cell3DPosition(1, -1, -2))));
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                    lattice->getBlock(module->position + Cell3DPosition(0, -1, -3))));
+            }
+        }
+    }
+    /* -------------------------------------------------------------------------- */
+
+    /* ---------- Avoid deadlock when transfering down then going back ---------- */
     if (operation->isTransfer() and operation->getDirection() == Direction::BACK) {
         if (not static_cast<Transfer_Operation*>(operation)->isComingFromBack() and
             operation->getMMShape() == FRONTBACK) {
@@ -550,18 +580,19 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
                 latchingPoints.clear();
                 latchingPoints.push_back(
                     static_cast<Catoms3DBlock*>(lattice->getBlock(module->position.offsetY(2))));
-            } else if(not operation->isZeven() and mvt_it > 5 and
-                (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, 0, 2)) {
-                     latchingPoints.clear();
-                latchingPoints.push_back(
-                    static_cast<Catoms3DBlock*>(lattice->getBlock(seedPosition + Cell3DPosition(1, 2,2))));
-            }else if (mvt_it == 2) {
+            } else if (not operation->isZeven() and mvt_it > 5 and
+                       (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, 0, 2)) {
+                latchingPoints.clear();
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                    lattice->getBlock(seedPosition + Cell3DPosition(1, 2, 2))));
+            } else if (mvt_it == 2) {
                 latchingPoints.clear();
                 latchingPoints.push_back(static_cast<Catoms3DBlock*>(
                     lattice->getBlock(seedPosition + Cell3DPosition(1, 1, 2))));
             }
         }
     }
+    /* -------------------------------------------------------------------------- */
     return latchingPoints;
 }
 
@@ -1165,18 +1196,18 @@ void RePoStBlockCode::onBlockSelected() {
     cerr << "GreenLight: " << greenLightIsOn << endl;
     cerr << "isSource: " << isSource << endl;
     cerr << "isDestination: " << isPotentialDestination() << endl;
-    cerr << "parentPosition: " << parentPosition << endl;
-    cerr << "childrenPostions: ";
-    for(auto c: childrenPositions) cerr << c << "; ";
-    cerr << endl;
-    cerr << "distance: " << distance << endl;
+    // cerr << "parentPosition: " << parentPosition << endl;
+    // cerr << "childrenPostions: ";
+    // for(auto c: childrenPositions) cerr << c << "; ";
+    // cerr << endl;
+    // cerr << "distance: " << distance << endl;
     // cerr << "mainPathState: " << mainPathState << endl;
     // // cerr << "aug1PathState: " << aug1PathState << endl;
     // // cerr << "aug2PathState: " << aug2PathState << endl;
-    // cerr << "mainPathIn: " << mainPathIn << endl;
-    // cerr << "mainPathOut: ";
-    // for(auto out: mainPathOut) cerr << out << " | "; 
-    // cerr << endl;
+    cerr << "mainPathIn: " << mainPathIn << endl;
+    cerr << "mainPathOut: ";
+    for(auto out: mainPathOut) cerr << out << " | "; 
+    cerr << endl;
     // if(isDestination) cerr << "destinationFor: " << destinationOut << endl;
     // if(operation) {
     //     if(operation->isTransfer())
@@ -1235,8 +1266,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("FB_Transfer_Down_Zodd.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(2,5,8);
+    file.open("BF_Transfer_Down_Zeven.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(6,6,12);
     if(!file.is_open()) return;
 
     if(c == 'o') {

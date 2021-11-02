@@ -326,8 +326,9 @@ Transfer_Operation::Transfer_Operation(Direction _direction, MMShape _mmShape, b
         if(mmShape == FRONTBACK) {
             (Zeven) ? localRules.reset(&LocalRules_FB_Transfer_Down_Zeven):
                     localRules.reset(&LocalRules_FB_Transfer_Down_Zodd);
-        } else {
-            VS_ASSERT_MSG(false, "Not implemented");
+        } else { //mmShape = BACKFRONT
+            (Zeven) ? localRules.reset(&LocalRules_BF_Transfer_Down_Zeven):
+                    localRules.reset(&LocalRules_BF_Transfer_Down_Zodd);
         }
     } break;
 
@@ -444,7 +445,6 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                 getScheduler()->trace(sstream.str(), rbc->module->blockId, Color(MAGENTA));
 
                 if (mustHandleBridgeOnAdd(pos)) {  // suppose that there is a bridge
-                    VS_ASSERT(false);
                     if (rbc->transferCount == 8)
                         return;
                     else if (rbc->transferCount == 9) {
@@ -601,6 +601,7 @@ void Transfer_Operation::updateState(BaseSimulator::BlockCode *bc) {
 
     case Direction::DOWN: {
         if(rbc->mvt_it == 2 and mmShape == FRONTBACK and Zeven) return;
+        if(rbc->mvt_it == 2 and mmShape == BACKFRONT and not Zeven) return; 
         Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::DOWN,
                                     rbc->seedPosition);
         rbc->MMPosition = rbc->MMPosition.offsetZ(-1);
