@@ -232,6 +232,8 @@ public:
     inline Cell3DPosition relativePos() {
         return module->position - seedPosition;
     }
+
+    Direction getPreviousOpDir();
     bool setGreenLight(bool onoff);
 
     /**

@@ -263,6 +263,7 @@ void RePoStBlockCode::startup() {
 }
 
 void RePoStBlockCode::reinitialize() {
+    cerr << "REINITIALIZE!\n";
     for (auto id_block : BaseSimulator::getWorld()->buildingBlocksMap) {
         RePoStBlockCode* block = static_cast<RePoStBlockCode*>(id_block.second->blockCode);
         block->parentPosition = Cell3DPosition(-1, -1, -1);
@@ -360,19 +361,42 @@ void RePoStBlockCode::probeGreenLight() {
         (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, 0, 2)) {
         (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(2, 0, 2);
     }
-   
-    
-    rotating = true;
-    module->setColor(BLUE);
 
-    
-    if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(2, 0, 2)  and
+    if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(2, 0, 2) and
         lattice->cellHasBlock(module->position.offsetX(1)) and
         operation->getDirection() == Direction::UP /*and operation->isTransfer()*/) {
         (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, 0, 2);
     }
-     LocalMovement lmvt = (*operation->localRules)[mvt_it];
-    console << "mvt_it: " << mvt_it << "\n";
+
+    if (relativePos() == Cell3DPosition(4, 0, 2) and
+        module->getInterface(module->position.offsetY(1))->isConnected()) {
+        // special logic to avoid blocking when coming from right then going back.
+        // coordinator is not reached so modules be coordinated without being attached to the coordinator
+        updateState();
+        coordinatorPosition = seedPosition + Cell3DPosition(1, -1, 1);
+        RePoStBlockCode& coordinator = 
+            *static_cast<RePoStBlockCode*>(lattice->getBlock(coordinatorPosition)->blockCode);
+        operation = coordinator.operation;
+        while ((*coordinator.operation->localRules) [coordinator.mvt_it].currentPosition !=
+               Cell3DPosition(1, 1, 2)) {
+            coordinator.mvt_it++;
+        }
+        mvt_it = coordinator.mvt_it - 1;
+        coordinator.operation->setMvtItToNextModule(&coordinator);
+        if (coordinator.mvt_it > 42 and coordinator.operation->isBuild()) coordinator.mvt_it -= 3;
+        if (coordinator.mvt_it > 39 and coordinator.operation->isTransfer()) coordinator.mvt_it -= 3;
+        if (module->canMoveTo(seedPosition + Cell3DPosition(1, 1, 2))) {
+            module->moveTo(seedPosition + Cell3DPosition(1, 1, 2));
+            return;
+        } else {
+            VS_ASSERT(false);
+        }
+        // VS_ASSERT(false);
+    }
+    rotating = true;
+    module->setColor(BLUE);
+    LocalMovement lmvt = (*operation->localRules)[mvt_it];
+    console << "mvt_it1: " << mvt_it << "\n";
 
     Cell3DPosition targetPosition = lmvt.nextPosition + seedPosition;
     console << "probeGreenLight: " << targetPosition << "\n";
@@ -459,6 +483,20 @@ Catoms3DBlock* RePoStBlockCode::findTargetLightAmongNeighbors(
         }
     }
     return NULL;
+}
+
+Direction RePoStBlockCode::getPreviousOpDir() {
+    if(not operation) VS_ASSERT(false);
+    if(not operation->isTransfer()) VS_ASSERT(false);
+
+    Cell3DPosition prevDirVector = MMPosition - 
+        static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode)->mainPathIn;
+    if (prevDirVector.pt[0] == -1) return Direction::LEFT;
+    if (prevDirVector.pt[0] == 1) return  Direction::RIGHT;
+    if (prevDirVector.pt[1] == -1)return Direction::FRONT;
+    if (prevDirVector.pt[1] == 1) return  Direction::BACK;
+    if (prevDirVector.pt[2] == -1)return Direction::DOWN;
+    if (prevDirVector.pt[2] == 1) return  Direction::UP;
 }
 
 vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosition& targetPos,
@@ -1208,6 +1246,7 @@ void RePoStBlockCode::onBlockSelected() {
     cerr << "mainPathOut: ";
     for(auto out: mainPathOut) cerr << out << " | "; 
     cerr << endl;
+    cerr <<  "prevDir: " << getPreviousOpDir() << "\n";
     // if(isDestination) cerr << "destinationFor: " << destinationOut << endl;
     // if(operation) {
     //     if(operation->isTransfer())
