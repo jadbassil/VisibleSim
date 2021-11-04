@@ -39,6 +39,7 @@ void CoordinateMessage::handle(BaseSimulator::BlockCode *bc) {
 void CoordinateBackMessage::handle(BaseSimulator::BlockCode *bc) {
     RePoStBlockCode &rbc = *static_cast<RePoStBlockCode *>(bc);
     P2PNetworkInterface *sender = this->destinationInterface;
+    VS_ASSERT_MSG(sender->getConnectedBlockId() != -1, to_string(rbc.module->blockId));
     RePoStBlockCode *senderMM = static_cast<RePoStBlockCode *>(
         BaseSimulator::getWorld()->getBlockById(sender->getConnectedBlockId())->blockCode);
     if (senderMM->sendingCoordinateBack) {
@@ -62,7 +63,6 @@ void CoordinateBackMessage::handle(BaseSimulator::BlockCode *bc) {
         if ((*rbc.operation->localRules)[rbc.mvt_it].currentPosition + rbc.seedPosition ==
             rbc.module->position) {
             // The coordinator must start its motions (In Dismantle operations)
-            // LocalMovement lmvt = (*rbc.operation->localRules)[rbc.mvt_it];
             rbc.probeGreenLight();
             return;
         }
