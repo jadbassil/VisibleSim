@@ -438,10 +438,12 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                         new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
                                               rbc->mvt_it),
                         rbc->module->getInterface(pos), 100, 200);
-               
+                 rbc->console << "test1: " << rbc->mvt_it << "\n";
                 if(Zeven and rbc->transferCount < 10) {
+                     
                     setMvtItToNextModule(bc);
-                } else if(rbc->transferCount != 2 ) {
+                    rbc->console << "test2: " << rbc->mvt_it << "\n";
+                } else if(not Zeven and rbc->transferCount != 2 ) {
                     setMvtItToNextModule(bc);
                 }
             }

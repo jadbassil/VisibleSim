@@ -371,27 +371,52 @@ void RePoStBlockCode::probeGreenLight() {
     if (relativePos() == Cell3DPosition(4, 0, 2) and
         module->getInterface(module->position.offsetY(1))->isConnected()) {
         // special logic to avoid blocking when coming from right then going back.
-        // coordinator is not reached so modules be coordinated without being attached to the coordinator
+        // coordinator is not reached so modules be coordinated without being attached to the
+        // coordinator
+        if (operation->isZeven() and (mvt_it == 49 or mvt_it == 53)) {
+            sendHandleableMessage(new CoordinateBackMessage(movingSteps + 2, coordinatorPosition),
+                                  interfaceTo(coordinatorPosition), 0, 200);
+        }
+
         updateState();
         coordinatorPosition = seedPosition + Cell3DPosition(1, -1, 1);
-        RePoStBlockCode& coordinator = 
+        RePoStBlockCode& coordinator =
             *static_cast<RePoStBlockCode*>(lattice->getBlock(coordinatorPosition)->blockCode);
         operation = coordinator.operation;
-        while ((*coordinator.operation->localRules) [coordinator.mvt_it].currentPosition !=
+        coordinator.console << "right_back it1: " << coordinator.mvt_it << "\n";
+
+        while ((*coordinator.operation->localRules)[coordinator.mvt_it].currentPosition !=
                Cell3DPosition(1, 1, 2)) {
             coordinator.mvt_it++;
         }
         mvt_it = coordinator.mvt_it - 1;
+        coordinator.console << "right_back it2: " << coordinator.mvt_it << "\n";
+
         coordinator.operation->setMvtItToNextModule(&coordinator);
-        if (coordinator.mvt_it > 42 and coordinator.operation->isBuild()) coordinator.mvt_it -= 3;
-        if (coordinator.mvt_it > 39 and coordinator.operation->isTransfer()) coordinator.mvt_it -= 3;
+        coordinator.console << "right_back it3: " << coordinator.mvt_it << "\n";
+        if (not operation->isZeven()) {
+            if (coordinator.mvt_it > 42 and coordinator.operation->isBuild())
+                coordinator.mvt_it -= 3;
+            if (coordinator.mvt_it > 39 and coordinator.operation->isTransfer())
+                coordinator.mvt_it -= 3;
+        } else {
+            if (coordinator.mvt_it > 42 and coordinator.operation->isBuild())
+                coordinator.mvt_it -= 4;
+            if (coordinator.mvt_it > 39 and coordinator.operation->isTransfer())
+                coordinator.mvt_it -= 4;
+        }
+
+        coordinator.console << "right_back it4: " << coordinator.mvt_it << "\n";
         if (module->canMoveTo(seedPosition + Cell3DPosition(1, 1, 2))) {
-            module->moveTo(seedPosition + Cell3DPosition(1, 1, 2));
+            // module->moveTo(seedPosition + Cell3DPosition(1, 1, 2));
+            getScheduler()->schedule(new Catoms3DRotationStartEvent(
+                getScheduler()->now() + 150, module, seedPosition + Cell3DPosition(1, 1, 2),
+                RotationLinkType::Any, false));
             return;
         } else {
             VS_ASSERT(false);
         }
-        // VS_ASSERT(false);
+        return;
     }
     rotating = true;
     module->setColor(BLUE);
@@ -1098,7 +1123,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                 
                 if (module->getNeighborPos(face, pos) and (module->getState() <= 3) ) {
                     console << "REMOVE NEIGHBOR: " << pos << "\n";
-                    bool hasMovingNeighbors = false;;
+                    bool hasMovingNeighbors = false;
                     for(auto n: lattice->getActiveNeighborCells(module->position)) {
                         if(n == pos) continue;
                         if(static_cast<RePoStBlockCode*>(lattice->getBlock(n)->blockCode)->movingState == MOVING) {
@@ -1106,7 +1131,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                             break;
                         }
                     }
-                    if(not hasMovingNeighbors)
+                    //if(not hasMovingNeighbors)
                         setGreenLight(true);
                 }
             }
@@ -1246,7 +1271,6 @@ void RePoStBlockCode::onBlockSelected() {
     cerr << "mainPathOut: ";
     for(auto out: mainPathOut) cerr << out << " | "; 
     cerr << endl;
-    cerr <<  "prevDir: " << getPreviousOpDir() << "\n";
     // if(isDestination) cerr << "destinationFor: " << destinationOut << endl;
     // if(operation) {
     //     if(operation->isTransfer())
