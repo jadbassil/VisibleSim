@@ -306,11 +306,12 @@ Transfer_Operation::Transfer_Operation(Direction _direction, MMShape _mmShape, b
 
     case Direction::RIGHT: {
         if(mmShape == FRONTBACK){
-            Zeven ? localRules.reset(&LocalRules_FB_Transfer_Right)
+            Zeven ? localRules.reset(&LocalRules_FB_Transfer_Right_Zeven)
                 : localRules.reset(&LocalRules_FB_Transfer_Right_Zodd);
         }  else if(mmShape == BACKFRONT) {
-            VS_ASSERT_MSG(false, "Not implemented");
-            //localRules.reset(&LocalRules_BF_Transfer_Left);
+            Zeven ? localRules.reset(&LocalRules_BF_Transfer_Right_Zeven)
+                : localRules.reset(&LocalRules_BF_Transfer_Right_Zodd);
+            ;
         } 
     } break;
 
@@ -430,7 +431,12 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                 stringstream sstream;
                 sstream << "TransferCount: " + to_string(rbc->transferCount) << "\n";
                 getScheduler()->trace(sstream.str(), rbc->module->blockId, Color(MAGENTA));
-                if(not Zeven and rbc->transferCount == 3) setMvtItToNextModule(bc);
+                if(mmShape == FRONTBACK){
+                    if(not Zeven and rbc->transferCount == 3) setMvtItToNextModule(bc);
+                }else {
+                    if(Zeven and rbc->transferCount == 3) setMvtItToNextModule(bc);
+                }
+                    
                 Cell3DPosition targetModule =
                     rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
                 rbc->console << "targetModule: " << targetModule << "\n";
@@ -438,13 +444,18 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                         new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
                                               rbc->mvt_it),
                         rbc->module->getInterface(pos), 100, 200);
-                 rbc->console << "test1: " << rbc->mvt_it << "\n";
-                if(Zeven and rbc->transferCount < 10) {
-                     
-                    setMvtItToNextModule(bc);
-                    rbc->console << "test2: " << rbc->mvt_it << "\n";
-                } else if(not Zeven and rbc->transferCount != 2 ) {
-                    setMvtItToNextModule(bc);
+                if (mmShape == FRONTBACK) {
+                    if (Zeven and rbc->transferCount < 10) {
+                        setMvtItToNextModule(bc);
+                    } else if (not Zeven and rbc->transferCount != 2 and rbc->transferCount < 10) {
+                        setMvtItToNextModule(bc);
+                    }
+                } else {
+                    if (Zeven and rbc->transferCount != 2 and rbc->transferCount < 10) {
+                        setMvtItToNextModule(bc);
+                    } else if(not Zeven and rbc->transferCount < 10) {
+                        setMvtItToNextModule(bc);
+                    }
                 }
             }
         } break;
@@ -594,7 +605,7 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
             rbc->module->blockId, Color(CYAN));
         if ((rbc->transferCount == 33 and
              (direction == Direction::LEFT)) or 
-             (rbc->transferCount == 30 and direction == Direction::RIGHT and not Zeven) or
+             /*(rbc->transferCount == 30 and direction == Direction::RIGHT) or*/
             (rbc->transferCount == 30 and getMMShape() == FRONTBACK and
              (direction == Direction::BACK or direction == Direction::FRONT)) or
             ((rbc->transferCount == 19 and rbc->relativePos() == Cell3DPosition(0, 1, 2) and
@@ -668,8 +679,8 @@ bool Transfer_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
     if (rbc->isCoordinator) return false;
     if ((direction == Direction::LEFT) and rbc->mvt_it >= 14) {
         return true;
-    } else if(direction == Direction::RIGHT) {
-        if(Zeven and rbc->mvt_it >= 46) return true;
+    } else if(direction == Direction::RIGHT) {  
+        if(/*Zeven and*/ rbc->mvt_it >= 46) return true;
         else if(rbc->mvt_it == 2) return true;
     } else if (direction == Direction::BACK or direction == Direction::FRONT) {
         if (mmShape == BACKFRONT) {
@@ -754,7 +765,8 @@ Build_Operation::Build_Operation (Direction _direction, MMShape _mmShape, bool _
         // motions rules are set for Z even
         if(Zeven) {
             if(mmShape == BACKFRONT) {
-                localRules.reset(&LocalRules_BF_Build_Up);
+                if(comingFromBack) localRules.reset(&LocalRules_BF_Build_Up_ComingFromBack);
+                else localRules.reset(&LocalRules_BF_Build_Up);
             } else if(mmShape == FRONTBACK) {
                 localRules.reset(&LocalRules_FB_Build_Up);
             }
