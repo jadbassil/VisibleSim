@@ -387,17 +387,15 @@ void RePoStBlockCode::probeGreenLight() {
             (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, -1, -2);
         }
     }
-    // if (operation->getDirection() == Direction::DOWN /*and operation->isTransfer()*/ and
-    //     (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, 1, -2)) {
-    //     (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(2, 1, -2);
-    // }
 
-    // if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(2, 1, -2) and
-    //     lattice->cellHasBlock((*operation->localRules)[mvt_it].nextPosition + seedPosition) and
-    //     operation->getDirection() == Direction::DOWN /*and operation->isTransfer()*/) {
-    //     (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, 1, -2);
-    // }
-
+    if(operation->getDirection() == Direction::RIGHT) {
+        if(operation->isZeven() and operation->getMMShape() == FRONTBACK) {
+            if(mvt_it >= 13 and (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,0,1)
+                and not lattice->cellHasBlock(seedPosition + Cell3DPosition(5,0,0))) {
+                (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,0);
+            } 
+        }
+    }
 
     if (relativePos() == Cell3DPosition(4, 0, 2) and
         module->getInterface(module->position.offsetY(1))->isConnected()) {

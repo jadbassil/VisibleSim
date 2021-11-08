@@ -507,6 +507,26 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                     setMvtItToNextModule(bc);
                     rbc->console << "mvt_itX: " << rbc->mvt_it << "\n";
                 }
+            } else if (pos == rbc->seedPosition + Cell3DPosition(1, 0, 0) and
+                       mmShape == BACKFRONT and rbc->getPreviousOpDir() == Direction::RIGHT) {
+                // When coming from right and trandfering down modules will be connected below to
+                // the coordinator at position rbc->seedPosition + Cell3DPosition(1,0,0)
+                rbc->transferCount++;
+                stringstream sstream;
+                sstream << "TransferCount: " + to_string(rbc->transferCount);
+                getScheduler()->trace(sstream.str(), rbc->module->blockId, Color(MAGENTA));
+                if (rbc->transferCount == 2 or rbc->transferCount > 10) return;
+                rbc->mvt_it++;
+                Cell3DPosition targetModule =
+                    rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
+                rbc->sendHandleableMessage(
+                    new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                          rbc->mvt_it),
+                    rbc->module->getInterface(pos), 100, 200);
+                if (rbc->transferCount > 1) {
+                    setMvtItToNextModule(bc);
+                    rbc->console << "mvt_itX: " << rbc->mvt_it << "\n";
+                }
             }
 
         } break;
