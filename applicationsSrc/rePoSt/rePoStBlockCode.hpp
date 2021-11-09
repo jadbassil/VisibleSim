@@ -234,6 +234,7 @@ public:
     }
 
     Direction getPreviousOpDir();
+    Direction getNextOpDir();
     bool setGreenLight(bool onoff);
 
     /**

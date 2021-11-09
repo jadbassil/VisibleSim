@@ -22,7 +22,8 @@ enum Direction {
     DOWN,
     LEFT,
     FRONT,
-    BACK
+    BACK,
+    UNDEFINED
 };
 
 class LocalMovement {

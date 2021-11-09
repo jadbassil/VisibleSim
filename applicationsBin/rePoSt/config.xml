@@ -18,14 +18,14 @@
 
 
 		<block position="1,0,0"/>
-		<!-- <block position="1,0,1"/> -->
+		<block position="1,0,1"/>
 		<!-- <block position="1,0,2"/> -->
 		<!-- <block position="1,0,3"/> -->
 
 
 		<block position="2,0,0"/>
-		<block position="2,1,1"/>
-		<block position="2,0,1"/>
+		<block position="2,1,0"/>
+		
 
 		
 	</MMBlockList>
@@ -40,14 +40,13 @@
 		<!-- <block position="1,0,4"/> -->
 
 		<block position="1,0,0"/>
-		<!-- <block position="1,0,1"/> -->
+		<block position="1,0,1"/>
 		<!-- <block position="1,0,2"/> -->
 		<!-- <block position="1,0,3"/> -->
 
-		<block position="2,0,0"/>
+			<block position="2,0,0"/>
+		<block position="2,1,0"/>
 		<block position="2,1,1"/>
-		<block position="2,0,1"/>
-		<block position="2,1,2"/>
 
 		
 	</MMTargetList>

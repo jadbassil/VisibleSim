@@ -394,7 +394,13 @@ void RePoStBlockCode::probeGreenLight() {
                 and not lattice->cellHasBlock(seedPosition + Cell3DPosition(5,0,0))) {
                 (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,0);
             } 
+        } else if (not operation->isZeven() and operation->getMMShape() == BACKFRONT) {
+             if(mvt_it >= 13 and (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,-1,1)
+                and not lattice->cellHasBlock(seedPosition + Cell3DPosition(5,0,0))) {
+                (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,0);
+            } 
         }
+        
     }
 
     if (relativePos() == Cell3DPosition(4, 0, 2) and
@@ -540,9 +546,12 @@ Catoms3DBlock* RePoStBlockCode::findTargetLightAmongNeighbors(
 }
 
 Direction RePoStBlockCode::getPreviousOpDir() {
-    if(not operation) VS_ASSERT(false);
+    if(not operation) return Direction::UNDEFINED;
+    
 //    if(not operation->isTransfer()) VS_ASSERT(false);
-
+    if(not lattice->cellHasBlock(seedPosition)) return Direction::UNDEFINED;
+    if(static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode)->isSource)
+        return Direction::UNDEFINED;
     Cell3DPosition prevDirVector = MMPosition - 
         static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode)->mainPathIn;
     if (prevDirVector.pt[0] == -1) return Direction::LEFT;
@@ -551,6 +560,19 @@ Direction RePoStBlockCode::getPreviousOpDir() {
     if (prevDirVector.pt[1] == 1) return  Direction::BACK;
     if (prevDirVector.pt[2] == -1)return Direction::DOWN;
     if (prevDirVector.pt[2] == 1) return  Direction::UP;
+}
+
+Direction RePoStBlockCode::getNextOpDir() {
+    if(not lattice->cellHasBlock(seedPosition) or not operation)
+        return Direction::UNDEFINED;
+    if (static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode)
+            ->mainPathOut.empty())
+        return Direction::UNDEFINED;
+    Cell3DPosition nextSeed;
+    Init::getNeighborMMSeedPos(seedPosition, MMPosition, operation->getDirection(), nextSeed);
+    Cell3DPosition nextCoordinatorPos =static_cast<RePoStBlockCode*>(lattice->getBlock(nextSeed)->blockCode)->coordinatorPosition; 
+    return static_cast<RePoStBlockCode*>(lattice->getBlock(nextCoordinatorPos)->blockCode)
+        ->operation->getDirection();
 }
 
 vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosition& targetPos,
@@ -688,10 +710,15 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
 
     /* ------------------ Avoid blocking when transfering right ----------------- */
     if (operation->isTransfer() and operation->getDirection() == Direction::RIGHT) {
-        if ((relativePos() == Cell3DPosition(2, 0, 2) or
-             relativePos() == Cell3DPosition(3, 0, 2)) and
-            operation->getMMShape() == BACKFRONT and mvt_it > 3 and operation->isZeven()) {
-              //Zeven    
+        if (((relativePos() == Cell3DPosition(2, 0, 2) or
+              relativePos() == Cell3DPosition(3, 0, 2)) and
+             operation->getMMShape() == BACKFRONT and mvt_it > 3 and operation->isZeven() and
+             getNextOpDir() != Direction::DOWN) or
+            ((relativePos() == Cell3DPosition(2, 1, 2) or
+              relativePos() == Cell3DPosition(3, 0, 1)) and
+             operation->getMMShape() == BACKFRONT and mvt_it > 4 and not operation->isZeven() and
+             getNextOpDir() != Direction::DOWN)) {
+            // Zeven
             latchingPoints.push_back(static_cast<Catoms3DBlock*>(
                 lattice->getBlock(seedPosition + Cell3DPosition(3, -1, 1))));
             latchingPoints.push_back(static_cast<Catoms3DBlock*>(
@@ -708,24 +735,26 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
                     lattice->getBlock(seedPosition + Cell3DPosition(5, 2, 2))));
         }
 
-        if ((relativePos() == Cell3DPosition(2, 1, 2) or relativePos() == Cell3DPosition(3,0,1)) and
-            operation->getMMShape() == BACKFRONT and mvt_it > 4 and not operation->isZeven()) {
-              //Zodd    
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(seedPosition + Cell3DPosition(3, -1, 1))));
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(seedPosition + Cell3DPosition(4, 0, 0))));
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(seedPosition + Cell3DPosition(5, 0, 0))));
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(seedPosition + Cell3DPosition(5, 0, 1))));
-            if (lattice->cellHasBlock(seedPosition + Cell3DPosition(5, 1, 2)))
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(seedPosition + Cell3DPosition(5, 1, 2))));
-            if (lattice->cellHasBlock(seedPosition + Cell3DPosition(5, 2, 2)))
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(seedPosition + Cell3DPosition(5, 2, 2))));
-        }
+        // if ((relativePos() == Cell3DPosition(2, 1, 2) or relativePos() == Cell3DPosition(3,0,1)) and
+        //     operation->getMMShape() == BACKFRONT and mvt_it > 4 and not operation->isZeven()
+        //         and getNextOpDir() != Direction::DOWN) {
+        //       //Zodd    
+        //     latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+        //         lattice->getBlock(seedPosition + Cell3DPosition(3, -1, 1))));
+        //     latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+        //         lattice->getBlock(seedPosition + Cell3DPosition(4, 0, 0))));
+        //     if(lattice->cellHasBlock(seedPosition + Cell3DPosition(5, 0, 0)))
+        //         latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+        //             lattice->getBlock(seedPosition + Cell3DPosition(5, 0, 0))));
+        //     latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+        //         lattice->getBlock(seedPosition + Cell3DPosition(5, 0, 1))));
+        //     if (lattice->cellHasBlock(seedPosition + Cell3DPosition(5, 1, 2)))
+        //         latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+        //             lattice->getBlock(seedPosition + Cell3DPosition(5, 1, 2))));
+        //     if (lattice->cellHasBlock(seedPosition + Cell3DPosition(5, 2, 2)))
+        //         latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+        //             lattice->getBlock(seedPosition + Cell3DPosition(5, 2, 2))));
+        // }
 
         if (relativePos() == Cell3DPosition(1, 0, 1) and mvt_it >= 7 and
             operation->getMMShape() == BACKFRONT and operation->isZeven()) {
