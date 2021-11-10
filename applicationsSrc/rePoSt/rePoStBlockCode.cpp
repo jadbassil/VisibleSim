@@ -342,10 +342,10 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
     if (isSource) {
         coordinator->operation = new Dismantle_Operation(direction, shapeState, MMPosition.pt[2], false);
     } else if (isDestination) {
-        bool comingFromBack = (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1]-1 and shapeState == BACKFRONT);
+        bool comingFromBack = (inPosition.pt[0] == MMPosition.pt[0] and abs(inPosition.pt[1] - MMPosition.pt[1]) == 1);
        coordinator->operation = new Build_Operation(direction, shapeState, comingFromBack,  MMPosition.pt[2]);
     } else {
-        bool comingFromBack = (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1]-1 and shapeState == BACKFRONT);
+        bool comingFromBack = (inPosition.pt[0] == MMPosition.pt[0] and abs(inPosition.pt[1] - MMPosition.pt[1]) == 1);
 
         coordinator->operation = new Transfer_Operation(direction, shapeState, comingFromBack, MMPosition.pt[2]);
     }
@@ -749,26 +749,6 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
                     lattice->getBlock(seedPosition + Cell3DPosition(5, 2, 2))));
         }
 
-        // if ((relativePos() == Cell3DPosition(2, 1, 2) or relativePos() == Cell3DPosition(3,0,1)) and
-        //     operation->getMMShape() == BACKFRONT and mvt_it > 4 and not operation->isZeven()
-        //         and getNextOpDir() != Direction::DOWN) {
-        //       //Zodd    
-        //     latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-        //         lattice->getBlock(seedPosition + Cell3DPosition(3, -1, 1))));
-        //     latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-        //         lattice->getBlock(seedPosition + Cell3DPosition(4, 0, 0))));
-        //     if(lattice->cellHasBlock(seedPosition + Cell3DPosition(5, 0, 0)))
-        //         latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-        //             lattice->getBlock(seedPosition + Cell3DPosition(5, 0, 0))));
-        //     latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-        //         lattice->getBlock(seedPosition + Cell3DPosition(5, 0, 1))));
-        //     if (lattice->cellHasBlock(seedPosition + Cell3DPosition(5, 1, 2)))
-        //         latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-        //             lattice->getBlock(seedPosition + Cell3DPosition(5, 1, 2))));
-        //     if (lattice->cellHasBlock(seedPosition + Cell3DPosition(5, 2, 2)))
-        //         latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-        //             lattice->getBlock(seedPosition + Cell3DPosition(5, 2, 2))));
-        // }
 
         if (relativePos() == Cell3DPosition(1, 0, 1) and mvt_it >= 7 and
             operation->getMMShape() == BACKFRONT and operation->isZeven()) {
@@ -793,6 +773,41 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
     }
 
     /* -------------------------------------------------------------------------- */
+
+    if(operation->isBuild()) {
+        switch(operation->getDirection()) {
+            case Direction::UP: {
+                if(operation->getMMShape() == FRONTBACK) {
+                    if(relativePos() == Cell3DPosition(1,-1,3)) {
+                        latchingPoints.clear();
+                    }
+                }
+            } break;
+
+            default: break;
+        }
+    }
+
+    if(operation->isTransfer()) {
+         switch(operation->getDirection()) {
+            case Direction::FRONT: {
+                if(operation->getMMShape() == FRONTBACK) {
+                     if (relativePos() == Cell3DPosition(-1, -4, 3)) {
+                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                            lattice->getBlock(module->position + Cell3DPosition(2 , 0, -2))));
+                    }
+                } else { //BackFront
+                    if(relativePos() == Cell3DPosition(1,0,2) and lattice->cellHasBlock(seedPosition + Cell3DPosition(1,-2,2))) {
+                        latchingPoints.clear();
+                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                            lattice->getBlock(seedPosition + Cell3DPosition(1,-2,2))));
+                    }
+                }
+            } break;
+
+            default: break;
+        }
+    }
     return latchingPoints;
 }
 
@@ -816,13 +831,14 @@ bool RePoStBlockCode::setGreenLight(bool onoff) {
     if (onoff) {
         info << "green: ";
         greenLightIsOn = true;
-        //module->setColor(initialColor);
+        // module->setColor(initialColor);
         module->setColor(GREY);
         // Resume flow if needed
-        if(not awaitingSources.empty()) {
-            for(auto as: awaitingSources) {
-                sendHandleableMessage(new GLOMessage(as),
-                    module->getInterface(nearestPositionTo(as)), 100, 200);
+        if (not awaitingSources.empty()) {
+            for (auto as : awaitingSources) {
+                if (lattice->cellHasBlock(as))
+                    sendHandleableMessage(new GLOMessage(as),
+                                          module->getInterface(nearestPositionTo(as)), 100, 200);
             }
             awaitingSources.clear();
         }
@@ -830,10 +846,10 @@ bool RePoStBlockCode::setGreenLight(bool onoff) {
     } else {
         info << "red: ";
         greenLightIsOn = false;
-        //module->setColor(RED);
+        // module->setColor(RED);
     }
 
-    getScheduler()->trace(info.str(),module->blockId, onoff ? GREEN : RED);
+    getScheduler()->trace(info.str(), module->blockId, onoff ? GREEN : RED);
 }
 
 bool RePoStBlockCode::isPotentialDestination() {
@@ -1234,9 +1250,25 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                      operation->getMMShape() == BACKFRONT and not
                         static_cast<Build_Operation*>(operation)->isComingFromBack())*/) {
                     if (posBlock->module->canMoveTo(module->position.offsetY(1)) and not posBlock->sendingCoordinateBack) {
-                            console << "move pos\n";
+                            console << "move pos BF\n";
                         posBlock->module->moveTo(module->position.offsetY(1));
                     } else {
+                        // Wait until it can move to the desired position
+                        getScheduler()->schedule(new InterruptionEvent(
+                            getScheduler()->now() + getRoundDuration(), posBlock->module,
+                            IT_MODE_TRANSFERBACK_REACHCOORDINATOR));
+                    }
+                }
+            }
+
+            if(isCoordinator and pos == module->position + Cell3DPosition(0,0,1) and shapeState == FRONTBACK) {
+                if (operation->getDirection() != Direction::FRONT) {
+                    
+                     if (posBlock->module->canMoveTo(module->position.offsetY(-1)) and not posBlock->sendingCoordinateBack) {
+                            console << "move pos FB\n";
+                        posBlock->module->moveTo(module->position.offsetY(-1));
+                    } else {
+                        posBlock->console << "SendingCoordnateBack: " << posBlock->sendingCoordinateBack << "\n";
                         // Wait until it can move to the desired position
                         getScheduler()->schedule(new InterruptionEvent(
                             getScheduler()->now() + getRoundDuration(), posBlock->module,
@@ -1322,10 +1354,18 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
 
                 case IT_MODE_TRANSFERBACK_REACHCOORDINATOR: {
                     getScheduler()->trace("ReachCoordinator", module->blockId, RED);
-                    if (module->canMoveTo(module->position.offsetZ(-1)) and not sendingCoordinateBack) {
+                    if (shapeState == BACKFRONT and
+                        module->canMoveTo(module->position.offsetZ(-1)) and
+                        not sendingCoordinateBack) {
                         module->moveTo(module->position.offsetZ(-1));
+                    } else if (shapeState == FRONTBACK and
+                               module->canMoveTo(module->position + Cell3DPosition(0, -1, -1)) and
+                               not sendingCoordinateBack) {
+                        module->moveTo(module->position + Cell3DPosition(0, -1, -1));
+
                     } else {
                         console << "Trying to reach coordinator\n";
+                        console << "SendingCoordnateBack: " << sendingCoordinateBack << "\n";
                         getScheduler()->schedule(
                             new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
                                                   module, IT_MODE_TRANSFERBACK_REACHCOORDINATOR));
@@ -1466,9 +1506,9 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("BF_Transfer_Right.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(6,5,8);
-    if(!file.is_open()) return;
+    file.open("FB_Transfer_Front.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(2,12,4);
+    if(!file.is_open()) return; 
 
     if(c == 'o') {
         file << "{LocalMovement(" << "Cell3DPosition" << block->module->position - block->seedPosition;

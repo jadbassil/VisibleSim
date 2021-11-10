@@ -141,8 +141,7 @@ void BFSMessage::handle(BaseSimulator::BlockCode *bc) {
     rbc.console << "pathsOld: ";
     for (auto pOld : pathsOld) rbc.console << pOld << "; ";
     rbc.console << "\n";
-    if (rbc.mainPathState == NONE and !isIn(pathsOld, sourceMM) and
-        rbc.MMPosition.pt[1] >= fromMMPosition.pt[1]) {
+    if (rbc.mainPathState == NONE and !isIn(pathsOld, sourceMM)) {
         rbc.mainPathsOld.push_back(sourceMM);
         Cell3DPosition fromSeedPosition = rbc.getSeedPositionFromMMPosition(fromMMPosition);
         rbc.deficit++;
@@ -173,7 +172,7 @@ void BFSMessage::handle(BaseSimulator::BlockCode *bc) {
         }
     } else if (rbc.mainPathState == Streamline and rbc.aug1PathState == NONE and
                fromMMPosition != rbc.mainPathIn and fromMMPosition != rbc.mainPathOut and
-               !isIn(pathsOld, sourceMM) and rbc.MMPosition.pt[1] >= fromMMPosition.pt[1]) {
+               !isIn(pathsOld, sourceMM)) {
         rbc.aug1PathsOld.push_back(sourceMM);
         Cell3DPosition fromSeedPosition = rbc.getSeedPositionFromMMPosition(fromMMPosition);
         rbc.deficit++;
@@ -191,8 +190,7 @@ void BFSMessage::handle(BaseSimulator::BlockCode *bc) {
         }
 
     } else if (rbc.mainPathState == Streamline and rbc.aug2PathState == NONE and
-               fromMMPosition == rbc.mainPathOut and
-               rbc.MMPosition.pt[1] >= fromMMPosition.pt[1]) {
+               fromMMPosition == rbc.mainPathOut) {
         rbc.aug2PathsOld.push_back(sourceMM);
         Cell3DPosition fromSeedPosition = rbc.getSeedPositionFromMMPosition(fromMMPosition);
         rbc.deficit++;

@@ -1783,6 +1783,126 @@ static vector<LocalMovement> LocalRules_BF_Transfer_Back_ComingFromBack = {
     {LocalMovement(Cell3DPosition(0, 2, 1), Cell3DPosition(1, 2, 1), IN_POSITION)},
 };
 
+static vector<LocalMovement> LocalRules_FB_Transfer_Front = {
+    {LocalMovement(Cell3DPosition(1, -1, 1), Cell3DPosition(0, -1, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -1, 1), Cell3DPosition(0, -1, 2), WAITING)},
+
+    {LocalMovement(Cell3DPosition(1, -1, 1), Cell3DPosition(1, 0, 2), WAITING)},  // 2
+
+    {LocalMovement(Cell3DPosition(1, -1, 1), Cell3DPosition(1, -1, 2), MOVING)},  // 3
+    {LocalMovement(Cell3DPosition(1, -1, 2), Cell3DPosition(0, -2, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -2, 2), Cell3DPosition(0, -3, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -3, 1), Cell3DPosition(1, -3, 1), IN_POSITION)},
+
+    {LocalMovement(Cell3DPosition(1, -1, 1), Cell3DPosition(1, -1, 2), MOVING)},  // 7
+    {LocalMovement(Cell3DPosition(1, -1, 2), Cell3DPosition(0, -2, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -2, 2), Cell3DPosition(0, -3, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -3, 1), Cell3DPosition(1, -3, 1), IN_POSITION)},
+
+    {LocalMovement(Cell3DPosition(1, -1, 1), Cell3DPosition(1, -1, 2), MOVING)},  // 11
+    {LocalMovement(Cell3DPosition(1, -1, 2), Cell3DPosition(0, -2, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -2, 2), Cell3DPosition(0, -3, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -3, 1), Cell3DPosition(1, -3, 1), IN_POSITION)},
+
+    {LocalMovement(Cell3DPosition(1, -1, 1), Cell3DPosition(1, -1, 2), MOVING)},  // 15
+    {LocalMovement(Cell3DPosition(1, -1, 2), Cell3DPosition(0, -2, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -2, 2), Cell3DPosition(0, -3, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -3, 1), Cell3DPosition(1, -3, 1), IN_POSITION)},
+
+    {LocalMovement(Cell3DPosition(1, -1, 1), Cell3DPosition(1, -1, 2), MOVING)},  // 19
+    {LocalMovement(Cell3DPosition(1, -1, 2), Cell3DPosition(0, -2, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -2, 2), Cell3DPosition(0, -3, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -3, 1), Cell3DPosition(1, -3, 1), IN_POSITION)},
+
+    {LocalMovement(Cell3DPosition(1, -1, 1), Cell3DPosition(1, -1, 2), MOVING)},  // 23
+    {LocalMovement(Cell3DPosition(1, -1, 2), Cell3DPosition(0, -2, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -2, 2), Cell3DPosition(0, -3, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -3, 1), Cell3DPosition(1, -3, 1), IN_POSITION)},
+
+    {LocalMovement(Cell3DPosition(1, -1, 1), Cell3DPosition(1, -1, 2), MOVING)},  // 27
+    {LocalMovement(Cell3DPosition(1, -1, 2), Cell3DPosition(0, -2, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -2, 2), Cell3DPosition(0, -3, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -3, 1), Cell3DPosition(1, -3, 1), IN_POSITION)},
+
+    {LocalMovement(Cell3DPosition(1, -1, 1), Cell3DPosition(1, -1, 2), MOVING)},  // 31
+    {LocalMovement(Cell3DPosition(1, -1, 2), Cell3DPosition(0, -2, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -2, 2), Cell3DPosition(0, -3, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -3, 1), Cell3DPosition(1, -3, 1), IN_POSITION)},
+
+    {LocalMovement(Cell3DPosition(1, 0, 2), Cell3DPosition(0, 0, 1), MOVING)},  // 35
+    {LocalMovement(Cell3DPosition(0, 0, 1), Cell3DPosition(-1, 0, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(-1, 0, 1), Cell3DPosition(0, 0, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, 0, 2), Cell3DPosition(1, -1, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(1, -1, 2), Cell3DPosition(0, -2, 2), WAITING)},
+
+    {LocalMovement(Cell3DPosition(0, -1, 2), Cell3DPosition(1, -2, 2), MOVING)},  // 40
+    {LocalMovement(Cell3DPosition(1, -2, 2), Cell3DPosition(0, -3, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -3, 2), Cell3DPosition(-1, -4, 3), WAITING)},
+
+    {LocalMovement(Cell3DPosition(0, -2, 2), Cell3DPosition(0, -3, 1), MOVING)},  // 43
+    {LocalMovement(Cell3DPosition(0, -3, 1), Cell3DPosition(1, -3, 1), IN_POSITION)},
+
+    {LocalMovement(Cell3DPosition(-1, -4, 3), Cell3DPosition(0, -3, 2), MOVING)},  // 45
+    {LocalMovement(Cell3DPosition(0, -3, 2), Cell3DPosition(0, -2, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -2, 2), Cell3DPosition(0, -3, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -3, 1), Cell3DPosition(1, -3, 1), IN_POSITION)},
+
+};
+
+static vector<LocalMovement> LocalRules_FB_Transfer_Front_ComingFromBack = {
+    {LocalMovement(Cell3DPosition(1, 0, 2), Cell3DPosition(1, -1, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(1, -1, 1), Cell3DPosition(0, -1, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -1, 1), Cell3DPosition(0, -1, 2), WAITING)},
+
+    {LocalMovement(Cell3DPosition(1, 0, 2), Cell3DPosition(1, -1, 1), WAITING)},  // 3
+
+    {LocalMovement(Cell3DPosition(1, 0, 2), Cell3DPosition(1, -1, 2), MOVING)},  // 4
+    {LocalMovement(Cell3DPosition(1, -1, 2), Cell3DPosition(0, -2, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -2, 2), Cell3DPosition(0, -3, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -3, 1), Cell3DPosition(1, -3, 1), IN_POSITION)},
+
+    {LocalMovement(Cell3DPosition(1, -1, 1), Cell3DPosition(1, 0, 2), MOVING)},  // 8
+    {LocalMovement(Cell3DPosition(1, 0, 2), Cell3DPosition(0, 0, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(0, 0, 1), Cell3DPosition(-1, 0, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(-1, 0, 1), Cell3DPosition(0, 0, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, 0, 2), Cell3DPosition(1, -1, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(1, -1, 2), Cell3DPosition(0, -2, 2), WAITING)},
+
+    {LocalMovement(Cell3DPosition(0, -1, 2), Cell3DPosition(1, -2, 2), MOVING)},  // 14
+    {LocalMovement(Cell3DPosition(1, -2, 2), Cell3DPosition(0, -3, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -3, 2), Cell3DPosition(-1, -4, 3), WAITING)},
+
+    {LocalMovement(Cell3DPosition(0, -2, 2), Cell3DPosition(0, -3, 1), MOVING)},  // 17
+    {LocalMovement(Cell3DPosition(0, -3, 1), Cell3DPosition(1, -3, 1), IN_POSITION)},
+
+    {LocalMovement(Cell3DPosition(-1, -4, 3), Cell3DPosition(0, -3, 2), MOVING)},  // 19
+    {LocalMovement(Cell3DPosition(0, -3, 2), Cell3DPosition(0, -2, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -2, 2), Cell3DPosition(0, -3, 1), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -3, 1), Cell3DPosition(1, -3, 1), IN_POSITION)},
+
+};
+
+static vector<LocalMovement> LocalRules_BF_Transfer_Front = {
+    {LocalMovement(Cell3DPosition(1, 0, 1), Cell3DPosition(1, 0, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(1, 0, 2), Cell3DPosition(1, -1, 2), WAITING)},
+
+    {LocalMovement(Cell3DPosition(1, 0, 1), Cell3DPosition(1, 0, 2), MOVING)},  // 2
+    {LocalMovement(Cell3DPosition(1, 0, 2), Cell3DPosition(0, -1, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -1, 2), Cell3DPosition(1, -2, 2), WAITING)},
+
+    {LocalMovement(Cell3DPosition(1, -1, 2), Cell3DPosition(0, -2, 2), MOVING)},  // 5
+    {LocalMovement(Cell3DPosition(0, -2, 2), Cell3DPosition(1, -3, 2), IN_POSITION)},
+
+    {LocalMovement(Cell3DPosition(1, 0, 1), Cell3DPosition(1, 0, 2), MOVING)},  // 7
+    {LocalMovement(Cell3DPosition(1, 0, 2), Cell3DPosition(1, -1, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(1, -1, 2), Cell3DPosition(0, -2, 2), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -2, 2), Cell3DPosition(1, -3, 2), IN_POSITION)  },
+
+    {LocalMovement(Cell3DPosition(1, -2, 2), Cell3DPosition(1, -3, 2), IN_POSITION)},  // 11
+
+    //{LocalMovement(Cell3DPosition(1,-3,2), Cell3DPosition(1,-3,1), IN_POSITION)}
+};
+
 static vector<LocalMovement> LocalRules_FB_Build_Up = {
     // Z even coming from left
     //     // {LocalMovement(Cell3DPosition(1, -1, 1), Cell3DPosition(1, 0, 2), MOVING)},

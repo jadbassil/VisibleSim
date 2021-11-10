@@ -200,6 +200,7 @@ void GLOMessage::handle(BaseSimulator::BlockCode *bc) {
             rbc.interfaceTo(srcPos), 100, 200);
         return;
     }
+
     rbc.nbWaitedAnswers--;
     if(rbc.nbWaitedAnswers == 0) {
         Cell3DPosition targetPosition =
