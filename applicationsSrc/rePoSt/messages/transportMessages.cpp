@@ -195,11 +195,15 @@ void PLSMessage::handle(BaseSimulator::BlockCode *bc) {
 
 void GLOMessage::handle(BaseSimulator::BlockCode *bc) {
     RePoStBlockCode &rbc = *static_cast<RePoStBlockCode *>(bc);
+        if(rbc.isAdjacentToPosition(srcPos) and not rbc.module->getInterface(srcPos)->isConnected()) {
+        return;
+    } 
     if(rbc.module->position != srcPos) {
         rbc.sendHandleableMessage(static_cast<PLSMessage*>(this->clone()),
             rbc.interfaceTo(srcPos), 100, 200);
         return;
     }
+
 
     rbc.nbWaitedAnswers--;
     if(rbc.nbWaitedAnswers == 0) {

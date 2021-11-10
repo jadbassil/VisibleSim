@@ -15,6 +15,7 @@ protected:
    
     //vector<LocalMovement> *localRules;
     Direction direction;
+    Direction prevOpDirection;
     MMShape mmShape;
     Cell3DPosition nextSeed;
     bool Zeven;
@@ -22,7 +23,7 @@ protected:
    
 public:
     Operation(/* args */);
-    Operation(Direction _direction, MMShape _mmshape, int Z = 0);
+    Operation(Direction _direction, MMShape _mmshape, Direction _prevOpDirection, int Z = 0);
     virtual ~Operation();
      void setMvtItToNextModule(BaseSimulator::BlockCode*);
     std::shared_ptr<vector<LocalMovement>> localRules;
@@ -59,7 +60,7 @@ private:
 public:
     bool filled;
 
-    Dismantle_Operation(Direction _direction, MMShape _mmShape , int Z = 0, bool _filled = false);
+    Dismantle_Operation(Direction _direction, MMShape _mmShape , Direction _prevOpDirection, int Z = 0, bool _filled = false);
     ~Dismantle_Operation ();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
@@ -72,7 +73,7 @@ class Fill_Operation: public Operation {
 private:
     bool comingFromBack;
 public:
-    Fill_Operation(Direction _direction, MMShape _mmShape, bool _comingFromBack = false, int Z = 0);
+    Fill_Operation(Direction _direction, MMShape _mmShape, Direction _prevOpDirection, bool _comingFromBack = false, int Z = 0);
     ~Fill_Operation ();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
@@ -85,7 +86,7 @@ class Transfer_Operation: public Operation {
 private:
     bool comingFromBack;
 public:
-    Transfer_Operation(Direction _direction, MMShape _mmShape, bool comingFromBack = false, int Z = 0);
+    Transfer_Operation(Direction _direction, MMShape _mmShape, Direction _prevOpDirection, bool comingFromBack = false, int Z = 0);
     ~Transfer_Operation();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
@@ -103,7 +104,7 @@ class Build_Operation: public Operation {
 private:
     bool comingFromBack;
 public:
-    Build_Operation(Direction _direction, MMShape _mmShape, bool comingFromBack = false, int Z = 0);
+    Build_Operation(Direction _direction, MMShape _mmShape, Direction _prevOpDirection, bool comingFromBack = false, int Z = 0);
     ~Build_Operation ();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;

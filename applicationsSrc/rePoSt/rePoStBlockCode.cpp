@@ -340,14 +340,14 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
             BaseSimulator::getWorld()->getBlockByPosition(coordinatorPosition)->blockCode);
     coordinator->isCoordinator = true;
     if (isSource) {
-        coordinator->operation = new Dismantle_Operation(direction, shapeState, MMPosition.pt[2], false);
+        coordinator->operation = new Dismantle_Operation(direction, shapeState, getPreviousOpDir(), MMPosition.pt[2], false);
     } else if (isDestination) {
-        bool comingFromBack = (inPosition.pt[0] == MMPosition.pt[0] and abs(inPosition.pt[1] - MMPosition.pt[1]) == 1);
-       coordinator->operation = new Build_Operation(direction, shapeState, comingFromBack,  MMPosition.pt[2]);
+        bool comingFromBack = (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and shapeState == BACKFRONT);
+       coordinator->operation = new Build_Operation(direction, shapeState, getPreviousOpDir(), comingFromBack,  MMPosition.pt[2]);
     } else {
-        bool comingFromBack = (inPosition.pt[0] == MMPosition.pt[0] and abs(inPosition.pt[1] - MMPosition.pt[1]) == 1);
-
-        coordinator->operation = new Transfer_Operation(direction, shapeState, comingFromBack, MMPosition.pt[2]);
+        bool comingFromBack = (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and shapeState == BACKFRONT);
+       
+        coordinator->operation = new Transfer_Operation(direction, shapeState, getPreviousOpDir(), comingFromBack, MMPosition.pt[2]);
     }
 
 }
@@ -560,10 +560,14 @@ Catoms3DBlock* RePoStBlockCode::findTargetLightAmongNeighbors(
 }
 
 Direction RePoStBlockCode::getPreviousOpDir() {
-    if(not operation) return Direction::UNDEFINED;
+    if(not lattice->cellHasBlock(seedPosition)) return Direction::UNDEFINED;
+    if( static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode)->mainPathIn == Cell3DPosition(-1,-1,-1)){
+        return Direction::UNDEFINED;
+    }
+    //if(not operation) return Direction::UNDEFINED;
     
 //    if(not operation->isTransfer()) VS_ASSERT(false);
-    if(not lattice->cellHasBlock(seedPosition)) return Direction::UNDEFINED;
+    
     if(static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode)->isSource)
         return Direction::UNDEFINED;
     Cell3DPosition prevDirVector = MMPosition - 
@@ -1262,7 +1266,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
             }
 
             if(isCoordinator and pos == module->position + Cell3DPosition(0,0,1) and shapeState == FRONTBACK) {
-                if (operation->getDirection() != Direction::FRONT) {
+                if (operation->getDirection() != Direction::FRONT and getPreviousOpDir() == Direction::FRONT) {
                     
                      if (posBlock->module->canMoveTo(module->position.offsetY(-1)) and not posBlock->sendingCoordinateBack) {
                             console << "move pos FB\n";

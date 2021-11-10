@@ -10,8 +10,8 @@
 Operation::Operation(/* args */) {
     //localRules.reset(&LocalRules_BF_Dismantle_Left);
 }
-Operation:: Operation(Direction _direction, MMShape _mmshape, int Z)
-    :direction(_direction), mmShape(_mmshape) {
+Operation:: Operation(Direction _direction, MMShape _mmshape, Direction _prevOpDirection, int Z)
+    :direction(_direction), mmShape(_mmshape), prevOpDirection(_prevOpDirection) {
     Zeven = (Z % 2 == 0);
 }
 Operation::~Operation() {}
@@ -55,8 +55,8 @@ void Operation::setMvtItToNextModule(BaseSimulator::BlockCode* bc) {
  *************************  DISMANTLE OPERATION  ************************
  ***********************************************************************/
 
-Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape, int Z, bool _filled)
-    :Operation(_direction, _mmShape, Z), filled(_filled)  {
+Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape, Direction _prevOpDirection, int Z, bool _filled)
+    :Operation(_direction, _mmShape, _prevOpDirection, Z), filled(_filled)  {
     
     switch (direction) {
     case Direction::LEFT: {
@@ -143,8 +143,8 @@ bool Dismantle_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
  ***************************  FILL OPERATION  ***************************
  ***********************************************************************/
 
-Fill_Operation::Fill_Operation (Direction _direction, MMShape _mmShape, bool _comingFromBack, int Z) 
-    :Operation(_direction, _mmShape, Z) {
+Fill_Operation::Fill_Operation (Direction _direction, MMShape _mmShape, Direction _prevOpDirection, bool _comingFromBack, int Z) 
+    :Operation(_direction, _mmShape, _prevOpDirection, Z) {
     switch (direction) {
         case Direction::LEFT: {
             if (mmShape == BACKFRONT) {
@@ -292,8 +292,8 @@ bool Fill_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode *bc) {
  ***************************  TRANSFER OPERATION  ***********************
  ***********************************************************************/
 
-Transfer_Operation::Transfer_Operation(Direction _direction, MMShape _mmShape, bool _comingFromBack, int Z) 
-    :Operation(_direction, _mmShape, Z), comingFromBack(_comingFromBack) {
+Transfer_Operation::Transfer_Operation(Direction _direction, MMShape _mmShape, Direction _prevOpDirection, bool _comingFromBack, int Z) 
+    :Operation(_direction, _mmShape,_prevOpDirection, Z), comingFromBack(_comingFromBack) {
     switch (direction){
     case Direction::LEFT: {
         if(mmShape == FRONTBACK){
@@ -356,7 +356,7 @@ Transfer_Operation::Transfer_Operation(Direction _direction, MMShape _mmShape, b
 
     case Direction::FRONT: {
         if(mmShape == FRONTBACK) {
-            if(comingFromBack) {
+            if(prevOpDirection == Direction::FRONT) {
                 localRules.reset(&LocalRules_FB_Transfer_Front_ComingFromBack);
             } else {
                 localRules.reset(&LocalRules_FB_Transfer_Front);
@@ -620,7 +620,7 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                     }
                 }
             }
-        }
+        } break;
 
         case Direction::FRONT: {
             if (pos == rbc->module->position.offsetY(-1) or
@@ -631,7 +631,7 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                 getScheduler()->trace(sstream.str(), rbc->module->blockId, Color(MAGENTA));
 
                 if(mmShape == FRONTBACK) {
-                    if (not comingFromBack) {  // mmShape = BACKFRONT
+                    if (not rbc->getPreviousOpDir() == Direction::FRONT) {  // mmShape = BACKFRONT
                         if (rbc->transferCount == 8 and mustHandleBridgeOnAdd(pos)) {
                             // skip to avoid unsupported motion
                             rbc->console << "skip\n";
@@ -677,7 +677,7 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                     }
                 }
             } else if(pos == rbc->module->position.offsetZ(1)){
-                if(comingFromBack and mmShape == FRONTBACK) {
+                if(rbc->getPreviousOpDir() == Direction::FRONT and mmShape == FRONTBACK) {
                     rbc->transferCount++;
                     stringstream sstream;
                     sstream << "TransferCount: " + to_string(rbc->transferCount) << "\n";
@@ -724,7 +724,7 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
              (rbc->transferCount == 30 and getMMShape() == BACKFRONT and
               direction == Direction::FRONT) or
              (rbc->transferCount == 19 and rbc->relativePos() == Cell3DPosition(0, -1, 2) and
-              comingFromBack and getMMShape() == FRONTBACK) and
+              prevOpDirection == Direction::FRONT and getMMShape() == FRONTBACK) and
                  direction == Direction::FRONT)) {  // when all modules passed the bridge
             rbc->sendHandleableMessage(
                 new CoordinateBackMessage(0, rbc->coordinatorPosition),
@@ -825,8 +825,8 @@ bool Transfer_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
         return true;
     } else if (direction == Direction::FRONT) {
         if(mmShape == FRONTBACK) {
-             if (not comingFromBack and rbc->mvt_it >= 26) return true;
-             if (comingFromBack and rbc->mvt_it > 8) return true;
+             if (prevOpDirection != Direction::FRONT and rbc->mvt_it >= 26) return true;
+             if (prevOpDirection == Direction::FRONT and rbc->mvt_it > 8) return true;
         } else { //BACKFRONT
             if(/*not comingFromBack and*/ rbc->mvt_it == 4 or rbc->mvt_it == 6) return true;
         }
@@ -887,8 +887,8 @@ bool Transfer_Operation::handleBridgeMovements(BaseSimulator::BlockCode* bc) {
  ***************************  BUILD OPERATION  **************************
  ***********************************************************************/
 
-Build_Operation::Build_Operation (Direction _direction, MMShape _mmShape, bool _comingFromBack, int Z)
-    :Operation(_direction, _mmShape, Z), comingFromBack(_comingFromBack) {
+Build_Operation::Build_Operation (Direction _direction, MMShape _mmShape, Direction _prevOpDirection, bool _comingFromBack, int Z)
+    :Operation(_direction, _mmShape,_prevOpDirection, Z), comingFromBack(_comingFromBack) {
    
     switch (direction) {
     case Direction::UP: {
@@ -932,7 +932,7 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
         BaseSimulator::getWorld()->getBlockByPosition(pos)->blockCode);
     if (rbc->isCoordinator and abs(pos.pt[1] - rbc->module->position.pt[1]) == 1 and
         abs(pos.pt[2] - rbc->module->position.pt[2]) == 0 and
-        rbc->mvt_it < localRules->size() /*and not isComingFromBack()*/) {
+        rbc->mvt_it < localRules->size() and not isComingFromBack()) {
         rbc->transferCount++; 
         getScheduler()->trace("transferCount: " + to_string(rbc->transferCount), rbc->module->blockId, Color(MAGENTA));
         Cell3DPosition targetModule =
