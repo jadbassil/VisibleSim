@@ -389,6 +389,7 @@ void RePoStBlockCode::probeGreenLight() {
     }
 
     if(operation->getDirection() == Direction::RIGHT) {
+        // When pivot cannot be found when coming from Right then transferring down
         if(operation->isZeven() and operation->getMMShape() == FRONTBACK) {
             if(mvt_it >= 13 and (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,0,1)
                 and not lattice->cellHasBlock(seedPosition + Cell3DPosition(5,0,0))) {
@@ -401,6 +402,19 @@ void RePoStBlockCode::probeGreenLight() {
             } 
         }
         
+    }
+
+    if(operation->getDirection() == Direction::BACK) {
+        // When pivot cannot be found when coming from back then transferring down
+        if(operation->getMMShape() == BACKFRONT) {
+            if( (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1,3,0)) {
+                (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1,2,1);
+            }
+            if(mvt_it >= 7 and (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1,2,1)
+                and not lattice->cellHasBlock(seedPosition + Cell3DPosition(1,3,0))) {
+                     (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1,3,0);
+                }
+        }
     }
 
     if (relativePos() == Cell3DPosition(4, 0, 2) and
