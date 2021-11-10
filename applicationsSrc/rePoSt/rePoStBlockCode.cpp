@@ -311,7 +311,6 @@ void RePoStBlockCode::return_wave(bool b) {
 
 /* -------------------------------------------------------------------------- */
 
-
 void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition outPosition) {
     Direction direction;
     Cell3DPosition directionVector = outPosition - MMPosition;
@@ -321,35 +320,40 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
     if (directionVector.pt[1] == 1) direction = Direction::BACK;
     if (directionVector.pt[2] == -1) direction = Direction::DOWN;
     if (directionVector.pt[2] == 1) direction = Direction::UP;
-    if(isSource) {
+    if (isSource) {
         (shapeState == FRONTBACK) ? coordinatorPosition = seedPosition + Cell3DPosition(-1, -1, 2)
                                   : coordinatorPosition = seedPosition + Cell3DPosition(-1, 1, 2);
-        if(direction == Direction::BACK and shapeState == FRONTBACK) {
-            coordinatorPosition = seedPosition + Cell3DPosition(2,1,2);
-        } else if(direction ==Direction::UP) {
-            if(MMPosition.pt[2] % 2 != 0) {
-                coordinatorPosition = seedPosition + Cell3DPosition(1,0,4);
+        if (direction == Direction::BACK and shapeState == FRONTBACK) {
+            coordinatorPosition = seedPosition + Cell3DPosition(2, 1, 2);
+        } else if (direction == Direction::UP) {
+            if (MMPosition.pt[2] % 2 != 0) {
+                coordinatorPosition = seedPosition + Cell3DPosition(1, 0, 4);
             }
         }
     } else {
         (shapeState == FRONTBACK) ? coordinatorPosition = seedPosition + Cell3DPosition(1, 0, 1)
-                              : coordinatorPosition = seedPosition + Cell3DPosition(1, -1, 1);
-       
+                                  : coordinatorPosition = seedPosition + Cell3DPosition(1, -1, 1);
     }
-     RePoStBlockCode* coordinator = static_cast<RePoStBlockCode*>(
-            BaseSimulator::getWorld()->getBlockByPosition(coordinatorPosition)->blockCode);
+    RePoStBlockCode* coordinator = static_cast<RePoStBlockCode*>(
+        BaseSimulator::getWorld()->getBlockByPosition(coordinatorPosition)->blockCode);
     coordinator->isCoordinator = true;
     if (isSource) {
-        coordinator->operation = new Dismantle_Operation(direction, shapeState, getPreviousOpDir(), MMPosition.pt[2], false);
+        coordinator->operation = new Dismantle_Operation(direction, shapeState, getPreviousOpDir(),
+                                                         MMPosition.pt[2], false);
     } else if (isDestination) {
-        bool comingFromBack = (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and shapeState == BACKFRONT);
-       coordinator->operation = new Build_Operation(direction, shapeState, getPreviousOpDir(), comingFromBack,  MMPosition.pt[2]);
+        bool comingFromBack =
+            (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and
+             shapeState == BACKFRONT);
+        coordinator->operation = new Build_Operation(direction, shapeState, getPreviousOpDir(),
+                                                     comingFromBack, MMPosition.pt[2]);
     } else {
-        bool comingFromBack = (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and shapeState == BACKFRONT);
-       
-        coordinator->operation = new Transfer_Operation(direction, shapeState, getPreviousOpDir(), comingFromBack, MMPosition.pt[2]);
-    }
+        bool comingFromBack =
+            (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and
+             shapeState == BACKFRONT);
 
+        coordinator->operation = new Transfer_Operation(direction, shapeState, getPreviousOpDir(),
+                                                        comingFromBack, MMPosition.pt[2]);
+    }
 }
 
  /* -------------------------------------------------------------------------- */
@@ -801,7 +805,8 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
                             lattice->getBlock(module->position + Cell3DPosition(2 , 0, -2))));
                     }
                 } else { //BackFront
-                    if(relativePos() == Cell3DPosition(1,0,2) and lattice->cellHasBlock(seedPosition + Cell3DPosition(1,-2,2))) {
+                    if(/*relativePos() == Cell3DPosition(1,0,2) and*/ lattice->cellHasBlock(seedPosition + Cell3DPosition(1,-2,2)) and 
+                    relativePos().pt[1] > -2) {
                         latchingPoints.clear();
                         latchingPoints.push_back(static_cast<Catoms3DBlock*>(
                             lattice->getBlock(seedPosition + Cell3DPosition(1,-2,2))));
@@ -1453,10 +1458,10 @@ void RePoStBlockCode::onBlockSelected() {
     for(auto out: mainPathOut) cerr << out << " | "; 
     cerr << endl;
     // if(isDestination) cerr << "destinationFor: " << destinationOut << endl;
-    // if(operation) {
-    //     if(operation->isTransfer())
-    //     cerr << "comingFromBack: " << static_cast<Transfer_Operation*>(operation)->isComingFromBack() << endl;
-    // }
+    if(operation) {
+        if(operation->isTransfer())
+        cerr << "prevOpDir: " << operation->getPrevOpDirection() << endl;
+    }
     // cerr << endl;
     // cerr << "aug1PathIn: " << aug1PathIn << endl;
     // cerr << "aug1PathOut: ";

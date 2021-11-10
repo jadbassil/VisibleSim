@@ -631,7 +631,7 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                 getScheduler()->trace(sstream.str(), rbc->module->blockId, Color(MAGENTA));
 
                 if(mmShape == FRONTBACK) {
-                    if (not rbc->getPreviousOpDir() == Direction::FRONT) {  // mmShape = BACKFRONT
+                    if (prevOpDirection != Direction::FRONT) { 
                         if (rbc->transferCount == 8 and mustHandleBridgeOnAdd(pos)) {
                             // skip to avoid unsupported motion
                             rbc->console << "skip\n";

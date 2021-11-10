@@ -29,6 +29,7 @@ public:
     std::shared_ptr<vector<LocalMovement>> localRules;
     Cell3DPosition getNextSeed(BaseSimulator::BlockCode*);
     Direction getDirection() const {return direction;};
+    Direction getPrevOpDirection() const {return prevOpDirection;};
     MMShape getMMShape() const {return mmShape;};
     bool mustHandleBridgeOnAdd(const Cell3DPosition&);
     /**
