@@ -132,7 +132,7 @@ void PLSMessage::handle(BaseSimulator::BlockCode *bc) {
     }
 
     if (rbc.operation) {
-        if (rbc.operation->isTransfer() and rbc.operation->getDirection() == Direction::BACK and
+        if (/*rbc.operation->isTransfer() and*/ rbc.operation->getDirection() == Direction::BACK and
             rbc.getPreviousOpDir() == Direction::RIGHT and
             rbc.operation->getMMShape() == FRONTBACK) {
             if (rbc.relativePos() == Cell3DPosition(1, 1, 2) and

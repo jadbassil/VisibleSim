@@ -825,7 +825,10 @@ bool Transfer_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
         return true;
     } else if (direction == Direction::FRONT) {
         if(mmShape == FRONTBACK) {
-             if (prevOpDirection != Direction::FRONT and rbc->mvt_it >= 26) return true;
+             if (prevOpDirection != Direction::FRONT) {
+                 if(rbc->mvt_it >= 26 and prevOpDirection != Direction::RIGHT) return true;
+                 else if(prevOpDirection == Direction::RIGHT and rbc->mvt_it >= 42) return true;
+             }  
              if (prevOpDirection == Direction::FRONT and rbc->mvt_it > 8) return true;
         } else { //BACKFRONT
             if(/*not comingFromBack and*/ rbc->mvt_it == 4 or rbc->mvt_it == 6) return true;

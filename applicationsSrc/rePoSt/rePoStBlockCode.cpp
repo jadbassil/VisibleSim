@@ -426,7 +426,8 @@ void RePoStBlockCode::probeGreenLight() {
         // special logic to avoid blocking when coming from right then going back.
         // coordinator is not reached so modules be coordinated without being attached to the
         // coordinator
-        if (operation->isZeven() and (mvt_it == 49 or mvt_it == 53)) {
+        if ((operation->isZeven() and (mvt_it == 49 or mvt_it == 53)) 
+            or (not operation->isZeven() and mvt_it == 45)) {
             sendHandleableMessage(new CoordinateBackMessage(movingSteps + 2, coordinatorPosition),
                                   interfaceTo(coordinatorPosition), 0, 200);
         }
@@ -464,6 +465,53 @@ void RePoStBlockCode::probeGreenLight() {
             // module->moveTo(seedPosition + Cell3DPosition(1, 1, 2));
             getScheduler()->schedule(new Catoms3DRotationStartEvent(
                 getScheduler()->now() + 150, module, seedPosition + Cell3DPosition(1, 1, 2),
+                RotationLinkType::Any, false));
+            return;
+        } else {
+            VS_ASSERT(false);
+        }
+        return;
+    }
+
+    if(relativePos() ==  Cell3DPosition(4,0,2) and
+        module->getInterface(module->position.offsetY(-1))->isConnected()) {
+        
+        if ((operation->isZeven() and mvt_it == 45) or (not operation->isZeven() and mvt_it >= 46) ) {
+            sendHandleableMessage(new CoordinateBackMessage(movingSteps + 2, coordinatorPosition),
+                                  interfaceTo(coordinatorPosition), 0, 200);
+        }
+        updateState();
+        coordinatorPosition = seedPosition + Cell3DPosition(1, 0, 1);
+        RePoStBlockCode& coordinator =
+            *static_cast<RePoStBlockCode*>(lattice->getBlock(coordinatorPosition)->blockCode);
+        operation = coordinator.operation;
+        coordinator.console << "right_back it1: " << coordinator.mvt_it << "\n";
+
+        while ((*coordinator.operation->localRules)[coordinator.mvt_it].currentPosition !=
+               Cell3DPosition(1, -1, 2)) {
+            coordinator.mvt_it++;
+        }
+        mvt_it = coordinator.mvt_it - 1;
+        coordinator.console << "right_back it2: " << coordinator.mvt_it << "\n";
+
+        coordinator.operation->setMvtItToNextModule(&coordinator);
+        coordinator.console << "right_back it3: " << coordinator.mvt_it << "\n";
+        if (not operation->isZeven()) {
+            if (coordinator.mvt_it > 42 and coordinator.operation->isBuild())
+                coordinator.mvt_it -= 3;
+            if (coordinator.mvt_it > 39 and coordinator.operation->isTransfer())
+                coordinator.mvt_it -= 3;
+        } else {
+            if (coordinator.mvt_it > 42 and coordinator.operation->isBuild())
+                coordinator.mvt_it -= 4;
+            if (coordinator.mvt_it > 39 and coordinator.operation->isTransfer())
+                coordinator.mvt_it -= 4;
+        }
+        coordinator.console << "right_back it4: " << coordinator.mvt_it << "\n";
+        if (module->canMoveTo(seedPosition + Cell3DPosition(1, -1, 2))) {
+            // module->moveTo(seedPosition + Cell3DPosition(1, 1, 2));
+            getScheduler()->schedule(new Catoms3DRotationStartEvent(
+                getScheduler()->now() + 150, module, seedPosition + Cell3DPosition(1, -1, 2),
                 RotationLinkType::Any, false));
             return;
         } else {
@@ -736,7 +784,7 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
               relativePos() == Cell3DPosition(3, 0, 2)) and
              operation->getMMShape() == BACKFRONT and mvt_it > 3 and operation->isZeven() and
              getNextOpDir() != Direction::DOWN) or
-            ((relativePos() == Cell3DPosition(2, 1, 2) or
+             ((relativePos() == Cell3DPosition(2, 1, 2) or
               relativePos() == Cell3DPosition(3, 0, 1)) and
              operation->getMMShape() == BACKFRONT and mvt_it > 4 and not operation->isZeven() and
              getNextOpDir() != Direction::DOWN)) {
@@ -810,6 +858,12 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
                         latchingPoints.clear();
                         latchingPoints.push_back(static_cast<Catoms3DBlock*>(
                             lattice->getBlock(seedPosition + Cell3DPosition(1,-2,2))));
+                    }
+                    if(relativePos() == Cell3DPosition(0,-2,2)) {
+                   
+                        latchingPoints.clear();
+                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                            lattice->getBlock(seedPosition + Cell3DPosition(1,-3,1))));
                     }
                 }
             } break;
@@ -957,13 +1011,15 @@ Cell3DPosition RePoStBlockCode::nearestPositionTo(Cell3DPosition& targetPosition
                                                   P2PNetworkInterface* except) {
     int distance = INT32_MAX;
     Cell3DPosition nearest;
-    if(isAdjacentToPosition(targetPosition) and module->getInterface(targetPosition)) {
+    if (isAdjacentToPosition(targetPosition) and module->getInterface(targetPosition)) {
         return targetPosition;
     }
     for (auto neighPos : lattice->getActiveNeighborCells(module->position)) {
         RePoStBlockCode* neighBlock = static_cast<RePoStBlockCode*>(
             BaseSimulator::getWorld()->getBlockByPosition(neighPos)->blockCode);
-        if (neighBlock->module->getState() == BuildingBlock::State::MOVING) continue;
+        if (neighBlock->module->getState() == BuildingBlock::State::MOVING or
+            neighBlock->movingState == MOVING)
+            continue;
         if (except != nullptr) {
             if (module->getInterface(neighPos) == except) {
                 continue;
@@ -1259,7 +1315,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                      operation->getMMShape() == BACKFRONT and not
                         static_cast<Build_Operation*>(operation)->isComingFromBack())*/) {
                     if (posBlock->module->canMoveTo(module->position.offsetY(1)) and not posBlock->sendingCoordinateBack) {
-                            console << "move pos BF\n";
+                        console << "move pos BF\n";
                         posBlock->module->moveTo(module->position.offsetY(1));
                     } else {
                         // Wait until it can move to the desired position
@@ -1272,7 +1328,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
 
             if(isCoordinator and pos == module->position + Cell3DPosition(0,0,1) and shapeState == FRONTBACK) {
                 if (operation->getDirection() != Direction::FRONT and getPreviousOpDir() == Direction::FRONT) {
-                    
+                     posBlock->movingSteps--;
                      if (posBlock->module->canMoveTo(module->position.offsetY(-1)) and not posBlock->sendingCoordinateBack) {
                             console << "move pos FB\n";
                         posBlock->module->moveTo(module->position.offsetY(-1));
@@ -1515,8 +1571,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("FB_Transfer_Front.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(2,12,4);
+    file.open("FB_Build_Back.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(10,11,8);
     if(!file.is_open()) return; 
 
     if(c == 'o') {

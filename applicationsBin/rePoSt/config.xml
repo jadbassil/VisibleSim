@@ -10,12 +10,19 @@
 
 	<MMBlockList>
 		<block position="0,0,0"/>
-		<block position="0,1,0"/>
-		<block position="0,2,0"/>
-		<block position="0,3,0"/>
+		<block position="0,0,1"/>
+		<block position="0,1,1"/>
+		<block position="0,2,1"/>
+		<block position="0,3,1"/>
+		<block position="0,4,1"/>
+
+		<block position="1,2,1"/>
+		<block position="1,4,1"/>
+		<block position="2,0,1"/>
+		<block position="2,2,1"/>
+		<block position="2,1,1"/>
 	
-		<block position="0,2,-1"/>
-		<block position="1,2,-1"/>
+
 
 
 		
@@ -24,13 +31,18 @@
 	<MMTargetList>
 
 		<block position="0,0,0"/>
-		<block position="0,1,0"/>
-		<block position="0,2,0"/>
-		<block position="0,3,0"/>
-
-		<block position="0,2,-1"/>
 		<block position="0,0,1"/>
+		<block position="0,1,1"/>
+		<block position="0,2,1"/>
+		<block position="0,3,1"/>
+		<block position="0,4,1"/>
 
+		<block position="1,2,1"/>
+		<!-- <block position="1,4,1"/> -->
+		<block position="2,3,1"/>
+		<block position="2,2,1"/>
+		<block position="2,1,1"/>
+		<block position="2,1,2"/>
 		
 	</MMTargetList>
 	
