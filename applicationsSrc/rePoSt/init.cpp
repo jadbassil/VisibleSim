@@ -69,7 +69,7 @@ void Init::buildMM(Catoms3DBlock *s, MMShape shape, Color col) {
     Cell3DPosition seed_position = s->position;
     RePoStBlockCode* seedModule = static_cast<RePoStBlockCode*>(
         BaseSimulator::getWorld()->getBlockByPosition(seed_position)->blockCode);
-
+    seedModule->fillingState = EMPTY;
     for(int i=1; i<FrontBackMM.size(); i++) {
         Cell3DPosition newBlock_position; 
         for(int j=0; j<3; j++) {
@@ -88,6 +88,7 @@ void Init::buildMM(Catoms3DBlock *s, MMShape shape, Color col) {
         newBlock->initialPosition = newBlock->module->position - newBlock->seedPosition;
         newBlock->shapeState = shape;
         newBlock->parentPosition = newBlock->MMPosition;
+        newBlock->fillingState = EMPTY;
     }
 }
 
@@ -137,6 +138,7 @@ void Init::buildMMon(Catoms3DBlock *s, Direction pos) {
 
 void Init::fillMM(Catoms3DBlock *s) {
     RePoStBlockCode *S = static_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(s->position)->blockCode);
+    S->fillingState = FULL;
     if (S->MMPosition.pt[2] % 2 == 0) { //Z_even
         if (S->shapeState == FRONTBACK) {
             for (int i = 0; i < 10; i++) {
@@ -148,6 +150,7 @@ void Init::fillMM(Catoms3DBlock *s) {
                     BaseSimulator::getWorld()->getBlockByPosition(newBlockPos)->blockCode);
                 newBlock->seedPosition = s->position;
                 newBlock->MMPosition = S->MMPosition;
+                newBlock->fillingState = FULL;
             }
         } else if (S->shapeState == BACKFRONT) {
             for (int i = 0; i < 10; i++) {
@@ -159,6 +162,7 @@ void Init::fillMM(Catoms3DBlock *s) {
                     BaseSimulator::getWorld()->getBlockByPosition(newBlockPos)->blockCode);
                 newBlock->seedPosition = s->position;
                 newBlock->MMPosition = S->MMPosition;
+                newBlock->fillingState = FULL;
             }
         }
     } else {  // Z_odd
@@ -172,6 +176,7 @@ void Init::fillMM(Catoms3DBlock *s) {
                     BaseSimulator::getWorld()->getBlockByPosition(newBlockPos)->blockCode);
                 newBlock->seedPosition = s->position;
                 newBlock->MMPosition = S->MMPosition;
+                newBlock->fillingState = FULL;
             }
         } else if (S->shapeState == BACKFRONT) {
             for (int i = 0; i < 10; i++) {
@@ -183,6 +188,7 @@ void Init::fillMM(Catoms3DBlock *s) {
                     BaseSimulator::getWorld()->getBlockByPosition(newBlockPos)->blockCode);
                 newBlock->seedPosition = s->position;
                 newBlock->MMPosition = S->MMPosition;
+                newBlock->fillingState = FULL;
             }
         }
     }

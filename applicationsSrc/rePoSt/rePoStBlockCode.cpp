@@ -917,12 +917,13 @@ bool RePoStBlockCode::setGreenLight(bool onoff) {
 bool RePoStBlockCode::isPotentialDestination() {
     //Check if an adjacent position is in target shape
     for (auto adjPos : getAdjacentMMPositions()) {
-        if (inTargetShape(adjPos) and not inInitialShape(adjPos) and not
-            lattice->cellHasBlock(getSeedPositionFromMMPosition(adjPos))) {
+        if ((inTargetShape(adjPos) and not inInitialShape(adjPos) and not
+            lattice->cellHasBlock(getSeedPositionFromMMPosition(adjPos))) 
+            or (isFilledInTarget(adjPos) and not isFilledInInitial(adjPos))) {
             if(find(destinations.begin(), destinations.end(), adjPos) != destinations.end()) {
                 continue;
             }
-            if(adjPos.pt[0] == MMPosition.pt[0] -1) continue;
+            // if(adjPos.pt[0] == MMPosition.pt[0] -1) continue;
             destinationOut = adjPos;
             return true;
         }
@@ -952,6 +953,26 @@ bool RePoStBlockCode::inInitialShape(Cell3DPosition pos) {
     for (auto initialPos : initialMap) {
         Cell3DPosition ip = Cell3DPosition(initialPos[0], initialPos[1], initialPos[2]);
         if (ip == pos) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool RePoStBlockCode::isFilledInInitial(Cell3DPosition MMpos) {
+    for (auto initialPos : initialMap) {
+        Cell3DPosition ip = Cell3DPosition(initialPos[0], initialPos[1], initialPos[2]);
+        if (ip == MMpos and initialPos[3] == 1) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool RePoStBlockCode::isFilledInTarget(Cell3DPosition MMpos) {
+    for (auto targetPos : targetMap) {
+        Cell3DPosition ip = Cell3DPosition(targetPos[0], targetPos[1], targetPos[2]);
+        if (ip == MMpos and targetPos[3] == 1) {
             return true;
         }
     }
@@ -1492,6 +1513,7 @@ void RePoStBlockCode::onBlockSelected() {
     cerr << "isCoordinator: " << (isCoordinator ? "true": "false") << endl;
     cerr << "coordinatorPosition: " << coordinatorPosition << endl;
     cerr << "ShapeState: " << shapeState << endl;
+    cerr << "FillingState: " << (fillingState == EMPTY ? "EMPTY": "FULL") << endl;
     cerr << "seedPosition: " << seedPosition << endl;
     cerr << "MMPostion: " << MMPosition << endl;
     cerr << "CurrentPos: " << module->position - seedPosition << endl;

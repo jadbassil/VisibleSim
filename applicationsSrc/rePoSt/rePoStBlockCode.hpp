@@ -56,6 +56,7 @@ static vector<Cell3DPosition> FillingPositions_BackFront_Zeven = {
 };
 
 enum PathState {NONE, BFS, ConfPath, Streamline};
+enum FillingState {EMPTY, FULL};
 enum ProcessState {PASSIVE, ACTIVE};
 enum RenconfigurationStep {SRCDEST, MAXFLOW, TRANSPORT, DONE};
 
@@ -85,6 +86,7 @@ public:
     short nbWaitedAnswers{0};
     bool isSource{false};
     bool isDestination{false};
+    FillingState fillingState;
 
     void reinitialize();
 /* -------------------------------------------------------------------------- */
@@ -190,10 +192,25 @@ public:
      * @return false 
      */
     bool inInitialShape(Cell3DPosition pos);
+    
+    /**
+     * @brief check if a Meta-Module is filled in the initial shape
+     * 
+     * @param MMpos Meta-module position
+     * @return bool
+     */
+    bool isFilledInInitial(Cell3DPosition MMpos);
+
+     /**
+     * @brief check if a Meta-Module is filled in the target shape
+     * 
+     * @param MMpos Meta-module position
+     * @return bool
+     */
+    bool isFilledInTarget(Cell3DPosition MMpos);
     /**
      * @return vector<Cell3DPosition> containing all adjacent MMs Positions occupied or not
      */
-
     vector<Cell3DPosition> getAdjacentMMPositions();
 
 
