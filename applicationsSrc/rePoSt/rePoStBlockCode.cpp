@@ -782,13 +782,12 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
     if (operation->isTransfer() and operation->getDirection() == Direction::RIGHT) {
         if (((relativePos() == Cell3DPosition(2, 0, 2) or
               relativePos() == Cell3DPosition(3, 0, 2)) and
-             operation->getMMShape() == BACKFRONT and mvt_it > 3 and operation->isZeven() and
+             operation->  getMMShape() == BACKFRONT and mvt_it > 3 and operation->isZeven() and
              getNextOpDir() != Direction::DOWN) or
              ((relativePos() == Cell3DPosition(2, 1, 2) or
               relativePos() == Cell3DPosition(3, 0, 1)) and
              operation->getMMShape() == BACKFRONT and mvt_it > 4 and not operation->isZeven() and
              getNextOpDir() != Direction::DOWN)) {
-            // Zeven
             latchingPoints.push_back(static_cast<Catoms3DBlock*>(
                 lattice->getBlock(seedPosition + Cell3DPosition(3, -1, 1))));
             latchingPoints.push_back(static_cast<Catoms3DBlock*>(

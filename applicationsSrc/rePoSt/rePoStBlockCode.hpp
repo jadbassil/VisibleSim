@@ -120,6 +120,7 @@ public:
     bool notFindingPivot{false};
     Cell3DPosition pivotPosition;
     set<Cell3DPosition> awaitingSources;
+    int prevTransferCount; //used in pls message handler on the bridge to avoid blocking when coming from right then building back
     bool initialized{false};
     Operation *operation = NULL;
     bool sendingCoordinateBack{false};

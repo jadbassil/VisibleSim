@@ -137,11 +137,13 @@ void PLSMessage::handle(BaseSimulator::BlockCode *bc) {
             rbc.operation->getMMShape() == FRONTBACK) {
             if (rbc.relativePos() == Cell3DPosition(1, 1, 2) and
                 (srcPos == rbc.seedPosition + Cell3DPosition(-2, 0, 2) or srcPos == rbc.seedPosition + Cell3DPosition(-2,1,2))) {
-                if (rbc.transferCount < 4) {
+                rbc.console << "prevTransferCount: " << rbc.prevTransferCount << "\n";
+                if (rbc.transferCount < 4 or rbc.prevTransferCount == rbc.transferCount) {
                     getScheduler()->trace("light turned orange2\n", rbc.module->blockId, ORANGE);
                     if (not rbc.awaitingSources.empty()) rbc.setGreenLight(true);
                     rbc.awaitingSources.insert(srcPos);
                     rbc.module->setColor(DARKORANGE);
+                    rbc.prevTransferCount = rbc.transferCount + 3;
                     return;
                 }
             }
