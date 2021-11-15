@@ -922,7 +922,7 @@ bool RePoStBlockCode::isPotentialDestination() {
             if(find(destinations.begin(), destinations.end(), adjPos) != destinations.end()) {
                 continue;
             }
-            if(adjPos.pt[0] == MMPosition.pt[0] -1) continue;
+            //if(adjPos.pt[0] == MMPosition.pt[0] -1) continue;
             destinationOut = adjPos;
             return true;
         }
