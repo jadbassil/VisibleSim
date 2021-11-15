@@ -271,8 +271,11 @@ void FTRMessage::handle(BaseSimulator::BlockCode *bc) {
         return;
     }
     if (rbc.isCoordinator and rbc.getPreviousOpDir() == Direction::DOWN and
-        rbc.operation->getDirection() == Direction::RIGHT and
+        rbc.operation->getDirection() == Direction::RIGHT  and
         (senderPos == rbc.module->position.offsetY(1) or senderPos == rbc.module->position.offsetY(-1 ))) {
+        return;
+    }
+    if(rbc.isCoordinator and rbc.getPreviousOpDir() == Direction::BACK and rbc.operation->getDirection() == Direction::DOWN){
         return;
     }
 
