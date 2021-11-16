@@ -289,8 +289,8 @@ bool Fill_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode *bc) {
         if (mmShape == FRONTBACK and Zeven and (rbc->mvt_it >= 51))
             return true;
         if (mmShape == BACKFRONT and Zeven and rbc->mvt_it >= 40) return true;
-        if (mmShape == BACKFRONT and rbc->mvt_it >= 58) return true;
-        if (mmShape == FRONTBACK and (rbc->mvt_it == 53 or rbc->mvt_it >= 68)) return true;
+        if (mmShape == BACKFRONT and rbc->mvt_it >= 45) return true;
+        if (mmShape == FRONTBACK and (rbc->mvt_it >= 51)) return true;
     } else if(direction == Direction::BACK) {
         if (mmShape == FRONTBACK and rbc->mvt_it >= 49) return true;
         if(mmShape == BACKFRONT and not comingFromBack and rbc->mvt_it >= 50) return true;

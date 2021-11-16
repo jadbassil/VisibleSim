@@ -1081,9 +1081,10 @@ Cell3DPosition RePoStBlockCode::nearestPositionTo(Cell3DPosition& targetPosition
     }
     if (distance == INT32_MAX) {
         module->getNeighborPos(module->getInterfaceId(except), nearest);
+        VS_ASSERT(false);
         return nearest;
     }
-    VS_ASSERT(distance != DBL_MAX and module->getInterface(nearest)->isConnected());
+    VS_ASSERT(distance != INT32_MAX and module->getInterface(nearest)->isConnected());
     return nearest;
 }
 
@@ -1620,8 +1621,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("FB_Build_Back.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(10,11,8);
+    file.open("BF_Fill_Left.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(24,19,14);
     if(!file.is_open()) return; 
 
     if(c == 'o') {

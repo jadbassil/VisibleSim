@@ -7,6 +7,12 @@ void CoordinateMessage::handle(BaseSimulator::BlockCode *bc) {
     P2PNetworkInterface *sender = this->destinationInterface;
     // console << "Received Coordinate Msg from: " << sender->getConnectedBlockId()
     // << " " << coordinateData->coordinatorPosition   << " " << coordinateData->position<< "\n";
+    if(rbc.isAdjacentToPosition(position)) {
+        if(not rbc.module->getInterface(position)->isConnected()) {
+            VS_ASSERT(false);
+            return;
+        }
+    }
 
     if (rbc.module->position == position) {
         rbc.console << "Can start moving\n";
@@ -53,6 +59,8 @@ void CoordinateBackMessage::handle(BaseSimulator::BlockCode *bc) {
             rbc.mvt_it++;
         }
 
+    
+
         if (rbc.mvt_it >= rbc.operation->localRules->size()) {
             // operation ended
             rbc.isCoordinator = false;
@@ -79,7 +87,13 @@ void CoordinateBackMessage::handle(BaseSimulator::BlockCode *bc) {
                      << (*rbc.operation->localRules)[rbc.mvt_it].currentPosition << "\n";
         Cell3DPosition targetModule =
             rbc.seedPosition + (*rbc.operation->localRules)[rbc.mvt_it].currentPosition;
-
+        if(not rbc.lattice->cellHasBlock(targetModule) and rbc.operation->isTransfer() and 
+            rbc.operation->getDirection() == Direction::LEFT) {
+            //check if target module(the module connected to the next module is connected)
+            rbc.mvt_it++;
+            targetModule =
+            rbc.seedPosition + (*rbc.operation->localRules)[rbc.mvt_it].currentPosition;
+        }
         if (rbc.lattice->cellsAreAdjacent(rbc.module->position, targetModule) and
             not rbc.module->getInterface(targetModule)->isConnected()) {
             // Received coordinateBack and no module is connected
@@ -91,6 +105,7 @@ void CoordinateBackMessage::handle(BaseSimulator::BlockCode *bc) {
             return;
         }
         VS_ASSERT(rbc.operation);
+        
         rbc.sendHandleableMessage(
             new CoordinateMessage(rbc.operation, targetModule, rbc.module->position, rbc.mvt_it),
             rbc.interfaceTo(targetModule), 100, 200);
