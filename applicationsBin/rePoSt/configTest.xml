@@ -12,15 +12,17 @@
 		<block position="0,0,0" />
 		<block position="1,0,0"/>
 		<block position="2,0,0"/>
+		<block position="3,0,0"/>
+		<!-- <block position="4,0,0"/> -->
 
 
 	</MMBlockList>
 	<MMTargetList>
 
-		<block position="0,0,0"  filled="true"/>
-		<block position="1,0,0"/>
-		<!-- <block position="2,0,0"/> -->
-		
+		<block position="0,0,0" />
+		<block position="1,0,0" />
+		<block position="2,0,0"/>
+		<!-- <block position="3,0,0"/> -->
 	</MMTargetList>
 </world>
 

@@ -66,10 +66,15 @@ void CoordinateBackMessage::handle(BaseSimulator::BlockCode *bc) {
             return;
         }
 
+        if(rbc.operation->isFill() and rbc.operation->getDirection() == Direction::LEFT and rbc.transferCount >= 8 and steps == 0) {
+            return;
+        }
+
         if ((*rbc.operation->localRules)[rbc.mvt_it - 1].state == MOVING and
             rbc.operation->isTransfer()) {
             rbc.operation->setMvtItToNextModule(rbc.module->blockCode);
         }
+        
         rbc.console << rbc.mvt_it << ": Movement ended must switch to next one "
                      << (*rbc.operation->localRules)[rbc.mvt_it].currentPosition << "\n";
         Cell3DPosition targetModule =
@@ -156,6 +161,17 @@ void PLSMessage::handle(BaseSimulator::BlockCode *bc) {
                 rbc.module->setColor(DARKORANGE);
                 return;
             }
+        }
+        if (rbc.isCoordinator and rbc.operation->isFill() and Direction::LEFT and
+            rbc.operation->isZeven() and rbc.transferCount > 8 and
+            rbc.operation->getPrevOpDirection() == Direction::LEFT and
+            (rbc.module->getInterface(rbc.module->position.offsetY(1))->isConnected() or
+             rbc.module->getInterface(rbc.module->position.offsetY(-1))->isConnected())) {
+            getScheduler()->trace("light turned orange2\n", rbc.module->blockId, ORANGE);
+            if (not rbc.awaitingSources.empty()) rbc.setGreenLight(true);
+            rbc.awaitingSources.insert(srcPos);
+            rbc.module->setColor(DARKORANGE);
+            return;
         }
     }
 

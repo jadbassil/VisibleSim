@@ -344,13 +344,30 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
         bool comingFromBack =
             (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and
              shapeState == BACKFRONT);
-        coordinator->operation = new Build_Operation(direction, shapeState, getPreviousOpDir(),
-                                                     comingFromBack, MMPosition.pt[2]);
+        if (isFilledInTarget(outPosition)) {
+            coordinator->operation = new Fill_Operation(direction, shapeState, getPreviousOpDir(),
+                                                        comingFromBack, MMPosition.pt[2]);
+        } else {
+            coordinator->operation = new Build_Operation(direction, shapeState, getPreviousOpDir(),
+                                                         comingFromBack, MMPosition.pt[2]);
+        }
+
     } else {
+        if(isFilledInTarget(MMPosition)) {
+            coordinator->operation = new Operation();
+            coordinator->isCoordinator = false;
+            return;
+        }
         bool comingFromBack =
             (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and
              shapeState == BACKFRONT);
-
+        if (isFilledInTarget(outPosition)) {
+            isDestination = true;
+            switchModulesColors();
+            coordinator->operation = new Fill_Operation(direction, shapeState, getPreviousOpDir(),
+                                                        comingFromBack, MMPosition.pt[2]);
+            return;
+        } 
         coordinator->operation = new Transfer_Operation(direction, shapeState, getPreviousOpDir(),
                                                         comingFromBack, MMPosition.pt[2]);
     }
@@ -869,6 +886,16 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
 
             default: break;
         }
+    }
+
+    if(operation->isFill()) {
+        switch(operation->getDirection()) {
+            case Direction::LEFT: {
+                if(relativePos() == Cell3DPosition(1,-1,1) or relativePos() == Cell3DPosition(1,0,1)) {
+                    latchingPoints.clear();
+                }
+            }break;
+        } 
     }
     return latchingPoints;
 }
@@ -1522,6 +1549,7 @@ void RePoStBlockCode::onBlockSelected() {
     cerr << "GreenLight: " << greenLightIsOn << endl;
     cerr << "isSource: " << isSource << endl;
     cerr << "isDestination: " << isPotentialDestination() << endl;
+    cerr << "destinationOut: " << destinationOut << endl; 
     // cerr << "parentPosition: " << parentPosition << endl;
     // cerr << "childrenPostions: ";
     // for(auto c: childrenPositions) cerr << c << "; ";
