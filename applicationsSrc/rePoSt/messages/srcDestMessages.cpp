@@ -131,7 +131,7 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
                     MMblock->seedPosition == MMblock->module->position) {
                     if (find(destinations.begin(), destinations.end(), MMblock->destinationOut) ==
                         destinations.end()) {
-                        cerr << MMblock->MMPosition << ": is destination\n";
+                        cerr << MMblock->MMPosition << ": is destination for: "<< MMblock->destinationOut << "\n";
                         MMblock->isDestination = true;
                         destinations.push_back(MMblock->destinationOut);
                     }

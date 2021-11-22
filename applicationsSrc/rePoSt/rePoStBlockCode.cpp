@@ -893,6 +893,10 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
             case Direction::LEFT: {
                 if(relativePos() == Cell3DPosition(1,-1,1) or relativePos() == Cell3DPosition(1,0,1)) {
                     latchingPoints.clear();
+                    
+                }
+                if( operation->getMMShape() == BACKFRONT and operation->isZeven() and mvt_it >= 39) {
+                    latchingPoints.clear();
                 }
             }break;
         } 
@@ -943,6 +947,8 @@ bool RePoStBlockCode::setGreenLight(bool onoff) {
 
 bool RePoStBlockCode::isPotentialDestination() {
     //Check if an adjacent position is in target shape
+    if(isFilledInTarget(MMPosition) and not isFilledInInitial(MMPosition))
+        return false;
     for (auto adjPos : getAdjacentMMPositions()) {
         if ((inTargetShape(adjPos) and not inInitialShape(adjPos) and not
             lattice->cellHasBlock(getSeedPositionFromMMPosition(adjPos))) 
