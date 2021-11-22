@@ -215,23 +215,28 @@ void Fill_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const 
                     rbc->transferCount++;
                     rbc->console << "mvt_it1: " << rbc->mvt_it << "\n";
                     getScheduler()->trace("transferCount: " + to_string(rbc->transferCount), rbc->module->blockId, Color(MAGENTA));
-                    if (mmShape == BACKFRONT) {
-                        if (rbc->transferCount == 3) {
-                            Cell3DPosition targetModule =
-                                rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
-                            rbc->sendHandleableMessage(
-                                new CoordinateMessage(rbc->operation, targetModule,
-                                                      rbc->module->position, rbc->mvt_it),
-                                rbc->module->getInterface(pos), 100, 200);
-                            setMvtItToNextModule(bc);
-                        }
-                    }
+                    // if (mmShape == BACKFRONT) {
+                    //     if (rbc->transferCount == 3) {
+                    //         return;
+                    //     }
+                    //     if(rbc->transferCount == 4) {
+                    //         setMvtItToNextModule(bc);
+                    //     }
+                    //     //    Cell3DPosition targetModule =
+                    //     //     rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
+                    //     // rbc->sendHandleableMessage(
+                    //     //     new CoordinateMessage(rbc->operation, targetModule,
+                    //     //                           rbc->module->position, rbc->mvt_it),
+                    //     //     rbc->module->getInterface(pos), 100, 200);
+                    //     // setMvtItToNextModule(bc);
+                        
+                    // }
 
                     if (mustHandleBridgeOnAdd(pos)) {  // suppose that there is a bridge
                         if (rbc->transferCount == 8)
                             return;
                         else if (rbc->transferCount == 9) {
-                            if (mmShape == BACKFRONT) return;
+                            //if (mmShape == BACKFRONT) return;
                             // msg so must jump to next module if previous operation requires
                             // bridging
                             setMvtItToNextModule(bc);
@@ -244,6 +249,12 @@ void Fill_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const 
                                               rbc->mvt_it),
                         rbc->module->getInterface(pos), 100, 200);
 
+                    // if(mmShape == BACKFRONT) {
+                    //     if(rbc->transferCount == 2) {
+                    //         return;
+                    //     }
+                    // }
+              
                     if(rbc->transferCount < 10) {
                          setMvtItToNextModule(bc);
                         rbc->console << "mvt_it2: " << rbc->mvt_it << "\n";
@@ -367,7 +378,7 @@ bool Fill_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode *bc) {
         if (mmShape == FRONTBACK and (rbc->mvt_it >= 51)) return true;
     } else if(direction == Direction::BACK) {
         if (mmShape == FRONTBACK and rbc->mvt_it >= 53) return true;
-        if(mmShape == BACKFRONT and not comingFromBack and rbc->mvt_it >= 50) return true;
+        if(mmShape == BACKFRONT and not comingFromBack and rbc->mvt_it >= 42 ) return true;
         if (mmShape == BACKFRONT and comingFromBack and
             (rbc->mvt_it == 9 or rbc->mvt_it == 15 or rbc->mvt_it == 21 or rbc->mvt_it >= 31))
             return true;

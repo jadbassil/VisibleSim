@@ -676,17 +676,23 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
             latchingPoints.push_back(static_cast<Catoms3DBlock*>(lattice->getBlock(lp)));
         }
     }
-    if (targetPos - seedPosition == Cell3DPosition(-2, 1, 2) and
-        lattice->cellHasBlock(seedPosition + Cell3DPosition(-3, 0, 2)) and
-        operation->isTransfer() and operation->getDirection() == Direction::LEFT) {
-        // Avoid blocking when passing the bridge if the next operation direction is back
-        RePoStBlockCode& rlp = *static_cast<RePoStBlockCode*>(
-            lattice->getBlock(seedPosition + Cell3DPosition(-3, 0, 2))->blockCode);
-        if (rlp.movingState == WAITING) {
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(seedPosition + Cell3DPosition(-3, 0, 2))));
+    if (targetPos - seedPosition == Cell3DPosition(-2, 1, 2)) {
+        if (lattice->cellHasBlock(seedPosition + Cell3DPosition(-3, 0, 2)) and
+            operation->isTransfer() and operation->getDirection() == Direction::LEFT) {
+            // Avoid blocking when passing the bridge if the next operation direction is back
+            RePoStBlockCode& rlp = *static_cast<RePoStBlockCode*>(
+                lattice->getBlock(seedPosition + Cell3DPosition(-3, 0, 2))->blockCode);
+            if (rlp.movingState == WAITING) {
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                    lattice->getBlock(seedPosition + Cell3DPosition(-3, 0, 2))));
+            }
+            return latchingPoints;
+        }
+        if(lattice->cellHasBlock(seedPosition + Cell3DPosition(-4,1,2))) {
+
         }
     }
+
     /* ------------------ Avoid blocking when coming from back ------------------ */
     if (operation->getDirection() == BACK and shapeState == BACKFRONT) {
         if (relativePos() == Cell3DPosition(0, 2, 2) and
@@ -898,7 +904,30 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
                 if( operation->getMMShape() == BACKFRONT and operation->isZeven() and mvt_it >= 39) {
                     latchingPoints.clear();
                 }
-            }break;
+            } break;
+
+            case Direction::BACK: {
+                if(operation->getMMShape() == BACKFRONT and operation->getPrevOpDirection() != Direction::BACK) {
+                    if(relativePos() == Cell3DPosition(0,1,2) and mvt_it >= 34) {
+                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                            lattice->getBlock(seedPosition + Cell3DPosition(0, 3, 0))));
+                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                            lattice->getBlock(seedPosition + Cell3DPosition(1, 3, 0))));
+                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                            lattice->getBlock(seedPosition + Cell3DPosition(1, 3, 1))));
+                        // latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                        //     lattice->getBlock(seedPosition + Cell3DPosition(1, 3, 3))));
+                        // latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                        //     lattice->getBlock(seedPosition + Cell3DPosition(0, 3, 4))));
+                        // latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                        //     lattice->getBlock(seedPosition + Cell3DPosition(1, 3, 4))));
+                        // latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                        //     lattice->getBlock(seedPosition + Cell3DPosition(-1, 0, 3))));
+                        // getScheduler()->toggle_pause();
+                        return latchingPoints;
+                    } 
+                }
+            } break;
         } 
     }
     return latchingPoints;
@@ -1627,8 +1656,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("FB_Fill_Left.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(28,19,14);
+    file.open("BF_Fill_Back.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(24,20,10);
     if(!file.is_open()) return; 
 
     if(c == 'o') {
