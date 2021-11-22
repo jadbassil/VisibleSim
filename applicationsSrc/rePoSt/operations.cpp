@@ -181,104 +181,178 @@ Fill_Operation::~Fill_Operation () {}
 void Fill_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const Cell3DPosition& pos) {
     RePoStBlockCode* rbc = static_cast<RePoStBlockCode*>(bc);
     if(rbc->isCoordinator) {
-        if (pos == rbc->module->position.offsetY(-1) or
-                pos == rbc->module->position.offsetY(1) and not comingFromBack) { // Left; Rigth and FB back
-            rbc->transferCount++;
-            rbc->console << "mvt_it1: " << rbc->mvt_it << "\n";
-            if(direction == Direction::BACK and mmShape == BACKFRONT) {
-                if(rbc->transferCount == 3) {
+        switch (direction){
+            case Direction::LEFT: {
+                if (pos == rbc->module->position.offsetY(-1) or
+                    pos == rbc->module->position.offsetY(1)) {
+                    rbc->transferCount++;
+                    rbc->console << "mvt_it1: " << rbc->mvt_it << "\n";
+
+                    getScheduler()->trace("transferCount: " + to_string(rbc->transferCount),
+                                          rbc->module->blockId, Color(MAGENTA));
+
+                    Cell3DPosition targetModule =
+                        rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
+                    // if(rbc->transferCount == 10) return;
+                    if (rbc->transferCount >= 8) {
+                        return;
+                    }
+                    rbc->sendHandleableMessage(
+                        new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                              rbc->mvt_it),
+                        rbc->module->getInterface(pos), 100, 200);
+                    if (rbc->transferCount < 7) {
+                        setMvtItToNextModule(bc);
+                        rbc->console << "mvt_it2: " << rbc->mvt_it << "\n";
+                    }
+                }
+            } break;
+
+            case Direction::BACK: {
+                if (pos == rbc->module->position.offsetY(-1) or
+                    pos == rbc->module->position.offsetY(1) and
+                        prevOpDirection != Direction::BACK) {
+                    rbc->transferCount++;
+                    rbc->console << "mvt_it1: " << rbc->mvt_it << "\n";
+                    getScheduler()->trace("transferCount: " + to_string(rbc->transferCount), rbc->module->blockId, Color(MAGENTA));
+                    if (mmShape == BACKFRONT) {
+                        if (rbc->transferCount == 3) {
+                            Cell3DPosition targetModule =
+                                rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
+                            rbc->sendHandleableMessage(
+                                new CoordinateMessage(rbc->operation, targetModule,
+                                                      rbc->module->position, rbc->mvt_it),
+                                rbc->module->getInterface(pos), 100, 200);
+                            setMvtItToNextModule(bc);
+                        }
+                    }
+
+                    if (mustHandleBridgeOnAdd(pos)) {  // suppose that there is a bridge
+                        if (rbc->transferCount == 8)
+                            return;
+                        else if (rbc->transferCount == 9) {
+                            if (mmShape == BACKFRONT) return;
+                            // msg so must jump to next module if previous operation requires
+                            // bridging
+                            setMvtItToNextModule(bc);
+                        }
+                    }
                     Cell3DPosition targetModule =
                         rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
                     rbc->sendHandleableMessage(
                         new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
                                               rbc->mvt_it),
                         rbc->module->getInterface(pos), 100, 200);
-                    setMvtItToNextModule(bc);
+
+                    if(rbc->transferCount < 10) {
+                         setMvtItToNextModule(bc);
+                        rbc->console << "mvt_it2: " << rbc->mvt_it << "\n";
+                    }
+                   
                 }
-            }
-
-
-            getScheduler()->trace("transferCount: " + to_string(rbc->transferCount), rbc->module->blockId, Color(MAGENTA));
-      
-            Cell3DPosition targetModule =
-                rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
-            // if(rbc->transferCount == 10) return; 
-               if(rbc->transferCount >= 8) {
-                return;
-            }
-            if (mustHandleBridgeOnAdd(pos)) {  // suppose that there is a bridge
-                if(rbc->transferCount == 8) return;
-                else if(rbc->transferCount == 9) {
-                    if(direction == Direction::BACK and mmShape == BACKFRONT) return;
-                    // msg so must jump to next module if previous operation requires bridging
-                     setMvtItToNextModule(bc);
-                }
-            }
-            if(rbc->transferCount >= 8) {
-                return;
-            }
-
-            rbc->sendHandleableMessage(
-                        new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
-                                              rbc->mvt_it),
-                        rbc->module->getInterface(pos), 100, 200);
-           // if(rbc->transferCount == 8 and mmShape == FRONTBACK) return;
-            if( rbc->transferCount < 7) {
-                setMvtItToNextModule(bc);
-                rbc->console << "mvt_it2: " << rbc->mvt_it << "\n";
-
-            } 
-        } else if(pos == rbc->module->position + Cell3DPosition(0, 1, 1)) { // BF back
-            if(direction == Direction::BACK and mmShape == BACKFRONT and comingFromBack) {
-                rbc->transferCount++;
-                getScheduler()->trace("transferCount: " + to_string(rbc->transferCount),
-                                      rbc->module->blockId, Color(MAGENTA));
-                if(rbc->transferCount >= 5) return;
-                Cell3DPosition targetModule =
-                    rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
-                rbc->sendHandleableMessage(
-                        new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
-                                              rbc->mvt_it),
-                        rbc->module->getInterface(pos), 100, 200);
-                if (rbc->transferCount < 9 and rbc->transferCount != 4) {
-                    setMvtItToNextModule(bc);
-                    
-                }             
-            }
+            } break;
+        default:
+            break;
         }
+        // if (pos == rbc->module->position.offsetY(-1) or
+        //         pos == rbc->module->position.offsetY(1) and not comingFromBack) { // Left; Rigth and FB back
+        //     rbc->transferCount++;
+        //     rbc->console << "mvt_it1: " << rbc->mvt_it << "\n";
+        //     if(direction == Direction::BACK and mmShape == BACKFRONT) {
+        //         if(rbc->transferCount == 3) {
+        //             Cell3DPosition targetModule =
+        //                 rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
+        //             rbc->sendHandleableMessage(
+        //                 new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+        //                                       rbc->mvt_it),
+        //                 rbc->module->getInterface(pos), 100, 200);
+        //             setMvtItToNextModule(bc);
+        //         }
+        //     }
+
+
+        //     getScheduler()->trace("transferCount: " + to_string(rbc->transferCount), rbc->module->blockId, Color(MAGENTA));
+      
+        //     Cell3DPosition targetModule =
+        //         rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
+        //     // if(rbc->transferCount == 10) return; 
+        //        if(rbc->transferCount >= 8) {
+        //         return;
+        //     }
+        //     if (mustHandleBridgeOnAdd(pos)) {  // suppose that there is a bridge
+        //         if(rbc->transferCount == 8) return;
+        //         else if(rbc->transferCount == 9) {
+        //             if(direction == Direction::BACK and mmShape == BACKFRONT) return;
+        //             // msg so must jump to next module if previous operation requires bridging
+        //              setMvtItToNextModule(bc);
+        //         }
+        //     }
+        //     if(rbc->transferCount >= 8) {
+        //         return;
+        //     }
+
+        //     rbc->sendHandleableMessage(
+        //                 new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+        //                                       rbc->mvt_it),
+        //                 rbc->module->getInterface(pos), 100, 200);
+        //    // if(rbc->transferCount == 8 and mmShape == FRONTBACK) return;
+        //     if( rbc->transferCount < 7) {
+        //         setMvtItToNextModule(bc);
+        //         rbc->console << "mvt_it2: " << rbc->mvt_it << "\n";
+
+        //     } 
+        // } else if(pos == rbc->module->position + Cell3DPosition(0, 1, 1)) { // BF back
+        //     if(direction == Direction::BACK and mmShape == BACKFRONT and comingFromBack) {
+        //         rbc->transferCount++;
+        //         getScheduler()->trace("transferCount: " + to_string(rbc->transferCount),
+        //                               rbc->module->blockId, Color(MAGENTA));
+        //         if(rbc->transferCount >= 5) return;
+        //         Cell3DPosition targetModule =
+        //             rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
+        //         rbc->sendHandleableMessage(
+        //                 new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+        //                                       rbc->mvt_it),
+        //                 rbc->module->getInterface(pos), 100, 200);
+        //         if (rbc->transferCount < 9 and rbc->transferCount != 4) {
+        //             setMvtItToNextModule(bc);
+                    
+        //         }             
+        //     }
+        // }
     }
 }
 
-void Fill_Operation::updateState(BaseSimulator::BlockCode *bc) {
+void Fill_Operation::updateState(BaseSimulator::BlockCode* bc) {
     RePoStBlockCode* rbc = static_cast<RePoStBlockCode*>(bc);
     switch (direction) {
-    case Direction::LEFT: {
-        if (mmShape == FRONTBACK) {
-            rbc->shapeState = BACKFRONT;
-            Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::LEFT,
+        case Direction::LEFT: {
+            if (mmShape == FRONTBACK) {
+                rbc->shapeState = BACKFRONT;
+                Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::LEFT,
+                                           rbc->seedPosition);
+                rbc->MMPosition = rbc->MMPosition.offsetX(-1);
+                rbc->initialPosition = rbc->module->position - rbc->seedPosition;
+                break;
+            } else if (mmShape == BACKFRONT) {
+                rbc->shapeState = FRONTBACK;
+                Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::LEFT,
+                                           rbc->seedPosition);
+                rbc->MMPosition = rbc->MMPosition.offsetX(-1);
+                rbc->initialPosition = rbc->module->position - rbc->seedPosition;
+                break;
+            }
+        } break;
+        case Direction::BACK: {
+            rbc->shapeState == FRONTBACK ? rbc->shapeState = BACKFRONT
+                                         : rbc->shapeState = FRONTBACK;
+            Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::BACK,
                                        rbc->seedPosition);
-            rbc->MMPosition = rbc->MMPosition.offsetX(-1);
+            rbc->MMPosition = rbc->MMPosition.offsetY(1);
             rbc->initialPosition = rbc->module->position - rbc->seedPosition;
-            break;
-        } else if (mmShape == BACKFRONT) {
-            rbc->shapeState = FRONTBACK;
-            Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::LEFT,
-                                       rbc->seedPosition);
-            rbc->MMPosition = rbc->MMPosition.offsetX(-1);
-            rbc->initialPosition = rbc->module->position - rbc->seedPosition;
-            break;
-        }
-    } break;
-    case Direction::BACK: {
-        rbc->shapeState == FRONTBACK ? rbc->shapeState = BACKFRONT : rbc->shapeState = FRONTBACK;
-        Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::BACK,
-                                   rbc->seedPosition);
-        rbc->MMPosition = rbc->MMPosition.offsetY(1);
-        rbc->initialPosition = rbc->module->position - rbc->seedPosition;
-    } break;
+        } break;
 
         default:
-        break;
+            break;
     }
 }
 
@@ -292,7 +366,7 @@ bool Fill_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode *bc) {
         if (mmShape == BACKFRONT and rbc->mvt_it >= 45) return true;
         if (mmShape == FRONTBACK and (rbc->mvt_it >= 51)) return true;
     } else if(direction == Direction::BACK) {
-        if (mmShape == FRONTBACK and rbc->mvt_it >= 49) return true;
+        if (mmShape == FRONTBACK and rbc->mvt_it >= 53) return true;
         if(mmShape == BACKFRONT and not comingFromBack and rbc->mvt_it >= 50) return true;
         if (mmShape == BACKFRONT and comingFromBack and
             (rbc->mvt_it == 9 or rbc->mvt_it == 15 or rbc->mvt_it == 21 or rbc->mvt_it >= 31))
