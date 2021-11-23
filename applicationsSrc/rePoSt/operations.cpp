@@ -260,6 +260,23 @@ void Fill_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const 
                         rbc->console << "mvt_it2: " << rbc->mvt_it << "\n";
                     }
                    
+                } else if(pos == rbc->module->position + Cell3DPosition(0, 1, 1)) {
+                    if(direction == Direction::BACK and prevOpDirection == Direction::BACK and mmShape == BACKFRONT) {
+                        rbc->transferCount++;
+                        getScheduler()->trace("transferCount: " + to_string(rbc->transferCount),
+                                            rbc->module->blockId, Color(MAGENTA));
+                        if(rbc->transferCount >= 5) return;
+                        Cell3DPosition targetModule =
+                            rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
+                        rbc->sendHandleableMessage(
+                                new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                                    rbc->mvt_it),
+                                rbc->module->getInterface(pos), 100, 200);
+                        if (rbc->transferCount < 9 and rbc->transferCount != 4) {
+                            setMvtItToNextModule(bc);
+                            
+                        } 
+                    }
                 }
             } break;
         default:
