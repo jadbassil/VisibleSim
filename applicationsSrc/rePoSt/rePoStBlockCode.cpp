@@ -915,17 +915,17 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
                             lattice->getBlock(seedPosition + Cell3DPosition(1, 3, 0))));
                         latchingPoints.push_back(static_cast<Catoms3DBlock*>(
                             lattice->getBlock(seedPosition + Cell3DPosition(1, 3, 1))));
-                        // latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                        //     lattice->getBlock(seedPosition + Cell3DPosition(1, 3, 3))));
-                        // latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                        //     lattice->getBlock(seedPosition + Cell3DPosition(0, 3, 4))));
-                        // latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                        //     lattice->getBlock(seedPosition + Cell3DPosition(1, 3, 4))));
-                        // latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                        //     lattice->getBlock(seedPosition + Cell3DPosition(-1, 0, 3))));
-                        // getScheduler()->toggle_pause();
                         return latchingPoints;
                     } 
+                    if(relativePos().pt[1] >= 3) {
+                         latchingPoints.clear();
+                    return latchingPoints;
+                    }
+                }
+                if(operation->getMMShape() == FRONTBACK and relativePos() == Cell3DPosition(1,3,2) and mvt_it >= 23) {
+                    //Avoid deadlock when the MM on top is being filled too
+                    latchingPoints.clear();
+                    return latchingPoints;
                 }
             } break;
         } 
@@ -1657,7 +1657,7 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     return;
     // }
     file.open("BF_Fill_Back.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(24,20,10);
+    seedPosition = Cell3DPosition(24,25,14);
     if(!file.is_open()) return; 
 
     if(c == 'o') {
