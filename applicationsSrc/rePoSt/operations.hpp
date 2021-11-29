@@ -86,8 +86,9 @@ public:
 class Transfer_Operation: public Operation {
 private:
     bool comingFromBack;
+    Direction nextOpDir;
 public:
-    Transfer_Operation(Direction _direction, MMShape _mmShape, Direction _prevOpDirection, bool comingFromBack = false, int Z = 0);
+    Transfer_Operation(Direction _direction, MMShape _mmShape, Direction _prevOpDirection, Direction _nextOpDir, bool comingFromBack = false, int Z = 0);
     ~Transfer_Operation();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
@@ -95,6 +96,7 @@ public:
     bool mustSendCoordinateBack(BaseSimulator::BlockCode*) override;
     bool isTransfer() const override {return true;};
     bool isComingFromBack() const {return comingFromBack;};
+    Direction getNextOpDir() const {return nextOpDir;};
     /**
      * @brief Special operation for bride on Coordinate message reception
     **/

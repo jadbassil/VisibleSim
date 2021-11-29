@@ -368,7 +368,7 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
                                                         comingFromBack, MMPosition.pt[2]);
             return;
         } 
-        coordinator->operation = new Transfer_Operation(direction, shapeState, getPreviousOpDir(),
+        coordinator->operation = new Transfer_Operation(direction, shapeState, getPreviousOpDir(), getNextOpDir(),
                                                         comingFromBack, MMPosition.pt[2]);
     }
 }
@@ -650,16 +650,21 @@ Direction RePoStBlockCode::getPreviousOpDir() {
 }
 
 Direction RePoStBlockCode::getNextOpDir() {
-    if(not lattice->cellHasBlock(seedPosition) or not operation)
+    if(not lattice->cellHasBlock(seedPosition))
         return Direction::UNDEFINED;
-    if (static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode)
-            ->mainPathOut.empty())
-        return Direction::UNDEFINED;
-    Cell3DPosition nextSeed;
-    Init::getNeighborMMSeedPos(seedPosition, MMPosition, operation->getDirection(), nextSeed);
-    Cell3DPosition nextCoordinatorPos =static_cast<RePoStBlockCode*>(lattice->getBlock(nextSeed)->blockCode)->coordinatorPosition; 
-    return static_cast<RePoStBlockCode*>(lattice->getBlock(nextCoordinatorPos)->blockCode)
-        ->operation->getDirection();
+    cout << module->blockId << ' ' << mainPathOut.size() << endl;
+    if ((static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode))
+            ->mainPathOut.size() == 0)
+         return Direction::UNDEFINED;
+    
+    Cell3DPosition nextSeedPosition;
+    nextSeedPosition = getSeedPositionFromMMPosition(mainPathOut.front());
+    RePoStBlockCode* nextSeed =static_cast<RePoStBlockCode*>(lattice->getBlock(nextSeedPosition)->blockCode); 
+    if(nextSeed->mainPathOut.empty()) return Direction::UNDEFINED;
+    Cell3DPosition nextNextSeedPosition; 
+    nextNextSeedPosition = getSeedPositionFromMMPosition(nextSeed->mainPathOut.front());
+    RePoStBlockCode* nextNextSeed = static_cast<RePoStBlockCode*>(lattice->getBlock(nextNextSeedPosition)->blockCode); 
+    return nextNextSeed->getPreviousOpDir();
 }
 
 vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosition& targetPos,
@@ -877,18 +882,39 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
                 } else { //BackFront
                     if(/*relativePos() == Cell3DPosition(1,0,2) and*/ lattice->cellHasBlock(seedPosition + Cell3DPosition(1,-2,2)) and 
                     relativePos().pt[1] > -2) {
+
                         latchingPoints.clear();
                         latchingPoints.push_back(static_cast<Catoms3DBlock*>(
                             lattice->getBlock(seedPosition + Cell3DPosition(1,-2,2))));
                     }
                     if(relativePos() == Cell3DPosition(0,-2,2)) {
-                   
                         latchingPoints.clear();
                         latchingPoints.push_back(static_cast<Catoms3DBlock*>(
                             lattice->getBlock(seedPosition + Cell3DPosition(1,-3,1))));
                     }
                 }
             } break;
+
+
+            case Direction::BACK: {
+                if(operation->getMMShape() == BACKFRONT and operation->getPrevOpDirection() != Direction::BACK
+                    and (relativePos() == Cell3DPosition(1,1,2) or relativePos() == Cell3DPosition(0,2,2))) {
+                         latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                            lattice->getBlock(seedPosition + Cell3DPosition(1,3,0))));
+                         latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                            lattice->getBlock(seedPosition + Cell3DPosition(1,3,1))));
+                    }
+            } break;
+
+            case Direction::LEFT: {
+                if(operation->getMMShape() == FRONTBACK and operation->isZeven() and 
+                    static_cast<Transfer_Operation*>(operation)->getNextOpDir() == Direction::DOWN) {
+                        if(relativePos() == Cell3DPosition(1,-1,1)) {
+                            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                lattice->getBlock(seedPosition + Cell3DPosition(-1,-1,1))));
+                        }
+                    }
+            } break;   
 
             default: break;
         }
@@ -1656,8 +1682,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("BF_Fill_Back.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(24,25,14);
+    file.open("FB_Transfer_Left.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(28,20,18);
     if(!file.is_open()) return; 
 
     if(c == 'o') {

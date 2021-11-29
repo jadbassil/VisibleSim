@@ -188,6 +188,15 @@ void PLSMessage::handle(BaseSimulator::BlockCode *bc) {
             rbc.module->setColor(DARKORANGE);
             return;
         }
+
+        if (rbc.isCoordinator and rbc.operation->getPrevOpDirection() == Direction::BACK and
+            rbc.module->getInterface(rbc.module->position.offsetY(-1))->isConnected()) {
+            getScheduler()->trace("light turned orange2\n", rbc.module->blockId, ORANGE);
+            if (not rbc.awaitingSources.empty()) rbc.setGreenLight(true);
+            rbc.awaitingSources.insert(srcPos);
+            rbc.module->setColor(DARKORANGE);
+            return;
+        }
     }
 
         // if (rbc.relativePos() == Cell3DPosition(1, 1, 2) and
