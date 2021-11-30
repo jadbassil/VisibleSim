@@ -654,11 +654,12 @@ Direction RePoStBlockCode::getNextOpDir() {
         return Direction::UNDEFINED;
     cout << module->blockId << ' ' << mainPathOut.size() << endl;
     if ((static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode))
-            ->mainPathOut.size() == 0)
+            ->mainPathOut.empty())
          return Direction::UNDEFINED;
     
     Cell3DPosition nextSeedPosition;
-    nextSeedPosition = getSeedPositionFromMMPosition(mainPathOut.front());
+    nextSeedPosition = getSeedPositionFromMMPosition(static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode)
+            ->mainPathOut.front());
     RePoStBlockCode* nextSeed =static_cast<RePoStBlockCode*>(lattice->getBlock(nextSeedPosition)->blockCode); 
     if(nextSeed->mainPathOut.empty()) return Direction::UNDEFINED;
     Cell3DPosition nextNextSeedPosition; 
