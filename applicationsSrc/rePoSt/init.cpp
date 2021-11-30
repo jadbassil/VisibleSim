@@ -50,7 +50,6 @@ void Init::buildInitialMap(Cell3DPosition firstSeedPos, vector<array<int, 4>> &m
             RePoStBlockCode *neighbSeed = static_cast<RePoStBlockCode*>(
                 BaseSimulator::getWorld()->getBlockByPosition(neighSeedPos)->blockCode
             );
-            cerr << neighSeedPos << endl;
             neighborsColors.push_back(neighbSeed->module->color);
         }
         while(isIn(neighborsColors, newSeed->module->color)) {

@@ -651,7 +651,6 @@ Direction RePoStBlockCode::getPreviousOpDir() {
 
 Direction RePoStBlockCode::getNextOpDir() {
     if (not lattice->cellHasBlock(seedPosition)) return Direction::UNDEFINED;
-    cout << module->blockId << ' ' << mainPathOut.size() << endl;
     if ((static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode))
             ->mainPathOut.empty())
         return Direction::UNDEFINED;
