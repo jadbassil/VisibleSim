@@ -114,18 +114,18 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
                     MMblock->mainPathState = BFS;
                     MMblock->mainPathIn = MMblock->MMPosition;
                     MMblock->mainPathsOld.push_back(MMblock->MMPosition);
-                    for (auto p : MMblock->getAdjacentMMSeeds()) {
-                        cerr << "MMPosition"
-                             << ": " << p << endl;
-                        RePoStBlockCode *toSeed = static_cast<RePoStBlockCode *>(
-                            BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode);
-                        MMblock->deficit++;
-                        MMblock->sendHandleableMessage(
-                            new BFSMessage(MMblock->MMPosition, toSeed->MMPosition,
-                                           MMblock->MMPosition),
-                            MMblock->interfaceTo(MMblock->MMPosition, toSeed->MMPosition), 100,
-                            200);
-                    }
+                    // for (auto p : MMblock->getAdjacentMMSeeds()) {
+                    //     cerr << "MMPosition"
+                    //          << ": " << p << endl;
+                    //     RePoStBlockCode *toSeed = static_cast<RePoStBlockCode *>(
+                    //         BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode);
+                    //     MMblock->deficit++;
+                    //     MMblock->sendHandleableMessage(
+                    //         new BFSMessage(MMblock->MMPosition, toSeed->MMPosition,
+                    //                        MMblock->MMPosition),
+                    //         MMblock->interfaceTo(MMblock->MMPosition, toSeed->MMPosition), 100,
+                    //         200);
+                    // }
                 }
                 if (MMblock->isPotentialDestination() and
                     MMblock->seedPosition == MMblock->module->position) {
