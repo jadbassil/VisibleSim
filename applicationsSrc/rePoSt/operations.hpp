@@ -55,19 +55,21 @@ public:
     bool isZeven() const {return Zeven;};
 };
 
-class Dismantle_Operation: public Operation {
-private:
+class Dismantle_Operation : public Operation {
+   private:
     /* data */
-public:
+   public:
     bool filled;
 
-    Dismantle_Operation(Direction _direction, MMShape _mmShape , Direction _prevOpDirection, int Z = 0, bool _filled = false);
-    ~Dismantle_Operation ();
+    Dismantle_Operation(Direction _direction, MMShape _mmShape, Direction _prevOpDirection,
+                        int Z = 0, bool _filled = false);
+    ~Dismantle_Operation();
 
     void handleAddNeighborEvent(BaseSimulator::BlockCode*, const Cell3DPosition&) override;
     void updateState(BaseSimulator::BlockCode*) override;
     bool mustSendCoordinateBack(BaseSimulator::BlockCode*) override;
-    bool isDismantle() const override {return true;};
+    bool isDismantle() const override { return true; };
+    bool isFill() const override { return filled ? true : false; };
 };
 
 class Fill_Operation: public Operation {

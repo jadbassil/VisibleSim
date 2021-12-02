@@ -68,8 +68,10 @@ Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape
     switch (direction) {
     case Direction::LEFT: {
         if(mmShape == BACKFRONT) {
-            if(filled) localRules.reset(&LocalRules_BF_DismantleFilled_Left_Zeven);
-            else{
+            if(filled){
+                Zeven ? localRules.reset(&LocalRules_BF_DismantleFilled_Left_Zeven)
+                    : localRules.reset(&LocalRules_BF_DismantleFilled_Left_Zodd);
+            } else{
                 Zeven ? localRules.reset(&LocalRules_BF_Dismantle_Left):
                     localRules.reset(&LocalRules_BF_Dismantle_Left_Zodd);
             }
@@ -162,6 +164,7 @@ Fill_Operation::Fill_Operation (Direction _direction, MMShape _mmShape, Directio
                       : localRules.reset(&LocalRules_FB_Fill_Left_Zodd);
             }
         } break;
+
         case Direction::BACK: {
             if (mmShape == BACKFRONT) {
                 comingFromBack = _comingFromBack;
@@ -179,7 +182,19 @@ Fill_Operation::Fill_Operation (Direction _direction, MMShape _mmShape, Directio
                     : localRules.reset(&LocalRules_FB_Fill_Back_Zodd);
             }
         } break;
+
+        case Direction::UP: {
+            if(mmShape == BACKFRONT) {
+                Zeven ? localRules.reset(&LocalRules_BF_Fill_Up_Zeven)
+                    : VS_ASSERT_MSG(false, "Not implemented");
+            } else { //FRONTBACK
+                Zeven ? localRules.reset(&LocalRules_FB_Fill_Up_Zeven)
+                    : VS_ASSERT_MSG(false, "Not implemented");
+            }
+        } break;
+
         default:
+           // VS_ASSERT_MSG(false, "Not implemented");
             break;
     }
 }
@@ -290,6 +305,37 @@ void Fill_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const 
                     }
                 }
             } break;
+
+            case Direction::UP: {
+                if (pos == rbc->module->position.offsetY(-1) or
+                    pos == rbc->module->position.offsetY(1)) {
+                    rbc->transferCount++;
+                    rbc->console << "mvt_it1: " << rbc->mvt_it << "\n";
+
+                    getScheduler()->trace("transferCount: " + to_string(rbc->transferCount),
+                                          rbc->module->blockId, Color(MAGENTA));
+
+                    if (mustHandleBridgeOnAdd(pos)) {  // suppose that there is a bridge
+                        if (rbc->transferCount == 8)
+                            return;
+                        else if (rbc->transferCount == 9) {
+                            // msg so must jump to next module if previous operation requires
+                            // bridging
+                            setMvtItToNextModule(bc);
+                        }
+                    }
+                    Cell3DPosition targetModule =
+                        rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
+                    rbc->sendHandleableMessage(
+                        new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                              rbc->mvt_it),
+                        rbc->module->getInterface(pos), 100, 200);
+                    if (rbc->transferCount < 10) {
+                        setMvtItToNextModule(bc);
+                        rbc->console << "mvt_it2: " << rbc->mvt_it << "\n";
+                    }
+                }
+            } break;
         default:
             break;
         }
@@ -326,6 +372,13 @@ void Fill_Operation::updateState(BaseSimulator::BlockCode* bc) {
             rbc->initialPosition = rbc->module->position - rbc->seedPosition;
         } break;
 
+        case Direction::UP: {
+            Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::UP,
+                                       rbc->seedPosition);
+            rbc->MMPosition = rbc->MMPosition.offsetZ(1);
+            rbc->initialPosition = rbc->module->position - rbc->seedPosition;  
+        } break;
+
         default:
             break;
     }
@@ -351,8 +404,11 @@ bool Fill_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode *bc) {
             if (mmShape == FRONTBACK and rbc->mvt_it >= 52) return true;
             if (mmShape == BACKFRONT and rbc->mvt_it >= 52 and prevOpDirection != Direction::BACK) return true;
             if (mmShape == BACKFRONT and rbc->mvt_it >= 44 and prevOpDirection == Direction::BACK) return true;
+        } 
+    } else if(direction == Direction::UP) {
+        if(Zeven) {
+            if(mmShape == BACKFRONT and rbc->mvt_it >= 61) return true;
         }
-        
     }
 
     return false;

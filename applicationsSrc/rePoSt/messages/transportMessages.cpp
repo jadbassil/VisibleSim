@@ -21,6 +21,7 @@ void CoordinateMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.coordinatorPosition = coordinatorPosition;
         rbc.operation = operation;
         bool bridgeStop = false;
+        rbc.movingSteps = 0;
         if (rbc.operation->isTransfer() or
             (rbc.operation->isDismantle() and
              static_cast<Dismantle_Operation *>(rbc.operation)->filled)) {

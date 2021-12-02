@@ -338,8 +338,14 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
         BaseSimulator::getWorld()->getBlockByPosition(coordinatorPosition)->blockCode);
     coordinator->isCoordinator = true;
     if (isSource) {
-        coordinator->operation = new Dismantle_Operation(direction, shapeState, getPreviousOpDir(),
+        if(isFilledInTarget(outPosition)) {
+            coordinator->operation = new Dismantle_Operation(direction, shapeState, getPreviousOpDir(),
+                                                         MMPosition.pt[2], true);
+        } else {
+            coordinator->operation = new Dismantle_Operation(direction, shapeState, getPreviousOpDir(),
                                                          MMPosition.pt[2], false);
+        }
+        
     } else if (isDestination) {
         bool comingFromBack =
             (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and
@@ -352,7 +358,7 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
                                                          comingFromBack, MMPosition.pt[2]);
         }
 
-    } else {
+    } else { //Transfer MM
         if(isFilledInTarget(MMPosition)) {
             coordinator->operation = new Operation();
             coordinator->isCoordinator = false;
@@ -378,7 +384,7 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
  /* -------------------------------------------------------------------------- */
 void RePoStBlockCode::probeGreenLight() {
     VS_ASSERT(operation->localRules != NULL);
-    if (operation->getDirection() == Direction::UP /*and operation->isTransfer()*/ and
+    if (operation->getDirection() == Direction::UP and not(operation->isFill() and operation->getMMShape() == FRONTBACK) and
         (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, 0, 2)) {
         (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(2, 0, 2);
     }
@@ -1008,14 +1014,13 @@ bool RePoStBlockCode::setGreenLight(bool onoff) {
 }
 
 bool RePoStBlockCode::isPotentialDestination() {
-    //Check if an adjacent position is in target shape
-    if(isFilledInTarget(MMPosition) and not isFilledInInitial(MMPosition))
-        return false;
+    // Check if an adjacent position is in target shape
+    if (isFilledInTarget(MMPosition) and not isFilledInInitial(MMPosition)) return false;
     for (auto adjPos : getAdjacentMMPositions()) {
-        if ((inTargetShape(adjPos) and not inInitialShape(adjPos) and not
-            lattice->cellHasBlock(getSeedPositionFromMMPosition(adjPos))) 
-            or (isFilledInTarget(adjPos) and not isFilledInInitial(adjPos))) {
-            if(find(destinations.begin(), destinations.end(), adjPos) != destinations.end()) {
+        if ((inTargetShape(adjPos) and not inInitialShape(adjPos) and
+             not lattice->cellHasBlock(getSeedPositionFromMMPosition(adjPos))) or
+            (isFilledInTarget(adjPos) and not isFilledInInitial(adjPos))) {
+            if (find(destinations.begin(), destinations.end(), adjPos) != destinations.end()) {
                 continue;
             }
             // if(adjPos.pt[0] == MMPosition.pt[0] -1) continue;
@@ -1296,8 +1301,8 @@ void RePoStBlockCode::onMotionEnd() {
         }
         if (movingState == IN_POSITION) {
             console << "mvt_it in pos: " << mvt_it << "\n";
-            if((operation->isBuild() or operation->isFill()) and mvt_it == (*operation->localRules).size() -1) {
-                cerr << "Destination reached" << endl;
+            if((operation->isBuild() or operation->isFill()) and mvt_it >= (*operation->localRules).size() -1) {
+                cerr << MMPosition << ": Destination reached" << endl;
                 NbOfDestinationsReached++;
                 cerr << NbOfDestinationsReached << " " << NbOfStreamlines << endl;
                 if(NbOfDestinationsReached == NbOfStreamlines) {
@@ -1423,10 +1428,8 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
             /**Special logic when the end position of previous transfer back with FB shape operation is (0,1,1) relative to the coordinator
              Specify if the module must move to the starting position if next operation is not transfer back BF **/
             if (isCoordinator and pos == module->position + Cell3DPosition(0, 1, 1)) {
-                if ((not operation->isTransfer() and not operation->isFill() and
-                     operation->getDirection() != Direction::UP and not operation->isBuild()) or
-                    (operation->isTransfer() and operation->getDirection() == Direction::UP and
-                     static_cast<Transfer_Operation*>(operation)->isComingFromBack()) /*or
+                if ( (operation->isTransfer() or operation->isFill()) and operation->getDirection() == Direction::UP and
+                     operation->getPrevOpDirection() == Direction::BACK /*or
                     (operation->isBuild() and operation->getDirection() == Direction::BACK and
                      operation->getMMShape() == BACKFRONT and not
                         static_cast<Build_Operation*>(operation)->isComingFromBack())*/) {
@@ -1619,10 +1622,10 @@ void RePoStBlockCode::onBlockSelected() {
     cerr << "isSource: " << isSource << endl;
     cerr << "isDestination: " << isPotentialDestination() << endl;
     cerr << "destinationOut: " << destinationOut << endl; 
-    // cerr << "parentPosition: " << parentPosition << endl;
-    // cerr << "childrenPostions: ";
-    // for(auto c: childrenPositions) cerr << c << "; ";
-    // cerr << endl;
+    cerr << "parentPosition: " << parentPosition << endl;
+    cerr << "childrenPostions: ";
+    for(auto c: childrenPositions) cerr << c << "; ";
+    cerr << endl;
     // cerr << "distance: " << distance << endl;
     // cerr << "mainPathState: " << mainPathState << endl;
     // // cerr << "aug1PathState: " << aug1PathState << endl;
@@ -1689,8 +1692,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("FB_Transfer_Left.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(28,20,18);
+    file.open("BF_DismantleFill_Left.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(14,5,6);
     if(!file.is_open()) return; 
 
     if(c == 'o') {
