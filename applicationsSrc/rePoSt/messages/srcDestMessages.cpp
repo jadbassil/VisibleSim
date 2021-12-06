@@ -19,8 +19,8 @@ void GoMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.module->blockId != RePoStBlockCode::GC->blockId) {
         rbc.parentPosition = fromMMPosition;
         // distance = data->distance + 1;
-        rbc.isPotentialSource() ? rbc.distance = distance + 1 : rbc.distance = distance;
-        rbc.console << "distance1: " << rbc.distance << "\n";
+        rbc.isPotentialSource() ? rbc.distanceSrc = distance + 1 : rbc.distanceSrc = distance;
+        rbc.console << "distance1: " << rbc.distanceSrc << "\n";
         rbc.nbWaitedAnswers = 0;
         for (auto p : rbc.getAdjacentMMSeeds()) {
             Cell3DPosition toMMPosition1 =
@@ -28,7 +28,7 @@ void GoMessage::handle(BaseSimulator::BlockCode *bc) {
                     BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
                     ->MMPosition;
             if (toMMPosition1 == fromMMPosition) continue;
-            rbc.sendHandleableMessage(new GoMessage(rbc.MMPosition, toMMPosition1, rbc.distance),
+            rbc.sendHandleableMessage(new GoMessage(rbc.MMPosition, toMMPosition1, rbc.distanceSrc),
                                       rbc.interfaceTo(rbc.MMPosition, toMMPosition1), 100, 200);
 
             rbc.nbWaitedAnswers++;
@@ -39,16 +39,16 @@ void GoMessage::handle(BaseSimulator::BlockCode *bc) {
                                       rbc.interfaceTo(rbc.MMPosition, rbc.parentPosition), 100,
                                       200);
         }
-    } else if ((not rbc.isPotentialSource() and distance < rbc.distance) or
-               (rbc.isPotentialSource() and distance + 1 < rbc.distance)) {
+    } else if ((not rbc.isPotentialSource() and distance < rbc.distanceSrc) or
+               (rbc.isPotentialSource() and distance + 1 < rbc.distanceSrc)) {
         Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(rbc.parentPosition);
         rbc.sendHandleableMessage(new BackMessage(rbc.MMPosition, rbc.parentPosition, false),
                                   rbc.interfaceTo(rbc.MMPosition, rbc.parentPosition), 100, 200);
 
         rbc.parentPosition = fromMMPosition;
         rbc.childrenPositions.clear();
-        rbc.isPotentialSource() ? rbc.distance = distance + 1 : rbc.distance = distance;
-        rbc.console << "distance2 : " << rbc.distance << "\n";
+        rbc.isPotentialSource() ? rbc.distanceSrc = distance + 1 : rbc.distanceSrc = distance;
+        rbc.console << "distance2 : " << rbc.distanceSrc << "\n";
 
         rbc.nbWaitedAnswers = 0;
         for (auto p : rbc.getAdjacentMMSeeds()) {
@@ -57,7 +57,7 @@ void GoMessage::handle(BaseSimulator::BlockCode *bc) {
                     BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
                     ->MMPosition;
             if (toMMPosition1 == fromMMPosition) continue;
-            rbc.sendHandleableMessage(new GoMessage(rbc.MMPosition, toMMPosition1, rbc.distance),
+            rbc.sendHandleableMessage(new GoMessage(rbc.MMPosition, toMMPosition1, rbc.distanceSrc),
                                       rbc.interfaceTo(rbc.MMPosition, toMMPosition1), 100, 200);
             rbc.nbWaitedAnswers++;
         }
@@ -97,7 +97,7 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
     }
     if (rbc.nbWaitedAnswers == 0) {
         if (rbc.parentPosition == Cell3DPosition(-1, -1, -1) and
-            rbc.module->position == RePoStBlockCode::GC->position) {
+            rbc.module->position == Cell3DPosition(14,5,14)) {
             cerr << rbc.module->blockId << ": Coordination Tree is Built\n";
             reconfigurationStep = MAXFLOW;
             destinations.clear();
@@ -110,10 +110,10 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
                     MMblock->isSource = true;
                     cerr << MMblock->MMPosition << ": is source\n";
                     // VS_ASSERT(mainPathState == NONE);
-                    MMblock->state = ACTIVE;
-                    MMblock->mainPathState = BFS;
-                    MMblock->mainPathIn = MMblock->MMPosition;
-                    MMblock->mainPathsOld.push_back(MMblock->MMPosition);
+                    // MMblock->state = ACTIVE;
+                    // MMblock->mainPathState = BFS;
+                    // MMblock->mainPathIn = MMblock->MMPosition;
+                    // MMblock->mainPathsOld.push_back(MMblock->MMPosition);
                     // for (auto p : MMblock->getAdjacentMMSeeds()) {
                     //     cerr << "MMPosition"
                     //          << ": " << p << endl;
@@ -128,16 +128,16 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
                     // }
                 }
                 if (MMblock->isPotentialDestination() and
-                    MMblock->seedPosition == MMblock->module->position) {
-                    if (find(destinations.begin(), destinations.end(), MMblock->destinationOut) ==
-                        destinations.end()) {
+                    MMblock->seedPosition == MMblock->module->position and MMblock->childrenPositions.empty()) {
+                    // if (find(destinations.begin(), destinations.end(), MMblock->destinationOut) ==
+                    //     destinations.end()) {
                         cerr << MMblock->MMPosition << ": is destination for: "<< MMblock->destinationOut << "\n";
                         MMblock->isDestination = true;
                         destinations.push_back(MMblock->destinationOut);
-                    }
+                    //}
                 }
             }
-            rbc.start_wave();
+            //rbc.start_wave();
             rbc.switchModulesColors();
         } else {
             Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(rbc.parentPosition);
@@ -145,5 +145,80 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
                                       rbc.interfaceTo(rbc.MMPosition, rbc.parentPosition), 100,
                                       200);
         }
+    }
+}
+
+void GoDstMessage::handle(BaseSimulator::BlockCode *bc) {
+    RePoStBlockCode &rbc = *static_cast<RePoStBlockCode *>(bc);
+    
+    Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(toMMPosition);
+    if (rbc.module->position != toSeedPosition) {
+        if (not rbc.interfaceTo(fromMMPosition, toMMPosition)) VS_ASSERT(false);
+        rbc.sendHandleableMessage(new GoDstMessage(fromMMPosition, toMMPosition, distance),
+                                  rbc.interfaceTo(fromMMPosition, toMMPosition), 100, 200);
+        return;
+    }
+    rbc.console << "received: " << this->getName() << "\n";
+    rbc.console << "distanceDst: " << rbc.distanceDst << "\n";
+    //rbc.nbWaitedAnswers = 0;
+
+     if (rbc.parentPosition == Cell3DPosition(-1, -1, -1)) {
+        rbc.parentPosition = fromMMPosition;
+        // distance = data->distance + 1;
+        rbc.isPotentialDestination() ? rbc.distanceDst = distance + 1 : rbc.distanceDst = distance;
+        rbc.console << "distance1: " << rbc.distanceDst << "\n";
+        rbc.nbWaitedAnswers = 0;
+        for (auto p : rbc.getAdjacentMMSeeds()) {
+            Cell3DPosition toMMPosition1 =
+                static_cast<RePoStBlockCode *>(
+                    BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
+                    ->MMPosition;
+            if (toMMPosition1 == fromMMPosition) continue;
+            rbc.sendHandleableMessage(new GoDstMessage(rbc.MMPosition, toMMPosition1, rbc.distanceDst),
+                                      rbc.interfaceTo(rbc.MMPosition, toMMPosition1), 100, 200);
+
+            rbc.nbWaitedAnswers++;
+        }
+            rbc.console << "nbWaitedAnswers: " << rbc.nbWaitedAnswers << "\n";
+
+        if (rbc.nbWaitedAnswers == 0) {
+            Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(rbc.parentPosition);
+            rbc.sendHandleableMessage(new BackMessage(rbc.MMPosition, rbc.parentPosition, true),
+                                      rbc.interfaceTo(rbc.MMPosition, rbc.parentPosition), 100,
+                                      200);
+        }
+    } else if ((not rbc.isPotentialDestination() and distance < rbc.distanceDst) or
+               (rbc.isPotentialDestination() and distance + 1 < rbc.distanceDst)){
+        
+        Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(rbc.parentPosition);
+        rbc.sendHandleableMessage(new BackMessage(rbc.MMPosition, rbc.parentPosition, false),
+                                  rbc.interfaceTo(rbc.MMPosition, rbc.parentPosition), 100, 200);
+
+        rbc.parentPosition = fromMMPosition;
+        rbc.childrenPositions.clear();
+        rbc.isPotentialDestination() ? rbc.distanceDst = distance + 1 : rbc.distanceDst = distance;
+        rbc.console << "distance2 : " << rbc.distanceDst << "\n";
+
+        rbc.nbWaitedAnswers = 0;
+        for (auto p : rbc.getAdjacentMMSeeds()) {
+            Cell3DPosition toMMPosition1 =
+                static_cast<RePoStBlockCode *>(
+                    BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
+                    ->MMPosition;
+            if (toMMPosition1 == fromMMPosition) continue;
+            rbc.sendHandleableMessage(new GoDstMessage(rbc.MMPosition, toMMPosition1, rbc.distanceDst),
+                                      rbc.interfaceTo(rbc.MMPosition, toMMPosition1), 100, 200);
+            rbc.nbWaitedAnswers++;
+        }
+        if (rbc.nbWaitedAnswers == 0) {
+            Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(rbc.parentPosition);
+            rbc.sendHandleableMessage(new BackMessage(rbc.MMPosition, rbc.parentPosition, true),
+                                      rbc.interfaceTo(rbc.MMPosition, rbc.parentPosition), 100,
+                                      200);
+        }
+    } else {
+        Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(fromMMPosition);
+        rbc.sendHandleableMessage(new BackMessage(rbc.MMPosition, fromMMPosition, false),
+                                  rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
     }
 }

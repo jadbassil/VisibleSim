@@ -42,7 +42,7 @@ void RePoStBlockCode::startup() {
         seedPosition = module->position;
         Cell3DPosition targetModule;
      
-
+        
         Init::initialMapBuildDone = true;
         // ofstream file;
         // file.open("nbMovementsPerTimeStep.txt", ios::out);
@@ -55,8 +55,9 @@ void RePoStBlockCode::startup() {
     initialColor = module->color;
     initialized = true;
     if(isPotentialSource()) {
-        distance = 1;
+        distanceSrc = 1;
     }
+   
     VS_ASSERT(Init::initialMapBuildDone);
       if(targetMap.empty()) return;
 
@@ -64,18 +65,24 @@ void RePoStBlockCode::startup() {
         reconfigurationStep = SRCDEST;
         nbOfIterations++;
         nbWaitedAnswers = 0;
-        distance = 0;
+        distanceSrc = 0;
         cerr << "Building coordination tree\n";
         getScheduler()->toggle_pause();
-        for (auto p : getAdjacentMMSeeds()) {
+        if (isPotentialDestination()) {
+            distanceDst = 1;
+        }
+        RePoStBlockCode *block = static_cast<RePoStBlockCode*>(
+            lattice->getBlock(Cell3DPosition(14,5,14))->blockCode
+        );
+        for (auto p : block->getAdjacentMMSeeds()) {
             Cell3DPosition toMMPosition =
                 static_cast<RePoStBlockCode*>(
                     BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
                     ->MMPosition;
             console<< toMMPosition << "\n";
-            sendHandleableMessage(new GoMessage(MMPosition, toMMPosition, distance),
-                                  interfaceTo(MMPosition, toMMPosition), 100, 200);
-            nbWaitedAnswers++;
+            block->sendHandleableMessage(new GoDstMessage(block->MMPosition, toMMPosition, block->distanceDst),
+                                  block->interfaceTo(block->MMPosition, toMMPosition), 100, 200);
+            block->nbWaitedAnswers++;
         }
     }
 
@@ -88,7 +95,7 @@ void RePoStBlockCode::reinitialize() {
         RePoStBlockCode* block = static_cast<RePoStBlockCode*>(id_block.second->blockCode);
         block->parentPosition = Cell3DPosition(-1, -1, -1);
         block->childrenPositions.clear();
-        block->distance = 0;
+        block->distanceSrc = 0;
         block->isSource = false;
         block->isDestination = false;
         block->mainPathState = block->aug1PathState = block->aug2PathState = NONE;
@@ -188,7 +195,7 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
             (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and
              shapeState == BACKFRONT);
         if (isFilledInTarget(outPosition)) {
-            isDestination = true;
+            //isDestination = true;
             switchModulesColors();
             coordinator->operation = new Fill_Operation(direction, shapeState, getPreviousOpDir(),
                                                         comingFromBack, MMPosition.pt[2]);
@@ -1159,13 +1166,13 @@ void RePoStBlockCode::onMotionEnd() {
                     reconfigurationStep = SRCDEST;
                     nbOfIterations++;
                     seedMM->nbWaitedAnswers = 0;
-                    seedMM->distance = 0;
+                    seedMM->distanceSrc = 0;
                     for (auto p : seedMM->getAdjacentMMSeeds()) {
                         Cell3DPosition toMMPosition =
                             static_cast<RePoStBlockCode*>(
                                 BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
                                 ->MMPosition;
-                        seedMM->sendHandleableMessage(new GoMessage(seedMM->MMPosition, toMMPosition, seedMM->distance),
+                        seedMM->sendHandleableMessage(new GoMessage(seedMM->MMPosition, toMMPosition, seedMM->distanceSrc),
                         seedMM->interfaceTo(seedMM->MMPosition, toMMPosition), 100, 200);
                         seedMM->nbWaitedAnswers++;
                     }
@@ -1472,7 +1479,7 @@ void RePoStBlockCode::onBlockSelected() {
     cerr << "childrenPostions: ";
     for(auto c: childrenPositions) cerr << c << "; ";
     cerr << endl;
-    // cerr << "distance: " << distance << endl;
+    cerr << "distanceDst: " << distanceDst << endl;
     // cerr << "mainPathState: " << mainPathState << endl;
     // // cerr << "aug1PathState: " << aug1PathState << endl;
     // // cerr << "aug2PathState: " << aug2PathState << endl;

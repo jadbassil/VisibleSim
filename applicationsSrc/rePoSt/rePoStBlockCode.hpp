@@ -82,7 +82,7 @@ public:
 /* ----------------------- COORDINATION TREE VARIABLES ---------------------- */
     Cell3DPosition parentPosition = Cell3DPosition(-1,-1,-1);
     vector<Cell3DPosition> childrenPositions;
-    short distance{0};
+    short distanceSrc{0}, distanceDst{0};
     short nbWaitedAnswers{0};
     bool isSource{false};
     bool isDestination{false};
