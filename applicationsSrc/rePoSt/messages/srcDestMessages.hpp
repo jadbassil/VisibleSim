@@ -4,6 +4,8 @@
 #include "comm/network.h"
 #include "grid/cell3DPosition.h"
 
+class RePoStBlockCode;
+
 class GoMessage : public HandleableMessage {
    private:
     Cell3DPosition fromMMPosition;

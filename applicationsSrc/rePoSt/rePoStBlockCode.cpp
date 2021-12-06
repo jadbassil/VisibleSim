@@ -12,6 +12,9 @@ using namespace Catoms3D;
 Catoms3DBlock* RePoStBlockCode::GC = nullptr; 
 int RePoStBlockCode::NbOfStreamlines = 0;
 
+vector<array<int, 4>> RePoStBlockCode::initialMap;
+vector<array<int, 4>> RePoStBlockCode::targetMap;
+
 RePoStBlockCode::RePoStBlockCode(Catoms3DBlock *host) : Catoms3DBlockCode(host) {
     // @warning Do not remove block below, as a blockcode with a NULL host might be created
     //  for command line parsing
@@ -33,10 +36,10 @@ void RePoStBlockCode::startup() {
         GC = module;
         cerr << GC->position << endl;
         Init::buildMM(module, FRONTBACK, Color(GREEN));
-        if(initialMap[0][3] == 1) {
+        if(RePoStBlockCode::initialMap[0][3] == 1) {
             Init::fillMM(GC);
         }
-        Init::buildInitialMap(GC->position, initialMap);
+        Init::buildInitialMap(GC->position, RePoStBlockCode::initialMap);
         setGreenLight(true);
         rotating = false;
         seedPosition = module->position;
@@ -55,11 +58,16 @@ void RePoStBlockCode::startup() {
     initialColor = module->color;
     initialized = true;
     if(isPotentialSource()) {
+        isSource = true;
         distanceSrc = 1;
+    }
+    if (isPotentialDestination()) {
+        isDestination = true;
+        distanceDst = 1;
     }
    
     VS_ASSERT(Init::initialMapBuildDone);
-      if(targetMap.empty()) return;
+      if(RePoStBlockCode::targetMap.empty()) return;
 
     if(module->blockId == GC->blockId) {
         reconfigurationStep = SRCDEST;
@@ -68,21 +76,16 @@ void RePoStBlockCode::startup() {
         distanceSrc = 0;
         cerr << "Building coordination tree\n";
         getScheduler()->toggle_pause();
-        if (isPotentialDestination()) {
-            distanceDst = 1;
-        }
-        RePoStBlockCode *block = static_cast<RePoStBlockCode*>(
-            lattice->getBlock(Cell3DPosition(14,5,14))->blockCode
-        );
-        for (auto p : block->getAdjacentMMSeeds()) {
+        
+        for (auto p : getAdjacentMMSeeds()) {
             Cell3DPosition toMMPosition =
                 static_cast<RePoStBlockCode*>(
                     BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
                     ->MMPosition;
             console<< toMMPosition << "\n";
-            block->sendHandleableMessage(new GoDstMessage(block->MMPosition, toMMPosition, block->distanceDst),
-                                  block->interfaceTo(block->MMPosition, toMMPosition), 100, 200);
-            block->nbWaitedAnswers++;
+            sendHandleableMessage(new GoMessage(MMPosition, toMMPosition, distanceSrc),
+                                  interfaceTo(MMPosition, toMMPosition), 100, 200);
+            nbWaitedAnswers++;
         }
     }
 
@@ -95,9 +98,18 @@ void RePoStBlockCode::reinitialize() {
         RePoStBlockCode* block = static_cast<RePoStBlockCode*>(id_block.second->blockCode);
         block->parentPosition = Cell3DPosition(-1, -1, -1);
         block->childrenPositions.clear();
-        block->distanceSrc = 0;
         block->isSource = false;
         block->isDestination = false;
+        block->distanceSrc = 0;
+        block->distanceDst = 0;
+        if(block->isPotentialSource()) {
+            block->isSource = true;
+            block->distanceSrc = 1;
+        }
+        if (block->isPotentialDestination()) {
+            block->isDestination = true;
+            block->distanceDst = 1;
+        }
         block->mainPathState = block->aug1PathState = block->aug2PathState = NONE;
         block->mainPathIn = block->aug1PathIn = block->aug2PathIn = Cell3DPosition(-1, -1, -1);
         block->mainPathOut.clear();
@@ -841,43 +853,23 @@ bool RePoStBlockCode::setGreenLight(bool onoff) {
 }
 
 bool RePoStBlockCode::isPotentialDestination() {
-    // Check if an adjacent position is in target shape
-    // if (isFilledInTarget(MMPosition) and not isFilledInInitial(MMPosition)) return false;
-    // for (auto adjPos : getAdjacentMMPositions()) {
-    //     if ((inTargetShape(adjPos) and not inInitialShape(adjPos) and
-    //          not lattice->cellHasBlock(getSeedPositionFromMMPosition(adjPos))) or
-    //         (isFilledInTarget(adjPos) and not isFilledInInitial(adjPos))) {
-    //         if (find(destinations.begin(), destinations.end(), adjPos) != destinations.end()) {
-    //             continue;
-    //         }
-    //         // if(adjPos.pt[0] == MMPosition.pt[0] -1) continue;
-    //         destinationOut = adjPos;
-    //         return true;
-    //     }
-    // }
-    // return false;
-    bool hasEmptyNeighbor = false;
-    bool hasSparseNeghbor = false;
-
-    if(fillingState == FULL) {
+    if (fillingState == FULL) {
         return false;
     }
 
     for (auto adjPos : getAdjacentMMPositions()) {
         if (inTargetShape(adjPos) and not inInitialShape(adjPos) and
             not lattice->cellHasBlock(getSeedPositionFromMMPosition(adjPos))) {
-            hasEmptyNeighbor = true;
             if (find(destinations.begin(), destinations.end(), adjPos) != destinations.end()) {
                 continue;
             }
-            // if(adjPos.pt[0] == MMPosition.pt[0] -1) continue;
             destinationOut = adjPos;
             return true;
         }
     }
 
-    if(targetMap.size() < initialMap.size() and inInitialShape(MMPosition) and inTargetShape(MMPosition) and 
-        fillingState == EMPTY) {
+    if (RePoStBlockCode::targetMap.size() < RePoStBlockCode::initialMap.size() and inInitialShape(MMPosition) and
+        inTargetShape(MMPosition) and fillingState == EMPTY) {
         destinationOut = MMPosition;
         return true;
     }
@@ -893,7 +885,7 @@ bool RePoStBlockCode::isPotentialSource() {
 }
 
 bool RePoStBlockCode::inTargetShape(Cell3DPosition pos) {
-    for (auto targetPos : targetMap) {
+    for (auto targetPos : RePoStBlockCode::targetMap) {
         Cell3DPosition tp = Cell3DPosition(targetPos[0], targetPos[1], targetPos[2]);
         if (tp == pos) {
             return true;
@@ -903,7 +895,7 @@ bool RePoStBlockCode::inTargetShape(Cell3DPosition pos) {
 }
 
 bool RePoStBlockCode::inInitialShape(Cell3DPosition pos) {
-    for (auto initialPos : initialMap) {
+    for (auto initialPos : RePoStBlockCode::initialMap) {
         Cell3DPosition ip = Cell3DPosition(initialPos[0], initialPos[1], initialPos[2]);
         if (ip == pos) {
             return true;
@@ -913,7 +905,7 @@ bool RePoStBlockCode::inInitialShape(Cell3DPosition pos) {
 }
 
 bool RePoStBlockCode::isFilledInInitial(Cell3DPosition MMpos) {
-    for (auto initialPos : initialMap) {
+    for (auto initialPos : RePoStBlockCode::initialMap) {
         Cell3DPosition ip = Cell3DPosition(initialPos[0], initialPos[1], initialPos[2]);
         if (ip == MMpos and initialPos[3] == 1) {
             return true;
@@ -923,7 +915,7 @@ bool RePoStBlockCode::isFilledInInitial(Cell3DPosition MMpos) {
 }
 
 bool RePoStBlockCode::isFilledInTarget(Cell3DPosition MMpos) {
-    for (auto targetPos : targetMap) {
+    for (auto targetPos : RePoStBlockCode::targetMap) {
         Cell3DPosition ip = Cell3DPosition(targetPos[0], targetPos[1], targetPos[2]);
         if (ip == MMpos and targetPos[3] == 1) {
             return true;
@@ -1173,7 +1165,7 @@ void RePoStBlockCode::onMotionEnd() {
                                 BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
                                 ->MMPosition;
                         seedMM->sendHandleableMessage(new GoMessage(seedMM->MMPosition, toMMPosition, seedMM->distanceSrc),
-                        seedMM->interfaceTo(seedMM->MMPosition, toMMPosition), 100, 200);
+                            seedMM->interfaceTo(seedMM->MMPosition, toMMPosition), 100, 200);
                         seedMM->nbWaitedAnswers++;
                     }
                     
@@ -1473,14 +1465,18 @@ void RePoStBlockCode::onBlockSelected() {
     cerr << "MovingState: " << movingState << endl;
     cerr << "GreenLight: " << greenLightIsOn << endl;
     cerr << "isSource: " << isSource << endl;
-    cerr << "isDestination: " << isPotentialDestination() << endl;
+    cerr << "isDestination: " << isDestination << endl;
     cerr << "destinationOut: " << destinationOut << endl; 
     cerr << "parentPosition: " << parentPosition << endl;
     cerr << "childrenPostions: ";
     for(auto c: childrenPositions) cerr << c << "; ";
     cerr << endl;
     cerr << "distanceDst: " << distanceDst << endl;
-    // cerr << "mainPathState: " << mainPathState << endl;
+    cerr << "parentPositionDst: " << parentPositionDst << endl;
+    cerr << "childrenPostionsDst: ";
+    for(auto c: childrenPositionsDst) cerr << c << "; ";
+    cerr << endl;
+    cerr << "mainPathState: " << mainPathState << endl;
     // // cerr << "aug1PathState: " << aug1PathState << endl;
     // // cerr << "aug2PathState: " << aug2PathState << endl;
     cerr << "mainPathIn: " << mainPathIn << endl;
@@ -1567,7 +1563,7 @@ void RePoStBlockCode::switchModulesColors() {
                 BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)
                 ->isSource) {
             block->module->setColor(RED);
-        } else if (block->isDestination or
+        } else if (
                    static_cast<RePoStBlockCode*>(BaseSimulator::getWorld()
                                                      ->getBlockByPosition(block->seedPosition)
                                                      ->blockCode)
@@ -1658,7 +1654,7 @@ void RePoStBlockCode::parseUserElements(TiXmlDocument *config) {
                 coord[3] = 1;
             }
         }
-        initialMap.push_back(coord);
+        RePoStBlockCode::initialMap.push_back(coord);
     }
 
     // Parsing target positions
@@ -1692,7 +1688,7 @@ void RePoStBlockCode::parseUserElements(TiXmlDocument *config) {
                 coord[3] = 1;
             }
         }
-        targetMap.push_back(coord);
+        RePoStBlockCode::targetMap.push_back(coord);
     }
 }
 

@@ -60,8 +60,7 @@ enum FillingState {EMPTY, FULL};
 enum ProcessState {PASSIVE, ACTIVE};
 enum RenconfigurationStep {SRCDEST, MAXFLOW, TRANSPORT, DONE};
 
-static vector<array<int, 4>> initialMap;
-static vector<array<int, 4>> targetMap;
+
 static bool showSrcAndDst = false;
 
 
@@ -79,9 +78,13 @@ private:
 public:
     static Catoms3DBlock *GC;
     static int NbOfStreamlines;
+    static vector<array<int, 4>> initialMap;
+    static vector<array<int, 4>> targetMap;
 /* ----------------------- COORDINATION TREE VARIABLES ---------------------- */
     Cell3DPosition parentPosition = Cell3DPosition(-1,-1,-1);
     vector<Cell3DPosition> childrenPositions;
+    Cell3DPosition parentPositionDst = Cell3DPosition(-1,-1,-1);
+    vector<Cell3DPosition> childrenPositionsDst;
     short distanceSrc{0}, distanceDst{0};
     short nbWaitedAnswers{0};
     bool isSource{false};

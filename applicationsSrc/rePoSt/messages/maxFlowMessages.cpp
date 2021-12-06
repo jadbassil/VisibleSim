@@ -141,6 +141,11 @@ void BFSMessage::handle(BaseSimulator::BlockCode *bc) {
     rbc.console << "pathsOld: ";
     for (auto pOld : pathsOld) rbc.console << pOld << "; ";
     rbc.console << "\n";
+
+    if(rbc.fillingState == FULL) {
+        rbc.state = PASSIVE;
+        return;
+    }
     if (rbc.mainPathState == NONE and !isIn(pathsOld, sourceMM)) {
         rbc.mainPathsOld.push_back(sourceMM);
         Cell3DPosition fromSeedPosition = rbc.getSeedPositionFromMMPosition(fromMMPosition);
