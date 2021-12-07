@@ -91,7 +91,7 @@ public:
     bool isDestination{false};
     FillingState fillingState;
 
-    void reinitialize();
+    static void reinitialize();
 /* -------------------------------------------------------------------------- */
 
 /* -------------------------- TERMINATION DETECTION ------------------------- */
@@ -153,7 +153,8 @@ public:
 /* -------------------------------------------------------------------------- */
 
     
-    void setOperation(Cell3DPosition inPosition, Cell3DPosition outPosition);
+    void setOperation(const Cell3DPosition& inPosition, Cell3DPosition outPosition);
+    bool mustFillMMPos(Cell3DPosition &outPosition);
 
     Color initialColor;
 
@@ -231,10 +232,15 @@ public:
      * @return Cell3DPosition 
      */
     Cell3DPosition nearestPositionTo(Cell3DPosition &targetPosition, P2PNetworkInterface *except = nullptr);
-    Cell3DPosition nextInBorder(P2PNetworkInterface* sender);
+
+    Cell3DPosition nextInBorder(P2PNetworkInterface *sender);
+
     Cell3DPosition getSeedPositionFromMMPosition(Cell3DPosition &MMPos);
-    P2PNetworkInterface *interfaceTo(Cell3DPosition& dstPos, P2PNetworkInterface *sender = nullptr);
-    P2PNetworkInterface *interfaceTo(Cell3DPosition& fromMM, Cell3DPosition& toMM, P2PNetworkInterface *sender = nullptr);
+
+    P2PNetworkInterface *interfaceTo(Cell3DPosition &dstPos, P2PNetworkInterface *sender = nullptr);
+
+    P2PNetworkInterface *
+    interfaceTo(Cell3DPosition &fromMM, Cell3DPosition &toMM, P2PNetworkInterface *sender = nullptr);
 
     void probeGreenLight();
     bool isAdjacentToPosition(const Cell3DPosition& pos) const;

@@ -34,20 +34,20 @@
 	<MMTargetList>
 		<block position="0,0,0"/>
 		<block position="1,0,0"/>
-		<block position="2,0,0" filled="true"/>
-		<block position="3,0,0" filled="true"/>
+		<block position="2,0,0" />
+		<block position="3,0,0" />
 		
 		<block position="0,0,1"/>
-		<block position="1,0,1" filled="true"/>
-		<block position="2,0,1" filled="true"/>
+		<block position="1,0,1" />
+		<block position="2,0,1" />
 		<!-- <block position="3,0,1"/> -->
 
 		<block position="0,0,2"/>
-		<block position="1,0,2" filled="true"/>
+		<block position="1,0,2" />
 		<!-- <block position="2,0,2"/>
 		<block position="3,0,2"/> -->
 
-		<block position="0,0,3" filled="true"/>
+		<block position="0,0,3" />
 		<!-- <block position="1,0,3"/>
 		<block position="2,0,3"/>
 		<block position="3,0,3"/> -->

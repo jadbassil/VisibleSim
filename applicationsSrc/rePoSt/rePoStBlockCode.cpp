@@ -95,8 +95,10 @@ void RePoStBlockCode::startup() {
 void RePoStBlockCode::reinitialize() {
     cerr << "REINITIALIZE!\n";
     for (auto id_block : BaseSimulator::getWorld()->buildingBlocksMap) {
-        RePoStBlockCode* block = static_cast<RePoStBlockCode*>(id_block.second->blockCode);
+        auto* block = static_cast<RePoStBlockCode*>(id_block.second->blockCode);
         block->parentPosition = Cell3DPosition(-1, -1, -1);
+        block->parentPositionDst = Cell3DPosition(-1, -1, -1);
+        block->childrenPositionsDst.clear();
         block->childrenPositions.clear();
         block->isSource = false;
         block->isDestination = false;
@@ -150,7 +152,7 @@ void RePoStBlockCode::return_wave(bool b) {
 
 /* -------------------------------------------------------------------------- */
 
-void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition outPosition) {
+void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosition outPosition) {
     Direction direction;
     Cell3DPosition directionVector = outPosition - MMPosition;
     if (directionVector.pt[0] == -1) direction = Direction::LEFT;
@@ -160,14 +162,20 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
     if (directionVector.pt[2] == -1) direction = Direction::DOWN;
     if (directionVector.pt[2] == 1) direction = Direction::UP;
     if (isSource) {
-        (shapeState == FRONTBACK) ? coordinatorPosition = seedPosition + Cell3DPosition(-1, -1, 2)
-                                  : coordinatorPosition = seedPosition + Cell3DPosition(-1, 1, 2);
-        if (direction == Direction::BACK and shapeState == FRONTBACK) {
+        if (direction == Direction::LEFT or (direction == Direction::BACK and shapeState == BACKFRONT)) {
+            (shapeState == FRONTBACK)
+                ? coordinatorPosition = seedPosition + Cell3DPosition(-1, -1, 2)
+                : coordinatorPosition = seedPosition + Cell3DPosition(-1, 1, 2);
+        } else if (direction == Direction::BACK and shapeState == FRONTBACK) {
             coordinatorPosition = seedPosition + Cell3DPosition(2, 1, 2);
         } else if (direction == Direction::UP) {
             if (MMPosition.pt[2] % 2 != 0) {
                 coordinatorPosition = seedPosition + Cell3DPosition(1, 0, 4);
             }
+        } else if(direction == Direction::DOWN){
+            coordinatorPosition = seedPosition;
+        } else {
+            VS_ASSERT(false);
         }
     } else {
         (shapeState == FRONTBACK) ? coordinatorPosition = seedPosition + Cell3DPosition(1, 0, 1)
@@ -177,7 +185,7 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
         BaseSimulator::getWorld()->getBlockByPosition(coordinatorPosition)->blockCode);
     coordinator->isCoordinator = true;
     if (isSource) {
-        if(isFilledInTarget(outPosition)) {
+        if(mustFillMMPos(outPosition)) {
             coordinator->operation = new Dismantle_Operation(direction, shapeState, getPreviousOpDir(),
                                                          MMPosition.pt[2], true);
         } else {
@@ -186,6 +194,12 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
         }
         
     } else if (isDestination) {
+        if(destinationOut == MMPosition) {
+            coordinator->operation = new Operation();
+            coordinator->isCoordinator = false;
+            fillingState = FULL;
+            return;
+        }
         bool comingFromBack =
             (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and
              shapeState == BACKFRONT);
@@ -198,7 +212,7 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
         }
 
     } else { //Transfer MM
-        if(isFilledInTarget(MMPosition)) {
+        if(mustFillMMPos(MMPosition)) {
             coordinator->operation = new Operation();
             coordinator->isCoordinator = false;
             return;
@@ -206,7 +220,7 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
         bool comingFromBack =
             (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and
              shapeState == BACKFRONT);
-        if (isFilledInTarget(outPosition)) {
+        if (mustFillMMPos(outPosition)) {
             //isDestination = true;
             switchModulesColors();
             coordinator->operation = new Fill_Operation(direction, shapeState, getPreviousOpDir(),
@@ -216,6 +230,18 @@ void RePoStBlockCode::setOperation(Cell3DPosition inPosition, Cell3DPosition out
         coordinator->operation = new Transfer_Operation(direction, shapeState, getPreviousOpDir(), getNextOpDir(),
                                                         comingFromBack, MMPosition.pt[2]);
     }
+}
+
+bool RePoStBlockCode::mustFillMMPos(Cell3DPosition &outPosition) {
+    RePoStBlockCode* outSeed = 
+        static_cast<RePoStBlockCode*>(lattice->getBlock(getSeedPositionFromMMPosition(outPosition))->blockCode);
+    if(outSeed->isDestination and outSeed->destinationOut == outPosition) {
+        outSeed->fillingState = FULL;
+        return true;
+    } else {
+        return false;
+    }
+    
 }
 
  /* -------------------------------------------------------------------------- */
@@ -762,6 +788,10 @@ vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosit
                             lattice->getBlock(seedPosition + Cell3DPosition(-1, -1, 1))));
                     }
                 }
+                if(relativePos() == Cell3DPosition(1,-1,1) and operation->getPrevOpDirection() == Direction::DOWN) {
+                    latchingPoints.clear();
+                    return latchingPoints;
+                }
             } break;
 
             default:
@@ -945,7 +975,7 @@ void RePoStBlockCode::updateState() {
    
     mvt_it = 0;
     isCoordinator = false;
-    // module->setColor(initialColor);
+    module->setColor(GREY);
     if(not greenLightIsOn) {
         setGreenLight(true);
     }
@@ -1541,8 +1571,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("BF_DismantleFill_Left.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(14,5,6);
+    file.open("FB_Dismantle_Down.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(10,6,10);
     if(!file.is_open()) return; 
 
     if(c == 'o') {

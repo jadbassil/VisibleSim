@@ -98,7 +98,26 @@ Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape
                 localRules.reset(&LocalRules_FB_Dismantle_Up_Zodd);
         }
     } break;
-    
+
+    case Direction::DOWN: {
+        if (mmShape == BACKFRONT) {
+            if (filled) {
+                Zeven ? VS_ASSERT_MSG(false, "Not implemented") :
+                localRules.reset(&LocalRules_BF_DismantleFilled_Down_Zodd);
+            } else {
+                VS_ASSERT_MSG(false, "Not implemented");
+            }
+        } else { //FRONTBACK
+            if (filled) {
+                VS_ASSERT_MSG(false, "Not implemented");
+            } else {
+                Zeven ? localRules.reset(&LocalRules_FB_Dismantle_Down_Zeven):
+                localRules.reset(&LocalRules_FB_Dismantle_Down_Zodd);
+            }
+        }
+    } break;
+
+
     default:
         VS_ASSERT_MSG(false, "Not implemented");
     }
@@ -112,6 +131,9 @@ void Dismantle_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, c
 
 void Dismantle_Operation::updateState(BaseSimulator::BlockCode* bc) {
     RePoStBlockCode* rbc = static_cast<RePoStBlockCode*>(bc);
+    if(filled) {
+        rbc->fillingState = FULL;
+    }
     switch (direction) {
         case Direction::LEFT: {
             (rbc->shapeState == FRONTBACK) ? rbc->shapeState = BACKFRONT
@@ -136,6 +158,13 @@ void Dismantle_Operation::updateState(BaseSimulator::BlockCode* bc) {
             Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::UP,
                                        rbc->seedPosition);
             rbc->MMPosition = rbc->MMPosition.offsetZ(1);
+            rbc->initialPosition = rbc->module->position - rbc->seedPosition;
+        } break;
+
+        case Direction::DOWN: {
+            Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::DOWN,
+                                       rbc->seedPosition);
+            rbc->MMPosition = rbc->MMPosition.offsetZ(-1);
             rbc->initialPosition = rbc->module->position - rbc->seedPosition;
         } break;
 
@@ -345,6 +374,7 @@ void Fill_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const 
 
 void Fill_Operation::updateState(BaseSimulator::BlockCode* bc) {
     RePoStBlockCode* rbc = static_cast<RePoStBlockCode*>(bc);
+    rbc->fillingState = FULL;
     switch (direction) {
         case Direction::LEFT: {
             if (mmShape == FRONTBACK) {

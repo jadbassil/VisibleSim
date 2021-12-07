@@ -121,7 +121,7 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
                         MMblock->mainPathsOld.push_back(MMblock->MMPosition);
 
                         // Start MaxFlow
-                        for (auto p : MMblock->getAdjacentMMSeeds()) {
+                        for (const auto& p : MMblock->getAdjacentMMSeeds()) {
                             cerr << "MMPosition"
                                  << ": " << p << endl;
                             RePoStBlockCode *toSeed = static_cast<RePoStBlockCode *>(
@@ -141,7 +141,8 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
                 // choose one source and find non blocking destinations to be filled
                 for (auto MMPos : RePoStBlockCode::initialMap) {
                     Cell3DPosition MMPos1 = Cell3DPosition(MMPos[0], MMPos[1], MMPos[2]);
-                    RePoStBlockCode *MMBlock = static_cast<RePoStBlockCode *>(
+                    if(not rbc.lattice->cellHasBlock((rbc.getSeedPositionFromMMPosition(MMPos1)))) continue;
+                    RePoStBlockCode *MMBlock = dynamic_cast<RePoStBlockCode *>(
                         rbc.lattice->getBlock(rbc.getSeedPositionFromMMPosition(MMPos1))
                             ->blockCode);
                     if (MMBlock->isSource) {
@@ -164,7 +165,6 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
             }
 
         } else {
-            Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(rbc.parentPosition);
             rbc.sendHandleableMessage(new BackMessage(rbc.MMPosition, rbc.parentPosition, true),
                                       rbc.interfaceTo(rbc.MMPosition, rbc.parentPosition), 100,
                                       200);
@@ -174,7 +174,7 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
 
 void GoDstMessage::handle(BaseSimulator::BlockCode *bc) {
     RePoStBlockCode &rbc = *static_cast<RePoStBlockCode *>(bc);
-    
+
     Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(toMMPosition);
     if (rbc.module->position != toSeedPosition) {
         if (not rbc.interfaceTo(fromMMPosition, toMMPosition)) VS_ASSERT(false);
@@ -185,42 +185,39 @@ void GoDstMessage::handle(BaseSimulator::BlockCode *bc) {
     rbc.console << "received: " << this->getName() << "\n";
     rbc.console << "distanceDst: " << rbc.distanceDst << "\n";
     //rbc.nbWaitedAnswers = 0;
-    if(rbc.fillingState == FULL) {
+    if (rbc.fillingState == FULL) {
         // ignore Full MM while building the tree
-         Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(fromMMPosition);
         rbc.sendHandleableMessage(new BackDstMessage(rbc.MMPosition, fromMMPosition, false),
                                   rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
         return;
     }
-     if (rbc.parentPositionDst == Cell3DPosition(-1, -1, -1)) {
+    if (rbc.parentPositionDst == Cell3DPosition(-1, -1, -1)) {
         rbc.parentPositionDst = fromMMPosition;
         // distance = data->distance + 1;
         rbc.isPotentialDestination() ? rbc.distanceDst = distance + 1 : rbc.distanceDst = distance;
         rbc.console << "distance1: " << rbc.distanceDst << "\n";
         rbc.nbWaitedAnswers = 0;
-        for (auto p : rbc.getAdjacentMMSeeds()) {
+        for (auto p: rbc.getAdjacentMMSeeds()) {
             Cell3DPosition toMMPosition1 =
-                static_cast<RePoStBlockCode *>(
-                    BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
-                    ->MMPosition;
+                    static_cast<RePoStBlockCode *>(
+                            BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
+                            ->MMPosition;
             if (toMMPosition1 == fromMMPosition) continue;
             rbc.sendHandleableMessage(new GoDstMessage(rbc.MMPosition, toMMPosition1, rbc.distanceDst),
                                       rbc.interfaceTo(rbc.MMPosition, toMMPosition1), 100, 200);
 
             rbc.nbWaitedAnswers++;
         }
-            rbc.console << "nbWaitedAnswers: " << rbc.nbWaitedAnswers << "\n";
+        rbc.console << "nbWaitedAnswers: " << rbc.nbWaitedAnswers << "\n";
 
         if (rbc.nbWaitedAnswers == 0) {
-            Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(rbc.parentPositionDst);
             rbc.sendHandleableMessage(new BackDstMessage(rbc.MMPosition, rbc.parentPositionDst, true),
                                       rbc.interfaceTo(rbc.MMPosition, rbc.parentPositionDst), 100,
                                       200);
         }
     } else if ((not rbc.isPotentialDestination() and distance < rbc.distanceDst) or
-               (rbc.isPotentialDestination() and distance + 1 < rbc.distanceDst)){
-        
-        Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(rbc.parentPositionDst);
+               (rbc.isPotentialDestination() and distance + 1 < rbc.distanceDst)) {
+
         rbc.sendHandleableMessage(new BackDstMessage(rbc.MMPosition, rbc.parentPositionDst, false),
                                   rbc.interfaceTo(rbc.MMPosition, rbc.parentPositionDst), 100, 200);
 
@@ -230,24 +227,22 @@ void GoDstMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.console << "distance2 : " << rbc.distanceDst << "\n";
 
         rbc.nbWaitedAnswers = 0;
-        for (auto p : rbc.getAdjacentMMSeeds()) {
+        for (auto p: rbc.getAdjacentMMSeeds()) {
             Cell3DPosition toMMPosition1 =
-                static_cast<RePoStBlockCode *>(
-                    BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
-                    ->MMPosition;
+                    static_cast<RePoStBlockCode *>(
+                            BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
+                            ->MMPosition;
             if (toMMPosition1 == fromMMPosition) continue;
             rbc.sendHandleableMessage(new GoDstMessage(rbc.MMPosition, toMMPosition1, rbc.distanceDst),
                                       rbc.interfaceTo(rbc.MMPosition, toMMPosition1), 100, 200);
             rbc.nbWaitedAnswers++;
         }
         if (rbc.nbWaitedAnswers == 0) {
-            Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(rbc.parentPositionDst);
             rbc.sendHandleableMessage(new BackDstMessage(rbc.MMPosition, rbc.parentPositionDst, true),
                                       rbc.interfaceTo(rbc.MMPosition, rbc.parentPositionDst), 100,
                                       200);
         }
     } else {
-        Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(fromMMPosition);
         rbc.sendHandleableMessage(new BackDstMessage(rbc.MMPosition, fromMMPosition, false),
                                   rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
     }
@@ -265,7 +260,7 @@ void BackDstMessage::handle(BaseSimulator::BlockCode *bc) {
 
     rbc.nbWaitedAnswers--;
     rbc.console << "nbWaitedAnswers: " << rbc.nbWaitedAnswers << "\n";
-    vector<Cell3DPosition>::iterator it =
+    auto it =
         find(rbc.childrenPositionsDst.begin(), rbc.childrenPositionsDst.end(), fromMMPosition);
     if (isChild and it == rbc.childrenPositionsDst.end()) {
         rbc.childrenPositionsDst.push_back(fromMMPosition);
@@ -280,8 +275,8 @@ void BackDstMessage::handle(BaseSimulator::BlockCode *bc) {
         if (rbc.parentPositionDst == Cell3DPosition(-1, -1, -1)) {
            // Start MaxFlow
             for (auto block : BaseSimulator::getWorld()->buildingBlocksMap) {
-                RePoStBlockCode *MMblock =
-                    static_cast<RePoStBlockCode *>(block.second->blockCode);
+                auto *MMblock =
+                    dynamic_cast<RePoStBlockCode *>(block.second->blockCode);
                 //Start MaxFlow
                 if (MMblock->isSource and MMblock->seedPosition == MMblock->module->position) {
                     cerr << MMblock->MMPosition << ": is source\n";
@@ -309,7 +304,6 @@ void BackDstMessage::handle(BaseSimulator::BlockCode *bc) {
             rbc.switchModulesColors();
  
         } else {
-            Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(rbc.parentPositionDst);
             rbc.sendHandleableMessage(new BackDstMessage(rbc.MMPosition, rbc.parentPositionDst, true),
                                       rbc.interfaceTo(rbc.MMPosition, rbc.parentPositionDst), 100,
                                       200);
