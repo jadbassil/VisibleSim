@@ -58,6 +58,44 @@ void Operation::setMvtItToNextModule(BaseSimulator::BlockCode* bc) {
     rbc->mvt_it += i + 1;
 }
 
+
+void Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Catoms3D::Catoms3DBlock *> &latchingPoints,
+                                    const Cell3DPosition &targetPos) const {
+    RePoStBlockCode &rbc = *dynamic_cast<RePoStBlockCode *>(bc);
+    if (targetPos - rbc.seedPosition == Cell3DPosition(-2, 1, 2)) {
+        if (rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(-3, 0, 2)) and
+            isTransfer() and direction == Direction::LEFT) {
+            // Avoid blocking when passing the bridge if the next operation direction is back
+            RePoStBlockCode &rlp = *static_cast<RePoStBlockCode *>(
+                    rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(-3, 0, 2))->blockCode);
+            if (rlp.movingState == WAITING) {
+                latchingPoints.push_back(static_cast<Catoms3DBlock *>(
+                                                 rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(-3, 0, 2))));
+            }
+            return;
+        }
+        if (rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(-4, 1, 2))) {
+        }
+    }
+
+    /* ------------------ Avoid blocking when coming from back ------------------ */
+    if (direction == BACK and rbc.shapeState == BACKFRONT) {
+        if (rbc.relativePos() == Cell3DPosition(0, 2, 2) and
+                rbc.lattice->cellHasBlock(rbc.module->position + Cell3DPosition(1, 1, -1))) {
+            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                             rbc.lattice->getBlock(rbc.module->position + Cell3DPosition(1, 1, -1))));
+        }
+        if (rbc.relativePos() == Cell3DPosition(0, 2, 1) and isTransfer()) {
+            latchingPoints.clear();
+        }
+        if (rbc.relativePos() == Cell3DPosition(-1, 3, 3)) {
+            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                             rbc.lattice->getBlock(rbc.module->position + Cell3DPosition(2, 0, -2))));
+        }
+    }
+    /* -------------------------------------------------------------------------- */
+}
+
 /************************************************************************
  *************************  DISMANTLE OPERATION  ************************
  ***********************************************************************/
@@ -177,6 +215,25 @@ bool Dismantle_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
     RePoStBlockCode* rbc = static_cast<RePoStBlockCode*>(bc);
     return rbc->isCoordinator? false:  true;
 }
+
+void
+Dismantle_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Catoms3D::Catoms3DBlock *> &latchingPoints,
+                                         const Cell3DPosition &targetPos) const {
+    RePoStBlockCode &rbc = *dynamic_cast<RePoStBlockCode *>(bc);
+    Operation::updateProbingPoints(bc, latchingPoints, targetPos);
+    switch (direction) {
+        case Direction::LEFT: {
+            /* ------ Avoid blocking when FB dismantling left then transferring down ----- */
+            if (targetPos - rbc.seedPosition == Cell3DPosition(-1, 0, 2) and
+                rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(-2, 0, 1))) {
+                latchingPoints.push_back(static_cast<Catoms3DBlock *>(
+                                                 rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(-2, 0, 1))));
+            }
+        }
+            break;
+    }
+}
+
 /************************************************************************
  ***************************  FILL OPERATION  ***************************
  ***********************************************************************/
@@ -444,12 +501,63 @@ bool Fill_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode *bc) {
     return false;
 }
 
+void Fill_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Catoms3D::Catoms3DBlock *> &latchingPoints,
+                                         const Cell3DPosition &targetPos) const {
+    RePoStBlockCode &rbc = *dynamic_cast<RePoStBlockCode *>(bc);
+    Operation::updateProbingPoints(bc, latchingPoints, targetPos);
+    switch (direction) {
+        case Direction::LEFT: {
+            if (rbc.relativePos() == Cell3DPosition(1, -1, 1) or
+                rbc.relativePos() == Cell3DPosition(1, 0, 1)) {
+                latchingPoints.clear();
+            }
+            if (mmShape == BACKFRONT and isZeven() and
+                rbc.mvt_it >= 39) {
+                latchingPoints.clear();
+            }
+        }
+            break;
+
+        case Direction::BACK: {
+            if (mmShape == BACKFRONT and
+                getPrevOpDirection() != Direction::BACK) {
+                if (rbc.relativePos() == Cell3DPosition(0, 1, 2) and rbc.mvt_it >= 34) {
+                    latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
+                                                     rbc.lattice->getBlock(
+                                                             rbc.seedPosition + Cell3DPosition(0, 3, 0))));
+                    latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
+                                                     rbc.lattice->getBlock(
+                                                             rbc.seedPosition + Cell3DPosition(1, 3, 0))));
+                    latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
+                                                     rbc.lattice->getBlock(
+                                                             rbc.seedPosition + Cell3DPosition(1, 3, 1))));
+                    return;
+                }
+                if (rbc.relativePos().pt[1] >= 3) {
+                    latchingPoints.clear();
+                    return;
+                }
+            }
+            if (mmShape == FRONTBACK and
+                rbc.relativePos() == Cell3DPosition(1, 3, 2) and rbc.mvt_it >= 23) {
+                // Avoid deadlock when the MM on top is being filled too
+                latchingPoints.clear();
+                return;
+            }
+        }
+            break;
+
+        default:
+            break;
+    }
+}
+
 /************************************************************************
  ***************************  TRANSFER OPERATION  ***********************
  ***********************************************************************/
 
 Transfer_Operation::Transfer_Operation(Direction _direction, MMShape _mmShape, Direction _prevOpDirection, Direction _nextOpDir, bool _comingFromBack, int Z) 
-    :Operation(_direction, _mmShape,_prevOpDirection, Z), nextOpDir(_nextOpDir), comingFromBack(_comingFromBack) {
+    :Operation(_direction, _mmShape,_prevOpDirection, Z), comingFromBack(_comingFromBack), nextOpDir(_nextOpDir) {
     switch (direction){
     case Direction::LEFT: {
         if(mmShape == FRONTBACK){
@@ -482,13 +590,13 @@ Transfer_Operation::Transfer_Operation(Direction _direction, MMShape _mmShape, D
         if(Zeven) {
             if(mmShape == FRONTBACK) {
                 localRules.reset(&LocalRules_FB_Transfer_Up_Zeven);
-            } else  { //mmsShape = BACKFRRONT
+            } else  { //mmsShape = BACKFRONT
                 localRules.reset(&LocalRules_BF_Transfer_Up_Zeven);
             }
         } else { //Zodd
             if(mmShape == FRONTBACK) {
                 localRules.reset(&LocalRules_FB_Transfer_Up_Zodd);
-            } else  { //mmsShape = BACKFRRONT
+            } else  { //mmsShape = BACKFRONT
                 localRules.reset(&LocalRules_BF_Transfer_Up_Zodd);
             }
         }
@@ -957,6 +1065,7 @@ void Transfer_Operation::updateState(BaseSimulator::BlockCode *bc) {
             break;
         }
     } break;
+
     case Direction::RIGHT : {
          (rbc->shapeState == FRONTBACK) ? rbc->shapeState = BACKFRONT : rbc->shapeState = FRONTBACK;
         Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::RIGHT,
@@ -964,6 +1073,7 @@ void Transfer_Operation::updateState(BaseSimulator::BlockCode *bc) {
         rbc->MMPosition = rbc->MMPosition.offsetX(1);
         rbc->initialPosition = rbc->module->position - rbc->seedPosition;
     } break;
+
     case Direction::UP : {
         Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::UP,
                                     rbc->seedPosition);
@@ -972,9 +1082,11 @@ void Transfer_Operation::updateState(BaseSimulator::BlockCode *bc) {
     } break;
 
     case Direction::DOWN: {
-        if(rbc->mvt_it == 2 and mmShape == FRONTBACK and Zeven) return;
-        if(rbc->mvt_it == 2 and mmShape == BACKFRONT and not Zeven) return;
-        if(rbc->mvt_it == localRules->size() -1) return;
+        if( rbc->mvt_it == 2  and mmShape == FRONTBACK and Zeven) return;
+        if( rbc->mvt_it == 2  and mmShape == BACKFRONT and not Zeven) return;
+        if(rbc->mvt_it == localRules->size() -1 and mmShape == FRONTBACK and not Zeven) return;
+        if(rbc->mvt_it == localRules->size() -1 and mmShape == BACKFRONT and  Zeven) return;
+
         Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::DOWN,
                                     rbc->seedPosition);
         rbc->MMPosition = rbc->MMPosition.offsetZ(-1);
@@ -1032,7 +1144,7 @@ bool Transfer_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
             //if (not comingFromBack and rbc->mvt_it >= 39) return true;
             if (comingFromBack and rbc->mvt_it > 8) return true;
         } else if (mmShape == FRONTBACK) {
-            if (not comingFromBack and rbc->mvt_it == 4 or rbc->mvt_it == 6) return true;
+            if ((not comingFromBack and rbc->mvt_it == 4) or rbc->mvt_it == 6) return true;
         }
     } else if (direction == Direction::DOWN and rbc->mvt_it == 2) {
         return true;
@@ -1097,6 +1209,188 @@ bool Transfer_Operation::handleBridgeMovements(BaseSimulator::BlockCode* bc) {
     // }
     
     return false;
+}
+
+void
+Transfer_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Catoms3D::Catoms3DBlock *> &latchingPoints,
+                                        const Cell3DPosition &targetPos) const {
+    RePoStBlockCode &rbc = *dynamic_cast<RePoStBlockCode *>(bc);
+    Operation::updateProbingPoints(bc, latchingPoints, targetPos);
+    switch (direction) {
+        case Direction::FRONT: {
+            if (mmShape == FRONTBACK) {
+                if (rbc.relativePos() == Cell3DPosition(-1, -4, 3)) {
+                    latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
+                                                     rbc.lattice->getBlock(
+                                                             rbc.module->position + Cell3DPosition(2, 0, -2))));
+                }
+            } else {  // BackFront
+                if (/*relativePos() == Cell3DPosition(1,0,2) and*/ rbc.lattice->cellHasBlock(
+                        rbc.seedPosition + Cell3DPosition(1, -2, 2)) and
+                                                                   rbc.relativePos().pt[1] > -2) {
+                    latchingPoints.clear();
+                    latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
+                                                     rbc.lattice->getBlock(
+                                                             rbc.seedPosition + Cell3DPosition(1, -2, 2))));
+                }
+                if (rbc.relativePos() == Cell3DPosition(0, -2, 2)) {
+                    latchingPoints.clear();
+                    latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
+                                                     rbc.lattice->getBlock(
+                                                             rbc.seedPosition + Cell3DPosition(1, -3, 1))));
+                }
+            }
+        }
+            break;
+
+        case Direction::BACK: {
+            if (prevOpDirection == Direction::BACK and
+                mmShape == FRONTBACK) {
+                if (isZeven() and rbc.mvt_it > 5 and
+                        (*localRules)[rbc.mvt_it].currentPosition == Cell3DPosition(1, 0, 2)) {
+                    latchingPoints.clear();
+                    latchingPoints.push_back(
+                            static_cast<Catoms3DBlock*>(rbc.lattice->getBlock(rbc.module->position.offsetY(2))));
+                } else if (not isZeven() and rbc.mvt_it > 5 and
+                           (*localRules)[rbc.mvt_it].nextPosition == Cell3DPosition(1, 0, 2)) {
+                    latchingPoints.clear();
+                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                     rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(1, 2, 2))));
+                } else if (rbc.mvt_it == 2) {
+                    latchingPoints.clear();
+                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                     rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(1, 1, 2))));
+                }
+            }
+            if (mmShape == BACKFRONT and
+                getPrevOpDirection() != Direction::BACK and
+                (rbc.relativePos() == Cell3DPosition(1, 1, 2) or
+                 rbc.relativePos() == Cell3DPosition(0, 2, 2))) {
+                latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
+                                                 rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(1, 3, 0))));
+                latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
+                                                 rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(1, 3, 1))));
+            }
+        }
+            break;
+
+        case Direction::LEFT: {
+            if ((*localRules)[rbc.mvt_it].nextPosition == Cell3DPosition(0, -1, 1)) {
+                // BACKFRONG
+                latchingPoints.clear();
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(rbc.lattice->getBlock(rbc.seedPosition)));
+                if (rbc.lattice->cellHasBlock(rbc.seedPosition.offsetY(-1))) {
+                    latchingPoints.push_back(
+                            static_cast<Catoms3DBlock*>(rbc.lattice->getBlock(rbc.seedPosition.offsetY(-1))));
+                }
+            } else if ((*localRules)[rbc.mvt_it].nextPosition == Cell3DPosition(0, 0, 1)) {
+                // FRONTBACK
+                latchingPoints.clear();
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(rbc.lattice->getBlock(rbc.seedPosition)));
+                if (rbc.lattice->cellHasBlock(rbc.seedPosition.offsetY(1))) {
+                    latchingPoints.push_back(
+                            static_cast<Catoms3DBlock*>(rbc.lattice->getBlock(rbc.seedPosition.offsetY(1))));
+                }
+            }
+            if (mmShape == FRONTBACK and isZeven() and getNextOpDir() ==
+                                                       Direction::DOWN) {
+                if (rbc.relativePos() == Cell3DPosition(1, -1, 1)) {
+                    latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
+                                                     rbc.lattice->getBlock(
+                                                             rbc.seedPosition + Cell3DPosition(-1, -1, 1))));
+                }
+            }
+            if (rbc.relativePos() == Cell3DPosition(1, -1, 1) and getPrevOpDirection() == Direction::DOWN) {
+                latchingPoints.clear();
+                return;
+            }
+        }
+            break;
+
+        case Direction::RIGHT: {
+            if (((rbc.relativePos() == Cell3DPosition(2, 0, 2) or
+                    rbc.relativePos() == Cell3DPosition(3, 0, 2)) and
+                 mmShape == BACKFRONT and rbc.mvt_it > 3 and isZeven() and
+                 getNextOpDir() != Direction::DOWN) or
+                ((rbc.relativePos() == Cell3DPosition(2, 1, 2) or
+                        rbc.relativePos() == Cell3DPosition(3, 0, 1)) and
+                 getMMShape() == BACKFRONT and rbc.mvt_it > 4 and not isZeven() and
+                 getNextOpDir() != Direction::DOWN)) {
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                 rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(3, -1, 1))));
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                 rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(4, 0, 0))));
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                 rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(5, 0, 0))));
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                 rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(5, 0, 1))));
+                if (rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(5, 1, 2)))
+                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                     rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(5, 1, 2))));
+                if (rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(5, 2, 2)))
+                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                     rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(5, 2, 2))));
+            }
+
+            if (rbc.relativePos() == Cell3DPosition(1, 0, 1) and rbc.mvt_it >= 7 and
+                mmShape == BACKFRONT and isZeven()) {
+                // BF
+                latchingPoints.clear();
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                 rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(2, -1, 2))));
+                if (rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(3, 0, 2)))
+                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                     rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(3, 0, 2))));
+            }
+
+            if (rbc.relativePos() == Cell3DPosition(1, -1, 1) and rbc.mvt_it >= 7 and
+                mmShape == FRONTBACK) {
+                // FB
+                latchingPoints.clear();
+                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                 rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(2, 1, 2))));
+                if (rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(3, 0, 2)))
+                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                     rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(3, 0, 2))));
+            }
+        }
+            break;
+
+        case Direction::DOWN: {
+            if (mmShape == FRONTBACK) {
+                if (rbc.relativePos() == Cell3DPosition(1, 0, 0)) {
+                    // Zeven
+                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                     rbc.lattice->getBlock(rbc.module->position + Cell3DPosition(1, 2, -2))));
+                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                     rbc.lattice->getBlock(rbc.module->position + Cell3DPosition(0, 1, -3))));
+                } else if (rbc.relativePos() == Cell3DPosition(1, -1, 0)) {
+                    // Zodd
+                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                     rbc.lattice->getBlock(rbc.module->position + Cell3DPosition(1, 1, -2))));
+                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                     rbc.lattice->getBlock(rbc.module->position + Cell3DPosition(0, 0, -3))));
+                }
+            } else {  // operation.shape = BACKFRONT
+                if (rbc.relativePos() == Cell3DPosition(1, 0, 0)) {
+                    // Zeven
+                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                     rbc.lattice->getBlock(rbc.module->position + Cell3DPosition(1, -2, -2))));
+                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                     rbc.lattice->getBlock(rbc.module->position + Cell3DPosition(0, -2, -3))));
+                } else if (rbc.relativePos() == Cell3DPosition(1, 1, 0)) {
+                    // Zodd
+                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                     rbc.lattice->getBlock(rbc.module->position + Cell3DPosition(1, -1, -2))));
+                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                     rbc.lattice->getBlock(rbc.module->position + Cell3DPosition(0, -1, -3))));
+                }
+            }
+        }
+            break;
+        default:
+            break;
+    }
 }
 
 /************************************************************************
@@ -1235,5 +1529,24 @@ bool Build_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
     else if(isComingFromBack() and direction != Direction::UP and rbc->mvt_it >= 37 and rbc->mvt_it != localRules->size()-1) return true;
     else if(direction == Direction::BACK and mmShape == BACKFRONT and rbc->mvt_it >= 42 and rbc->mvt_it != localRules->size()-1)  return true;
     return false;
+}
+
+void Build_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Catoms3D::Catoms3DBlock *> &latchingPoints,
+                                          const Cell3DPosition &targetPos) const {
+    RePoStBlockCode &rbc = *dynamic_cast<RePoStBlockCode *>(bc);
+    Operation::updateProbingPoints(bc, latchingPoints, targetPos);
+    switch (direction) {
+        case Direction::UP: {
+            if (mmShape == FRONTBACK) {
+                if (rbc.relativePos() == Cell3DPosition(1, -1, 3)) {
+                    latchingPoints.clear();
+                }
+            }
+        }
+            break;
+
+        default:
+            break;
+    }
 }
 

@@ -250,9 +250,14 @@ public:
     Catoms3DBlock* findTargetLightAmongNeighbors(const Cell3DPosition& targetPos,
                                                 const Cell3DPosition& srcPos,
                                                 P2PNetworkInterface *sender=NULL) const;
-    
-    vector<Catoms3DBlock*> findNextLatchingPoints(const Cell3DPosition& targetPos,
-                                                    const Cell3DPosition& pivotPos);
+    /**
+     *
+     * @param targetPos The next position of the module
+     * @param pivotPos
+     * @return a vector containing the probing points
+     */
+    vector<Catoms3DBlock*> findNextProbingPoints(const Cell3DPosition& targetPos,
+                                                 const Cell3DPosition& pivotPos);
     /**
      * @return module's position relative to the meta-module seedPosition
     **/
@@ -322,7 +327,7 @@ public:
      */
     void onUserKeyPressed(unsigned char c, int x, int y) override;
 
-    void switchModulesColors();
+    static void switchModulesColors();
 
     /**
      * Call by world during GL drawing phase, can be used by a user

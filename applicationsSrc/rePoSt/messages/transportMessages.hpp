@@ -23,7 +23,7 @@ class CoordinateMessage : public HandleableMessage {
               // type = 1002;
           };
 
-    ~CoordinateMessage(){};
+    ~CoordinateMessage() override = default;
 
     virtual void handle(BaseSimulator::BlockCode *) override;
     virtual Message *clone() const override { return new CoordinateMessage(*this); }
@@ -42,10 +42,10 @@ class CoordinateBackMessage : public HandleableMessage {
     CoordinateBackMessage(int _steps, Cell3DPosition _coordinatorPosition)
         : HandleableMessage(), steps(_steps), coordinatorPosition(_coordinatorPosition){};
 
-    ~CoordinateBackMessage(){};
+    ~CoordinateBackMessage() override = default;;
 
-    virtual void handle(BaseSimulator::BlockCode *) override;
-    virtual Message *clone() const override { return new CoordinateBackMessage(*this); }
+    void handle(BaseSimulator::BlockCode *) override;
+    Message *clone() const override { return new CoordinateBackMessage(*this); }
     virtual string getName() const override {
         return "CoordinateBackMessage{" + to_string(steps) + ", " +
                coordinatorPosition.to_string() + "}";
@@ -61,11 +61,11 @@ class PLSMessage : public HandleableMessage {
     PLSMessage(Cell3DPosition _srcPos, Cell3DPosition _destPos)
         : HandleableMessage(), srcPos(_srcPos), destPos(_destPos){};
 
-    ~PLSMessage(){};
+    ~PLSMessage() override= default;
 
-    virtual void handle(BaseSimulator::BlockCode *) override;
-    virtual Message *clone() const override { return new PLSMessage(*this); }
-    virtual string getName() const override {
+    void handle(BaseSimulator::BlockCode *) override;
+    Message *clone() const override { return new PLSMessage(*this); }
+    string getName() const override {
         return "PLSMessage{" + srcPos.to_string() + ", " + destPos.to_string() + "}";
     }
 };
@@ -78,11 +78,11 @@ class GLOMessage : public HandleableMessage {
     GLOMessage(Cell3DPosition _srcPos)
         : HandleableMessage(), srcPos(_srcPos){};
 
-    ~GLOMessage(){};
+    ~GLOMessage() override = default;;
 
-    virtual void handle(BaseSimulator::BlockCode *) override;
-    virtual Message *clone() const override { return new GLOMessage(*this); }
-    virtual string getName() const override {
+    void handle(BaseSimulator::BlockCode *) override;
+    Message *clone() const override { return new GLOMessage(*this); }
+    string getName() const override {
         return "GLOMessage{" + srcPos.to_string() + "}";
     }
 };
@@ -94,8 +94,8 @@ class FTRMessage : public HandleableMessage {
 
     ~FTRMessage(){};
 
-    virtual void handle(BaseSimulator::BlockCode *) override;
-    virtual Message *clone() const override { return new FTRMessage(*this); }
-    virtual string getName() const override { return "FTRMessage{}"; }
+    void handle(BaseSimulator::BlockCode *) override;
+    Message *clone() const override { return new FTRMessage(*this); }
+    string getName() const override { return "FTRMessage{}"; }
 };
 #endif

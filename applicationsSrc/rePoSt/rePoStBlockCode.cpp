@@ -181,18 +181,20 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
         (shapeState == FRONTBACK) ? coordinatorPosition = seedPosition + Cell3DPosition(1, 0, 1)
                                   : coordinatorPosition = seedPosition + Cell3DPosition(1, -1, 1);
     }
-    RePoStBlockCode* coordinator = static_cast<RePoStBlockCode*>(
+    auto* coordinator = dynamic_cast<RePoStBlockCode*>(
         BaseSimulator::getWorld()->getBlockByPosition(coordinatorPosition)->blockCode);
     coordinator->isCoordinator = true;
     if (isSource) {
-        if(mustFillMMPos(outPosition)) {
-            coordinator->operation = new Dismantle_Operation(direction, shapeState, getPreviousOpDir(),
-                                                         MMPosition.pt[2], true);
+        if (mustFillMMPos(outPosition)) {
+            coordinator->operation = new Dismantle_Operation(direction, shapeState,
+                                                             getPreviousOpDir(),
+                                                             MMPosition.pt[2], true);
         } else {
-            coordinator->operation = new Dismantle_Operation(direction, shapeState, getPreviousOpDir(),
-                                                         MMPosition.pt[2], false);
+            coordinator->operation = new Dismantle_Operation(direction, shapeState,
+                                                             getPreviousOpDir(),
+                                                             MMPosition.pt[2], false);
         }
-        
+
     } else if (isDestination) {
         if(destinationOut == MMPosition) {
             coordinator->operation = new Operation();
@@ -201,8 +203,8 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
             return;
         }
         bool comingFromBack =
-            (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and
-             shapeState == BACKFRONT);
+                (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and
+                 shapeState == BACKFRONT);
         if (isFilledInTarget(outPosition)) {
             coordinator->operation = new Fill_Operation(direction, shapeState, getPreviousOpDir(),
                                                         comingFromBack, MMPosition.pt[2]);
@@ -431,7 +433,7 @@ void RePoStBlockCode::probeGreenLight() {
     notFindingPivot = false;
     // VS_ASSERT(pivot);
     console << "pivot: " << pivot->position << "\n";
-    vector<Catoms3DBlock*> latchingPoints = findNextLatchingPoints(targetPosition, pivot->position);
+    vector<Catoms3DBlock*> latchingPoints = findNextProbingPoints(targetPosition, pivot->position);
     console << "latchingPoints: ";
     for(auto lp: latchingPoints) {
         console << '(' << lp->position << ") ";
@@ -540,304 +542,22 @@ Direction RePoStBlockCode::getNextOpDir() {
     return nextNextSeed->getPreviousOpDir();
 }
 
-vector<Catoms3DBlock*> RePoStBlockCode::findNextLatchingPoints(const Cell3DPosition& targetPos,
-                                                               const Cell3DPosition& pivotPos) {
-    vector<Catoms3DBlock*> latchingPoints;
-    for (auto lp : lattice->getActiveNeighborCells(targetPos)) {
-        RePoStBlockCode& rlp = *static_cast<RePoStBlockCode*>(lattice->getBlock(lp)->blockCode);
+vector<Catoms3DBlock *> RePoStBlockCode::findNextProbingPoints(const Cell3DPosition &targetPos,
+                                                               const Cell3DPosition &pivotPos) {
+    vector<Catoms3DBlock *> latchingPoints;
+    for (auto lp: lattice->getActiveNeighborCells(targetPos)) {
+        RePoStBlockCode &rlp = *static_cast<RePoStBlockCode *>(lattice->getBlock(lp)->blockCode);
         if (rlp.operation) {
             if (rlp.operation->isDismantle() and rlp.movingState == WAITING) {
                 continue;
             }
         }
         if (lp != pivotPos and lp != module->position and not rlp.rotating) {
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(lattice->getBlock(lp)));
+            latchingPoints.push_back(static_cast<Catoms3DBlock *>(lattice->getBlock(lp)));
         }
     }
-    if (targetPos - seedPosition == Cell3DPosition(-2, 1, 2)) {
-        if (lattice->cellHasBlock(seedPosition + Cell3DPosition(-3, 0, 2)) and
-            operation->isTransfer() and operation->getDirection() == Direction::LEFT) {
-            // Avoid blocking when passing the bridge if the next operation direction is back
-            RePoStBlockCode& rlp = *static_cast<RePoStBlockCode*>(
-                lattice->getBlock(seedPosition + Cell3DPosition(-3, 0, 2))->blockCode);
-            if (rlp.movingState == WAITING) {
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(seedPosition + Cell3DPosition(-3, 0, 2))));
-            }
-            return latchingPoints;
-        }
-        if (lattice->cellHasBlock(seedPosition + Cell3DPosition(-4, 1, 2))) {
-        }
-    }
+    operation->updateProbingPoints(this, latchingPoints, targetPos);
 
-    /* ------------------ Avoid blocking when coming from back ------------------ */
-    if (operation->getDirection() == BACK and shapeState == BACKFRONT) {
-        if (relativePos() == Cell3DPosition(0, 2, 2) and
-            lattice->cellHasBlock(module->position + Cell3DPosition(1, 1, -1))) {
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(module->position + Cell3DPosition(1, 1, -1))));
-        }
-        if (relativePos() == Cell3DPosition(0, 2, 1) and operation->isTransfer()) {
-            latchingPoints.clear();
-        }
-        if (relativePos() == Cell3DPosition(-1, 3, 3)) {
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(module->position + Cell3DPosition(2, 0, -2))));
-        }
-    }
-    /* -------------------------------------------------------------------------- */
-    /* ------- Avoid deadlock when transfering left and coming from below ------- */
-
-    if (operation->isTransfer() and operation->getDirection() == Direction::LEFT) {
-        if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(0, -1, 1)) {
-            // BACKFRONG
-            latchingPoints.clear();
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(lattice->getBlock(seedPosition)));
-            if (lattice->cellHasBlock(seedPosition.offsetY(-1))) {
-                latchingPoints.push_back(
-                    static_cast<Catoms3DBlock*>(lattice->getBlock(seedPosition.offsetY(-1))));
-            }
-        } else if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(0, 0, 1)) {
-            // FRONTBACK
-            latchingPoints.clear();
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(lattice->getBlock(seedPosition)));
-            if (lattice->cellHasBlock(seedPosition.offsetY(1))) {
-                latchingPoints.push_back(
-                    static_cast<Catoms3DBlock*>(lattice->getBlock(seedPosition.offsetY(1))));
-            }
-        }
-    }
-    /* -------------------------------------------------------------------------- */
-
-    /* ------ Avoid blocking when FB dismantling left then transfering down ----- */
-    if (operation->isDismantle() and operation->getDirection() == Direction::LEFT) {
-        if (targetPos - seedPosition == Cell3DPosition(-1, 0, 2) and
-            lattice->cellHasBlock(seedPosition + Cell3DPosition(-2, 0, 1))) {
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(seedPosition + Cell3DPosition(-2, 0, 1))));
-        }
-    }
-    /* -------------------------------------------------------------------------- */
-
-    /* ------------------ Avoid blocking when transfering down ------------------ */
-    if (operation->isTransfer() and operation->getDirection() == Direction::DOWN) {
-        // FRONTBACK
-        if (operation->getMMShape() == FRONTBACK) {
-            if (relativePos() == Cell3DPosition(1, 0, 0)) {
-                // Zeven
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(module->position + Cell3DPosition(1, 2, -2))));
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(module->position + Cell3DPosition(0, 1, -3))));
-            } else if (relativePos() == Cell3DPosition(1, -1, 0)) {
-                // Zodd
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(module->position + Cell3DPosition(1, 1, -2))));
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(module->position + Cell3DPosition(0, 0, -3))));
-            }
-        } else {  // operation.shape = BACKFRONT
-            if (relativePos() == Cell3DPosition(1, 0, 0)) {
-                // Zeven
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(module->position + Cell3DPosition(1, -2, -2))));
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(module->position + Cell3DPosition(0, -2, -3))));
-            } else if (relativePos() == Cell3DPosition(1, 1, 0)) {
-                // Zodd
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(module->position + Cell3DPosition(1, -1, -2))));
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(module->position + Cell3DPosition(0, -1, -3))));
-            }
-        }
-    }
-    /* -------------------------------------------------------------------------- */
-
-    /* ---------- Avoid deadlock when transfering down then going back ---------- */
-    if (operation->isTransfer() and operation->getDirection() == Direction::BACK) {
-        if (not static_cast<Transfer_Operation*>(operation)->isComingFromBack() and
-            operation->getMMShape() == FRONTBACK) {
-            if (operation->isZeven() and mvt_it > 5 and
-                (*operation->localRules)[mvt_it].currentPosition == Cell3DPosition(1, 0, 2)) {
-                latchingPoints.clear();
-                latchingPoints.push_back(
-                    static_cast<Catoms3DBlock*>(lattice->getBlock(module->position.offsetY(2))));
-            } else if (not operation->isZeven() and mvt_it > 5 and
-                       (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, 0, 2)) {
-                latchingPoints.clear();
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(seedPosition + Cell3DPosition(1, 2, 2))));
-            } else if (mvt_it == 2) {
-                latchingPoints.clear();
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(seedPosition + Cell3DPosition(1, 1, 2))));
-            }
-        }
-    }
-    /* -------------------------------------------------------------------------- */
-
-    /* ------------------ Avoid blocking when transfering right ----------------- */
-    if (operation->isTransfer() and operation->getDirection() == Direction::RIGHT) {
-        if (((relativePos() == Cell3DPosition(2, 0, 2) or
-              relativePos() == Cell3DPosition(3, 0, 2)) and
-             operation->getMMShape() == BACKFRONT and mvt_it > 3 and operation->isZeven() and
-             getNextOpDir() != Direction::DOWN) or
-            ((relativePos() == Cell3DPosition(2, 1, 2) or
-              relativePos() == Cell3DPosition(3, 0, 1)) and
-             operation->getMMShape() == BACKFRONT and mvt_it > 4 and not operation->isZeven() and
-             getNextOpDir() != Direction::DOWN)) {
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(seedPosition + Cell3DPosition(3, -1, 1))));
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(seedPosition + Cell3DPosition(4, 0, 0))));
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(seedPosition + Cell3DPosition(5, 0, 0))));
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(seedPosition + Cell3DPosition(5, 0, 1))));
-            if (lattice->cellHasBlock(seedPosition + Cell3DPosition(5, 1, 2)))
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(seedPosition + Cell3DPosition(5, 1, 2))));
-            if (lattice->cellHasBlock(seedPosition + Cell3DPosition(5, 2, 2)))
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(seedPosition + Cell3DPosition(5, 2, 2))));
-        }
-
-        if (relativePos() == Cell3DPosition(1, 0, 1) and mvt_it >= 7 and
-            operation->getMMShape() == BACKFRONT and operation->isZeven()) {
-            // BF
-            latchingPoints.clear();
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(seedPosition + Cell3DPosition(2, -1, 2))));
-            if (lattice->cellHasBlock(seedPosition + Cell3DPosition(3, 0, 2)))
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(seedPosition + Cell3DPosition(3, 0, 2))));
-        }
-
-        if (relativePos() == Cell3DPosition(1, -1, 1) and mvt_it >= 7 and
-            operation->getMMShape() == FRONTBACK) {
-            // FB
-            latchingPoints.clear();
-            latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                lattice->getBlock(seedPosition + Cell3DPosition(2, 1, 2))));
-            if (lattice->cellHasBlock(seedPosition + Cell3DPosition(3, 0, 2)))
-                latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                    lattice->getBlock(seedPosition + Cell3DPosition(3, 0, 2))));
-        }
-    }
-
-    /* -------------------------------------------------------------------------- */
-
-    if (operation->isBuild()) {
-        switch (operation->getDirection()) {
-            case Direction::UP: {
-                if (operation->getMMShape() == FRONTBACK) {
-                    if (relativePos() == Cell3DPosition(1, -1, 3)) {
-                        latchingPoints.clear();
-                    }
-                }
-            } break;
-
-            default:
-                break;
-        }
-    }
-
-    if (operation->isTransfer()) {
-        switch (operation->getDirection()) {
-            case Direction::FRONT: {
-                if (operation->getMMShape() == FRONTBACK) {
-                    if (relativePos() == Cell3DPosition(-1, -4, 3)) {
-                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                            lattice->getBlock(module->position + Cell3DPosition(2, 0, -2))));
-                    }
-                } else {  // BackFront
-                    if (/*relativePos() == Cell3DPosition(1,0,2) and*/ lattice->cellHasBlock(
-                            seedPosition + Cell3DPosition(1, -2, 2)) and
-                        relativePos().pt[1] > -2) {
-                        latchingPoints.clear();
-                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                            lattice->getBlock(seedPosition + Cell3DPosition(1, -2, 2))));
-                    }
-                    if (relativePos() == Cell3DPosition(0, -2, 2)) {
-                        latchingPoints.clear();
-                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                            lattice->getBlock(seedPosition + Cell3DPosition(1, -3, 1))));
-                    }
-                }
-            } break;
-
-            case Direction::BACK: {
-                if (operation->getMMShape() == BACKFRONT and
-                    operation->getPrevOpDirection() != Direction::BACK and
-                    (relativePos() == Cell3DPosition(1, 1, 2) or
-                     relativePos() == Cell3DPosition(0, 2, 2))) {
-                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                        lattice->getBlock(seedPosition + Cell3DPosition(1, 3, 0))));
-                    latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                        lattice->getBlock(seedPosition + Cell3DPosition(1, 3, 1))));
-                }
-            } break;
-
-            case Direction::LEFT: {
-                if (operation->getMMShape() == FRONTBACK and operation->isZeven() and
-                    static_cast<Transfer_Operation*>(operation)->getNextOpDir() ==
-                        Direction::DOWN) {
-                    if (relativePos() == Cell3DPosition(1, -1, 1)) {
-                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                            lattice->getBlock(seedPosition + Cell3DPosition(-1, -1, 1))));
-                    }
-                }
-                if(relativePos() == Cell3DPosition(1,-1,1) and operation->getPrevOpDirection() == Direction::DOWN) {
-                    latchingPoints.clear();
-                    return latchingPoints;
-                }
-            } break;
-
-            default:
-                break;
-        }
-    }
-
-    if (operation->isFill()) {
-        switch (operation->getDirection()) {
-            case Direction::LEFT: {
-                if (relativePos() == Cell3DPosition(1, -1, 1) or
-                    relativePos() == Cell3DPosition(1, 0, 1)) {
-                    latchingPoints.clear();
-                }
-                if (operation->getMMShape() == BACKFRONT and operation->isZeven() and
-                    mvt_it >= 39) {
-                    latchingPoints.clear();
-                }
-            } break;
-
-            case Direction::BACK: {
-                if (operation->getMMShape() == BACKFRONT and
-                    operation->getPrevOpDirection() != Direction::BACK) {
-                    if (relativePos() == Cell3DPosition(0, 1, 2) and mvt_it >= 34) {
-                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                            lattice->getBlock(seedPosition + Cell3DPosition(0, 3, 0))));
-                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                            lattice->getBlock(seedPosition + Cell3DPosition(1, 3, 0))));
-                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
-                            lattice->getBlock(seedPosition + Cell3DPosition(1, 3, 1))));
-                        return latchingPoints;
-                    }
-                    if (relativePos().pt[1] >= 3) {
-                        latchingPoints.clear();
-                        return latchingPoints;
-                    }
-                }
-                if (operation->getMMShape() == FRONTBACK and
-                    relativePos() == Cell3DPosition(1, 3, 2) and mvt_it >= 23) {
-                    // Avoid deadlock when the MM on top is being filled too
-                    latchingPoints.clear();
-                    return latchingPoints;
-                }
-            } break;
-        }
-    }
     return latchingPoints;
 }
 
@@ -975,7 +695,7 @@ void RePoStBlockCode::updateState() {
    
     mvt_it = 0;
     isCoordinator = false;
-    module->setColor(GREY);
+    module->setColor(BLUE);
     if(not greenLightIsOn) {
         setGreenLight(true);
     }
@@ -1588,24 +1308,21 @@ void RePoStBlockCode::switchModulesColors() {
     showSrcAndDst = true;
     // color sources in RED, destinations in GREEN in other MMs in White
     for (auto id_block : BaseSimulator::getWorld()->buildingBlocksMap) {
-        RePoStBlockCode* block = static_cast<RePoStBlockCode*>(id_block.second->blockCode);
-        if (static_cast<RePoStBlockCode*>(
+        auto block = dynamic_cast<RePoStBlockCode*>(id_block.second->blockCode);
+        if (dynamic_cast<RePoStBlockCode*>(
                 BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)
                 ->isSource) {
             block->module->setColor(RED);
         } else if (
-                   static_cast<RePoStBlockCode*>(BaseSimulator::getWorld()
+                   dynamic_cast<RePoStBlockCode*>(BaseSimulator::getWorld()
                                                      ->getBlockByPosition(block->seedPosition)
                                                      ->blockCode)
                        ->isDestination) {
             block->module->setColor(GREEN);
-        } else {
-            if (not static_cast<RePoStBlockCode*>(BaseSimulator::getWorld()
-                                                      ->getBlockByPosition(block->seedPosition)
-                                                      ->blockCode)
-                        ->isDestination)
-                block->getModule()->setColor(GREY);
-        }
+        } else if (not dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()
+                ->getBlockByPosition(block->seedPosition)
+                ->blockCode)
+                ->isDestination) { block->getModule()->setColor(GREY); }
     }
 }
 
