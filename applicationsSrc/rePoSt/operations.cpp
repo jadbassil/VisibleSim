@@ -510,10 +510,17 @@ void Fill_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Ca
             if (rbc.relativePos() == Cell3DPosition(1, -1, 1) or
                 rbc.relativePos() == Cell3DPosition(1, 0, 1)) {
                 latchingPoints.clear();
+                return;
             }
             if (mmShape == BACKFRONT and isZeven() and
                 rbc.mvt_it >= 39) {
                 latchingPoints.clear();
+                return;
+            }
+
+             if(mmShape == FRONTBACK and not isZeven() and rbc.mvt_it >= 37) {
+                latchingPoints.clear();
+                return;
             }
         }
             break;

@@ -25,9 +25,9 @@ class CoordinateMessage : public HandleableMessage {
 
     ~CoordinateMessage() override = default;
 
-    virtual void handle(BaseSimulator::BlockCode *) override;
-    virtual Message *clone() const override { return new CoordinateMessage(*this); }
-    virtual string getName() const override {
+    void handle(BaseSimulator::BlockCode *) override;
+    Message *clone() const override { return new CoordinateMessage(*this); }
+    string getName() const override {
         return "CoordinateMessage{" + position.to_string() + ", " +
                coordinatorPosition.to_string() + "}";
     }
@@ -46,7 +46,7 @@ class CoordinateBackMessage : public HandleableMessage {
 
     void handle(BaseSimulator::BlockCode *) override;
     Message *clone() const override { return new CoordinateBackMessage(*this); }
-    virtual string getName() const override {
+    string getName() const override {
         return "CoordinateBackMessage{" + to_string(steps) + ", " +
                coordinatorPosition.to_string() + "}";
     }

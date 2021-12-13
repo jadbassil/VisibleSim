@@ -179,8 +179,8 @@ void PLSMessage::handle(BaseSimulator::BlockCode *bc) {
                 return;
             }
         }
-        if (rbc.isCoordinator and rbc.operation->isFill() and Direction::LEFT and
-            rbc.operation->isZeven() and rbc.transferCount > 8 and
+        if (rbc.isCoordinator and rbc.operation->isFill() /*and
+            rbc.operation->isZeven()*/ and rbc.transferCount > 8 and
             rbc.operation->getPrevOpDirection() == Direction::LEFT and
             (rbc.module->getInterface(rbc.module->position.offsetY(1))->isConnected() or
              rbc.module->getInterface(rbc.module->position.offsetY(-1))->isConnected())) {
