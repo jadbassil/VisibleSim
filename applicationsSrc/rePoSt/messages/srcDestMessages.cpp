@@ -16,7 +16,7 @@ void GoMessage::handle(BaseSimulator::BlockCode *bc) {
     }
 
     if (rbc.parentPosition == Cell3DPosition(-1, -1, -1) and
-        rbc.module->blockId != RePoStBlockCode::GC->blockId) {
+            rbc.module->blockId != RePoStBlockCode::GC->blockId) {
         rbc.parentPosition = fromMMPosition;
         // distance = data->distance + 1;
         rbc.isPotentialSource() ? rbc.distanceSrc = distance + 1 : rbc.distanceSrc = distance;
@@ -24,9 +24,9 @@ void GoMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.nbWaitedAnswers = 0;
         for (auto p : rbc.getAdjacentMMSeeds()) {
             Cell3DPosition toMMPosition1 =
-                static_cast<RePoStBlockCode *>(
-                    BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
-                    ->MMPosition;
+                    dynamic_cast<RePoStBlockCode *>(
+                            BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
+                            ->MMPosition;
             if (toMMPosition1 == fromMMPosition) continue;
             rbc.sendHandleableMessage(new GoMessage(rbc.MMPosition, toMMPosition1, rbc.distanceSrc),
                                       rbc.interfaceTo(rbc.MMPosition, toMMPosition1), 100, 200);
@@ -34,14 +34,12 @@ void GoMessage::handle(BaseSimulator::BlockCode *bc) {
             rbc.nbWaitedAnswers++;
         }
         if (rbc.nbWaitedAnswers == 0) {
-            Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(rbc.parentPosition);
             rbc.sendHandleableMessage(new BackMessage(rbc.MMPosition, rbc.parentPosition, true),
                                       rbc.interfaceTo(rbc.MMPosition, rbc.parentPosition), 100,
                                       200);
         }
     } else if ((not rbc.isPotentialSource() and distance < rbc.distanceSrc) or
                (rbc.isPotentialSource() and distance + 1 < rbc.distanceSrc)) {
-        Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(rbc.parentPosition);
         rbc.sendHandleableMessage(new BackMessage(rbc.MMPosition, rbc.parentPosition, false),
                                   rbc.interfaceTo(rbc.MMPosition, rbc.parentPosition), 100, 200);
 
@@ -51,12 +49,13 @@ void GoMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.console << "distance2 : " << rbc.distanceSrc << "\n";
 
         rbc.nbWaitedAnswers = 0;
-        for (auto p : rbc.getAdjacentMMSeeds()) {
+        for (auto &p : rbc.getAdjacentMMSeeds()) {
             Cell3DPosition toMMPosition1 =
-                static_cast<RePoStBlockCode *>(
+                dynamic_cast<RePoStBlockCode *>(
                     BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
                     ->MMPosition;
             if (toMMPosition1 == fromMMPosition) continue;
+            if (not rbc.interfaceTo(rbc.MMPosition, toMMPosition1)->isConnected()) VS_ASSERT(false);
             rbc.sendHandleableMessage(new GoMessage(rbc.MMPosition, toMMPosition1, rbc.distanceSrc),
                                       rbc.interfaceTo(rbc.MMPosition, toMMPosition1), 100, 200);
             rbc.nbWaitedAnswers++;
@@ -139,6 +138,7 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
                 rbc.switchModulesColors();
             } else if (RePoStBlockCode::targetMap.size() < RePoStBlockCode::initialMap.size()) {
                 // choose one source and find non blocking destinations to be filled
+                cerr << "Nb of potential sources: " << RePoStBlockCode::NbOfPotentialSources << endl;
                 for (auto MMPos : RePoStBlockCode::initialMap) {
                     Cell3DPosition MMPos1 = Cell3DPosition(MMPos[0], MMPos[1], MMPos[2]);
                     if(not rbc.lattice->cellHasBlock((rbc.getSeedPositionFromMMPosition(MMPos1)))) continue;
@@ -185,7 +185,7 @@ void GoDstMessage::handle(BaseSimulator::BlockCode *bc) {
     rbc.console << "received: " << this->getName() << "\n";
     rbc.console << "distanceDst: " << rbc.distanceDst << "\n";
     //rbc.nbWaitedAnswers = 0;
-    if (rbc.fillingState == FULL) {
+    if (rbc.fillingState == FULL or distance >= RePoStBlockCode::NbOfPotentialSources) {
         // ignore Full MM while building the tree
         rbc.sendHandleableMessage(new BackDstMessage(rbc.MMPosition, fromMMPosition, false),
                                   rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);

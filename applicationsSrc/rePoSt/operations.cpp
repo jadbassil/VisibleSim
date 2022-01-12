@@ -129,7 +129,7 @@ Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape
 
     case Direction::UP: {
         if(mmShape == BACKFRONT) {
-            Zeven ? VS_ASSERT_MSG(false, "Not implemented"): 
+            Zeven ? localRules.reset(&LocalRules_BF_Dismantle_Up_Zeven):
                 localRules.reset(&LocalRules_BF_Dismantle_Up_Zodd);
         } else if(mmShape == FRONTBACK) {
              Zeven ? VS_ASSERT_MSG(false, "Not implemented"): 
@@ -143,11 +143,13 @@ Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape
                 Zeven ? VS_ASSERT_MSG(false, "Not implemented") :
                 localRules.reset(&LocalRules_BF_DismantleFilled_Down_Zodd);
             } else {
+                Zeven ? localRules.reset(&LocalRules_BF_Dismantle_Down_Zeven) :
                 VS_ASSERT_MSG(false, "Not implemented");
             }
         } else { //FRONTBACK
             if (filled) {
-                VS_ASSERT_MSG(false, "Not implemented");
+                Zeven ? localRules.reset(&LocalRules_FB_DismantleFilled_Down_Even):
+                VS_ASSERT_MSG(false, "Not implemented") ;
             } else {
                 Zeven ? localRules.reset(&LocalRules_FB_Dismantle_Down_Zeven):
                 localRules.reset(&LocalRules_FB_Dismantle_Down_Zodd);
@@ -155,9 +157,18 @@ Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape
         }
     } break;
 
+        case Direction::RIGHT: {
+            if (mmShape == BACKFRONT) {
+                Zeven ? localRules.reset(&LocalRules_BF_Dismantle_Right_Zeven) :
+                localRules.reset(&LocalRules_BF_Dismantle_Right_Zodd);
+            } else { //FRONTBACK
+                Zeven ? localRules.reset(&LocalRules_FB_Dismantle_Right_Zeven) :
+                localRules.reset(&LocalRules_FB_Dismantle_Right_Zodd);
+            }
+        } break;
 
-    default:
-        VS_ASSERT_MSG(false, "Not implemented");
+        default:
+            VS_ASSERT_MSG(false, "Not implemented");
     }
 }
 
@@ -206,6 +217,15 @@ void Dismantle_Operation::updateState(BaseSimulator::BlockCode* bc) {
             rbc->initialPosition = rbc->module->position - rbc->seedPosition;
         } break;
 
+        case Direction::RIGHT: {
+            (rbc->shapeState == FRONTBACK) ? rbc->shapeState = BACKFRONT
+                                           : rbc->shapeState = FRONTBACK;
+            Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::RIGHT,
+                                       rbc->seedPosition);
+            rbc->MMPosition = rbc->MMPosition.offsetX(1);
+            rbc->initialPosition = rbc->module->position - rbc->seedPosition;
+        } break;
+
         default:
             VS_ASSERT_MSG(false, "Not implemented");
     }
@@ -229,8 +249,17 @@ Dismantle_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Ca
                 latchingPoints.push_back(static_cast<Catoms3DBlock *>(
                                                  rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(-2, 0, 1))));
             }
-        }
-            break;
+        } break;
+
+        case Direction::DOWN: {
+            // Avoid blocing when BF dismantling down then going right via bridge; Zeven
+            if(targetPos - rbc.seedPosition == Cell3DPosition(1,-1,-1) and rbc.getNextOpDir() == Direction::RIGHT
+                and rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(2, -1, -3)) ) {
+                latchingPoints.push_back(static_cast<Catoms3DBlock *>(
+                                                 rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(2, -1, -3))));
+            }
+        } break;
+        default: return;
     }
 }
 
@@ -280,7 +309,7 @@ Fill_Operation::Fill_Operation (Direction _direction, MMShape _mmShape, Directio
         } break;
 
         default:
-           // VS_ASSERT_MSG(false, "Not implemented");
+            VS_ASSERT_MSG(false, "Not implemented");
             break;
     }
 }
@@ -1426,6 +1455,17 @@ Build_Operation::Build_Operation (Direction _direction, MMShape _mmShape, Direct
             }
         }
     } break;
+
+    case Direction::DOWN: {
+        if(mmShape == BACKFRONT) {
+            (Zeven) ?  localRules.reset(&LocalRules_BF_Build_Down_Zeven):
+                localRules.reset(&LocalRules_BF_Build_Down_Zodd);
+        } else { //FRONTBACK
+            VS_ASSERT_MSG(false, "Not implemented");
+        }
+
+    } break;
+
     case Direction::BACK: {
         if(mmShape == FRONTBACK) {
             localRules.reset(&LocalRules_FB_Build_Back);
@@ -1434,7 +1474,25 @@ Build_Operation::Build_Operation (Direction _direction, MMShape _mmShape, Direct
                 localRules.reset(&LocalRules_BF_Build_Back);
         }
     } break;
-    
+
+    case Direction::LEFT: {
+        if(mmShape == BACKFRONT) {
+            localRules.reset(&LocalRules_BF_Build_Left_Zodd);
+        } else {
+            localRules.reset(&LocalRules_FB_Build_Left_Zodd);
+        }
+    } break;
+
+    case Direction::RIGHT: {
+        if (mmShape == BACKFRONT) {
+           // Zeven ? VS_ASSERT_MSG(false, "Not implemented") :
+            localRules.reset(&LocalRules_BF_Build_Right_Zodd);
+        } else { //FRONTBACK
+            Zeven ? VS_ASSERT_MSG(false, "Not implemented") :
+            localRules.reset(&LocalRules_FB_Build_Right_Zodd);
+        }
+    } break;
+
     default:
         VS_ASSERT_MSG(false, "Not implemented");
     } 
@@ -1465,7 +1523,9 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
                         new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
                                               rbc->mvt_it),
                         rbc->module->getInterface(pos), 100, 200);
-        setMvtItToNextModule(bc);
+
+        if(rbc->transferCount < 10)
+            setMvtItToNextModule(bc);
 
         rbc->console << "mvt_it: " << rbc->mvt_it << "\n";
     } else if (rbc->isCoordinator and pos == (rbc->module->position + Cell3DPosition(0, 1, 1)) and
@@ -1479,6 +1539,7 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
                         new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
                                               rbc->mvt_it),
                         rbc->module->getInterface(pos), 100, 200);
+
         if(rbc->transferCount < 10)
             setMvtItToNextModule(bc);
     }
@@ -1517,6 +1578,13 @@ void Build_Operation::updateState(BaseSimulator::BlockCode* bc) {
         }
         
     } break;
+
+    case Direction::DOWN: {
+        Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::DOWN, rbc->seedPosition);
+        rbc->MMPosition = rbc->MMPosition.offsetZ(-1);
+        rbc->initialPosition = rbc->module->position - rbc->seedPosition;
+    } break;
+
      case Direction::BACK: {
         (rbc->shapeState == FRONTBACK) ? rbc->shapeState = BACKFRONT : rbc->shapeState = FRONTBACK;
         Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::BACK, rbc->seedPosition);
@@ -1524,6 +1592,21 @@ void Build_Operation::updateState(BaseSimulator::BlockCode* bc) {
         rbc->initialPosition = rbc->module->position - rbc->seedPosition;
      } break;   
 
+     case Direction::LEFT: {
+         (rbc->shapeState == FRONTBACK) ? rbc->shapeState = BACKFRONT : rbc->shapeState = FRONTBACK;
+         Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::LEFT,
+                                    rbc->seedPosition);
+         rbc->MMPosition = rbc->MMPosition.offsetX(-1);
+         rbc->initialPosition = rbc->module->position - rbc->seedPosition;
+     } break;
+
+    case Direction::RIGHT: {
+        (rbc->shapeState == FRONTBACK) ? rbc->shapeState = BACKFRONT : rbc->shapeState = FRONTBACK;
+        Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::RIGHT,
+                                   rbc->seedPosition);
+        rbc->MMPosition = rbc->MMPosition.offsetX(1);
+        rbc->initialPosition = rbc->module->position - rbc->seedPosition;
+    } break;
     
     default:
         break;
@@ -1532,9 +1615,23 @@ void Build_Operation::updateState(BaseSimulator::BlockCode* bc) {
 
 bool Build_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
     RePoStBlockCode* rbc = static_cast<RePoStBlockCode*>(bc);
-    if(direction == Direction::BACK and mmShape == FRONTBACK and rbc->mvt_it == 49) return true;
-    else if(isComingFromBack() and direction != Direction::UP and rbc->mvt_it >= 37 and rbc->mvt_it != localRules->size()-1) return true;
-    else if(direction == Direction::BACK and mmShape == BACKFRONT and rbc->mvt_it >= 42 and rbc->mvt_it != localRules->size()-1)  return true;
+    if (direction == Direction::BACK and mmShape == FRONTBACK and rbc->mvt_it == 49) return true;
+    else if (isComingFromBack() and direction != Direction::UP and rbc->mvt_it >= 37 and
+             rbc->mvt_it != localRules->size() - 1)
+        return true;
+    else if (direction == Direction::BACK and mmShape == BACKFRONT and rbc->mvt_it >= 42 and
+             rbc->mvt_it != localRules->size() - 1)
+        return true;
+    else if (direction == Direction::LEFT and mmShape == BACKFRONT and rbc->mvt_it >= 74 and
+             rbc->mvt_it != localRules->size() - 1)
+        return true;
+    else if (direction == Direction::LEFT and mmShape == FRONTBACK and rbc->mvt_it >= 83 and
+             rbc->mvt_it != localRules->size() - 1)
+        return true;
+    else if (direction == Direction::RIGHT and rbc->mvt_it >= 57 and
+             rbc->mvt_it != localRules->size() - 1)  // FRONTBACK & BACKFRONT
+        return true;
+
     return false;
 }
 

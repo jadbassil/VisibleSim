@@ -14,6 +14,7 @@ static const int IT_MODE_TRANSFERBACK_REACHCOORDINATOR = 2002;
 static const int IT_MODE_TERMINATION = 2003;
 static const int IT_MODE_STARTWAVE = 2004;
 static const int IT_MODE_NBMOVEMENTS = 2009;
+static const int IT_MODE_WAIT_MOVINGMODULES = 2011;
 
 static vector<Cell3DPosition> FrontBackMM = {Cell3DPosition(0, 0, 0),   Cell3DPosition(1, 0, 0),
                                              Cell3DPosition(1, 0, 1),   Cell3DPosition(2, 1, 2),
@@ -62,15 +63,12 @@ enum RenconfigurationStep {SRCDEST, MAXFLOW, TRANSPORT, DONE};
 
 
 static bool showSrcAndDst = false;
-
-
 static RenconfigurationStep reconfigurationStep;
-
 static int NbOfDestinationsReached = 0;
 static vector<Cell3DPosition> destinations;
-
 static int timeStep = 0;
 static int nbOfIterations = 0;
+
 
 class RePoStBlockCode : public Catoms3DBlockCode {
 private:
@@ -78,6 +76,7 @@ private:
 public:
     static Catoms3DBlock *GC;
     static int NbOfStreamlines;
+    static int NbOfPotentialSources;
     static vector<array<int, 4>> initialMap;
     static vector<array<int, 4>> targetMap;
 /* ----------------------- COORDINATION TREE VARIABLES ---------------------- */
@@ -90,8 +89,10 @@ public:
     bool isSource{false};
     bool isDestination{false};
     FillingState fillingState;
-
     static void reinitialize();
+    P2PNetworkInterface* unconnectedInterface{nullptr};
+    Cell3DPosition unreachableMMPosition;
+    Message *waitingMessage{nullptr};
 /* -------------------------------------------------------------------------- */
 
 /* -------------------------- TERMINATION DETECTION ------------------------- */
@@ -127,7 +128,7 @@ public:
     set<Cell3DPosition> awaitingSources;
     int prevTransferCount; //used in pls message handler on the bridge to avoid blocking when coming from right then building back
     bool initialized{false};
-    Operation *operation = NULL;
+    Operation *operation = nullptr;
     bool sendingCoordinateBack{false};
 /* -------------------------------------------------------------------------- */
 
@@ -158,21 +159,20 @@ public:
 
     Color initialColor;
 
-    RePoStBlockCode(Catoms3DBlock *host);
-    ~RePoStBlockCode(){
-    };
+    explicit RePoStBlockCode(Catoms3DBlock *host);
+    ~RePoStBlockCode() override = default;
 
     inline static Time getRoundDuration() {
         return (Catoms3DRotation::ANIMATION_DELAY * BaseSimulator::motionDelayMultiplier
                 + Catoms3DRotation::COM_DELAY) + 20128;// + (getScheduler()->now() / 1000);
     }
 
-    MMShape getShapeState() { return shapeState; };
-    void setShapeState(MMShape state) { shapeState = state; };
+    MMShape getShapeState() const { return shapeState; };
+    void setShapeState(MMShape _shapeState) { shapeState = _shapeState; };
     
 
-    Catoms3DBlock *getModule() { return module; };
-    Cell3DPosition getMMPosition() { return MMPosition; };
+    Catoms3DBlock *getModule() const { return module; };
+    Cell3DPosition getMMPosition() const { return MMPosition; };
 
     /**
      * @brief test if the MetaModule is a destination for Max-Flow
@@ -223,6 +223,9 @@ public:
      * 
      */
     void updateState();
+
+    static bool modulesAreMoving();
+
     bool isInMM(Cell3DPosition &neighborPosition);
     /**
      * @brief Used for routing. Finds the nearest active cell to targetPosition using network distance
@@ -237,10 +240,23 @@ public:
 
     Cell3DPosition getSeedPositionFromMMPosition(Cell3DPosition &MMPos);
 
-    P2PNetworkInterface *interfaceTo(Cell3DPosition &dstPos, P2PNetworkInterface *sender = nullptr);
+    /**
+     *  return the nearest interface to dstPos using a centralized shortest path computation
+     * @param dstPos the destination of the message
+     * @param except interface not considered
+     * @return nearest interface to dstPos
+     */
+    P2PNetworkInterface *interfaceTo(Cell3DPosition &dstPos, P2PNetworkInterface *except = nullptr);
 
+    /**
+     * Calculate the nearest interface to toMM seed using a predefined routing tables
+     * @param fromMM except Meta-Module
+     * @param toMM destination Meta-Module
+     * @param except interface not considered
+     * @return nearest interface to toMM seed
+     */
     P2PNetworkInterface *
-    interfaceTo(Cell3DPosition &fromMM, Cell3DPosition &toMM, P2PNetworkInterface *sender = nullptr);
+    interfaceTo(Cell3DPosition &fromMM, Cell3DPosition &toMM, P2PNetworkInterface *except = nullptr);
 
     void probeGreenLight();
     bool isAdjacentToPosition(const Cell3DPosition& pos) const;

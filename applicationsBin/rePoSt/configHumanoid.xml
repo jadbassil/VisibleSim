@@ -1,0 +1,221 @@
+<?xml version="1.0" standalone="no" ?>
+<visuals enableShadows="false" showGrid="false" windowSize="1800,1000"
+         backgroundColor="#ffffff" backgroundGradientColor="#eeeeee" />
+<world gridSize="100,80,100" windowSize="1800,900">
+    <camera target="99.7739,207.101,45.0787" directionSpherical="-1.35211,1.35211,380" angle="35.000000" near="75.000000" far="1500.000000" />
+    <spotlight target="200,200,100" directionSpherical="60,30,900" angle="33.690068" />
+
+    <blockList color="0,255,0" size="1,1,1" blockSize="40,40,41" >
+        <block position="21,9,30"/>
+
+    </blockList>
+
+    <MMBlockList>
+        <block position="0,0,0"/>
+        <block position="1,0,0"/>
+        <block position="2,0,0"/>
+        <block position="3,0,0"/>
+        <block position="4,0,0"/>
+        <block position="5,0,0"/>
+        <block position="6,0,0"/>
+
+        <block position="0,0,1"/>
+        <block position="1,0,1"/>
+        <block position="2,0,1"/>
+        <block position="3,0,1"/>
+        <block position="4,0,1"/>
+        <block position="5,0,1"/>
+        <block position="6,0,1"/>
+
+        <block position="0,0,2"/>
+        <block position="1,0,2"/>
+        <block position="2,0,2"/>
+        <block position="3,0,2"/>
+        <block position="4,0,2"/>
+        <block position="5,0,2"/>
+        <block position="6,0,2"/>
+
+        <block position="0,0,3"/>
+        <block position="1,0,3"/>
+        <block position="2,0,3"/>
+        <block position="3,0,3"/>
+        <block position="4,0,3"/>
+        <block position="5,0,3"/>
+        <block position="6,0,3"/>
+
+        <block position="0,0,4"/>
+        <block position="1,0,4"/>
+        <block position="2,0,4"/>
+        <block position="3,0,4"/>
+        <block position="4,0,4"/>
+        <block position="5,0,4"/>
+        <block position="6,0,4"/>
+
+        <block position="0,0,5"/>
+        <block position="1,0,5"/>
+        <block position="2,0,5"/>
+        <block position="3,0,5"/>
+        <block position="4,0,5"/>
+        <block position="5,0,5"/>
+        <block position="6,0,5"/>
+
+        <block position="0,0,6"/>
+        <block position="1,0,6"/>
+        <block position="2,0,6"/>
+        <block position="3,0,6"/>
+        <block position="4,0,6"/>
+        <block position="5,0,6"/>
+        <block position="6,0,6"/>
+
+        <block position="0,0,7"/>
+        <block position="1,0,7"/>
+        <block position="2,0,7"/>
+        <block position="3,0,7"/>
+        <block position="4,0,7"/>
+        <block position="5,0,7"/>
+        <block position="6,0,7"/>
+
+<!--        <block position="-1,0,-1"/>-->
+        <block position="0,0,-1"/>
+        <block position="1,0,-1"/>
+        <block position="2,0,-1"/>
+        <block position="3,0,-1"/>
+        <block position="4,0,-1"/>
+        <block position="5,0,-1"/>
+        <block position="6,0,-1"/>
+        <block position="7,0,-1"/>
+
+        <block position="7,0,0"/>
+        <block position="7,0,1"/>
+        <block position="7,0,2"/>
+        <block position="7,0,3"/>
+        <block position="7,0,4"/>
+        <block position="7,0,5"/>
+        <block position="7,0,6"/>
+        <block position="7,0,7"/>
+        <block position="7,0,8"/>
+
+        <block position="6,0,8"/>
+        <block position="5,0,8"/>
+        <block position="4,0,8"/>
+        <block position="3,0,8"/>
+        <block position="2,0,8"/>
+        <block position="1,0,8"/>
+        <block position="0,0,8"/>
+        <block position="-1,0,8"/>
+
+        <block position="-1,0,7"/>
+        <block position="-1,0,6"/>
+        <block position="-1,0,5"/>
+        <block position="-1,0,4"/>
+        <block position="-1,0,3"/>
+        <block position="-1,0,2"/>
+        <block position="-1,0,1"/>
+        <block position="-1,0,0"/>
+
+    </MMBlockList>
+
+    <MMTargetList>
+        <block position="0,0,0"/>
+        <block position="1,0,0"/>
+        <block position="2,0,0"/>
+        <block position="3,0,0"/>
+        <block position="4,0,0"/>
+        <block position="5,0,0"/>
+        <block position="6,0,0"/>
+
+        <block position="0,0,1"/>
+        <block position="1,0,1"/>
+        <block position="2,0,1"/>
+        <block position="3,0,1"/>
+        <block position="4,0,1"/>
+        <block position="5,0,1"/>
+        <block position="6,0,1"/>
+
+        <block position="0,0,2"/>
+        <block position="1,0,2"/>
+        <block position="2,0,2"/>
+        <block position="3,0,2"/>
+        <block position="4,0,2"/>
+        <block position="5,0,2"/>
+        <block position="6,0,2"/>
+
+        <block position="0,0,3"/>
+        <block position="1,0,3"/>
+        <block position="2,0,3"/>
+        <block position="3,0,3"/>
+        <block position="4,0,3"/>
+        <block position="5,0,3"/>
+        <block position="6,0,3"/>
+
+        <block position="0,0,4"/>
+        <block position="1,0,4"/>
+        <block position="2,0,4"/>
+        <block position="3,0,4"/>
+        <block position="4,0,4"/>
+        <block position="5,0,4"/>
+        <block position="6,0,4"/>
+
+        <block position="0,0,5"/>
+        <block position="1,0,5"/>
+        <block position="2,0,5"/>
+        <block position="3,0,5"/>
+        <block position="4,0,5"/>
+        <block position="5,0,5"/>
+        <block position="6,0,5"/>
+
+        <block position="0,0,6"/>
+        <block position="1,0,6"/>
+        <block position="2,0,6"/>
+        <block position="3,0,6"/>
+        <block position="4,0,6"/>
+        <block position="5,0,6"/>
+        <block position="6,0,6"/>
+
+        <block position="0,0,7"/>
+        <block position="1,0,7"/>
+        <block position="2,0,7"/>
+        <block position="3,0,7"/>
+        <block position="4,0,7"/>
+        <block position="5,0,7"/>
+        <block position="6,0,7"/>
+
+        <block position="1,0,-1"/>
+        <block position="1,0,-2"/>
+        <block position="1,0,-3"/>
+        <block position="1,0,-4"/>
+        <block position="1,0,-5"/>
+
+        <block position="5,0,-1"/>
+        <block position="5,0,-2"/>
+        <block position="5,0,-3"/>
+        <block position="5,0,-4"/>
+        <block position="5,0,-5"/>
+
+        <block position="-1,0,5"/>
+        <block position="-2,0,5"/>
+        <block position="-3,0,5"/>
+        <block position="-3,0,4"/>
+        <block position="-3,0,3"/>
+        <block position="-3,0,2"/>
+
+        <block position="7,0,5"/>
+        <block position="8,0,5"/>
+        <block position="9,0,5"/>
+        <block position="9,0,4"/>
+        <block position="9,0,3"/>
+        <block position="9,0,2"/>
+
+        <block position="3,0,8"/>
+        <block position="3,0,9"/>
+        <block position="2,0,10"/>
+        <block position="3,0,10"/>
+        <block position="4,0,10"/>
+        <block position="2,0,11"/>
+        <block position="3,0,11"/>
+        <block position="4,0,11"/>
+        <block position="2,0,12"/>
+        <block position="3,0,12"/>
+        <block position="4,0,12"/>
+    </MMTargetList>
+</world>

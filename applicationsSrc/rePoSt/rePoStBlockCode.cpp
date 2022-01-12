@@ -11,6 +11,7 @@ using namespace Catoms3D;
 
 Catoms3DBlock* RePoStBlockCode::GC = nullptr; 
 int RePoStBlockCode::NbOfStreamlines = 0;
+int RePoStBlockCode::NbOfPotentialSources = 0;
 
 vector<array<int, 4>> RePoStBlockCode::initialMap;
 vector<array<int, 4>> RePoStBlockCode::targetMap;
@@ -59,6 +60,7 @@ void RePoStBlockCode::startup() {
     initialized = true;
     if(isPotentialSource()) {
         isSource = true;
+        if(seedPosition == module->position) RePoStBlockCode::NbOfPotentialSources++;
         distanceSrc = 1;
     }
     if (isPotentialDestination()) {
@@ -94,8 +96,13 @@ void RePoStBlockCode::startup() {
 
 void RePoStBlockCode::reinitialize() {
     cerr << "REINITIALIZE!\n";
+    RePoStBlockCode::NbOfPotentialSources = 0;
+    RePoStBlockCode::NbOfStreamlines = 0;
+    NbOfDestinationsReached = 0;
+    destinations.clear();
     for (auto id_block : BaseSimulator::getWorld()->buildingBlocksMap) {
-        auto* block = static_cast<RePoStBlockCode*>(id_block.second->blockCode);
+        auto* block = dynamic_cast<RePoStBlockCode*>(id_block.second->blockCode);
+
         block->parentPosition = Cell3DPosition(-1, -1, -1);
         block->parentPositionDst = Cell3DPosition(-1, -1, -1);
         block->childrenPositionsDst.clear();
@@ -106,6 +113,7 @@ void RePoStBlockCode::reinitialize() {
         block->distanceDst = 0;
         if(block->isPotentialSource()) {
             block->isSource = true;
+            if(block->seedPosition == block->module->position) RePoStBlockCode::NbOfPotentialSources++;
             block->distanceSrc = 1;
         }
         if (block->isPotentialDestination()) {
@@ -127,9 +135,6 @@ void RePoStBlockCode::reinitialize() {
         block->isCoordinator = false;
         block->transferCount = 0;
         if(block->movingState != MOVING ) block->mvt_it = 0;
-        NbOfStreamlines = 0;
-        NbOfDestinationsReached = 0;
-        destinations.clear();
     }
 }
 
@@ -164,23 +169,30 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
     if (isSource) {
         if (direction == Direction::LEFT or (direction == Direction::BACK and shapeState == BACKFRONT)) {
             (shapeState == FRONTBACK)
-                ? coordinatorPosition = seedPosition + Cell3DPosition(-1, -1, 2)
-                : coordinatorPosition = seedPosition + Cell3DPosition(-1, 1, 2);
+            ? coordinatorPosition = seedPosition + Cell3DPosition(-1, -1, 2)
+            : coordinatorPosition = seedPosition + Cell3DPosition(-1, 1, 2);
         } else if (direction == Direction::BACK and shapeState == FRONTBACK) {
             coordinatorPosition = seedPosition + Cell3DPosition(2, 1, 2);
         } else if (direction == Direction::UP) {
             if (MMPosition.pt[2] % 2 != 0) {
                 coordinatorPosition = seedPosition + Cell3DPosition(1, 0, 4);
+            } else {
+                coordinatorPosition = seedPosition + Cell3DPosition(0, 0, 4);
             }
-        } else if(direction == Direction::DOWN){
+        } else if (direction == Direction::DOWN) {
             coordinatorPosition = seedPosition;
-        } else {
+        } else if (direction == Direction::RIGHT) {
+            (shapeState == FRONTBACK)
+            ? coordinatorPosition = seedPosition + Cell3DPosition(2,1,2)
+            : coordinatorPosition = seedPosition + Cell3DPosition(2, -1, 2);
+        }else {
             VS_ASSERT(false);
         }
     } else {
         (shapeState == FRONTBACK) ? coordinatorPosition = seedPosition + Cell3DPosition(1, 0, 1)
                                   : coordinatorPosition = seedPosition + Cell3DPosition(1, -1, 1);
     }
+    if(not lattice->cellHasBlock(coordinatorPosition)) VS_ASSERT(false);
     auto* coordinator = dynamic_cast<RePoStBlockCode*>(
         BaseSimulator::getWorld()->getBlockByPosition(coordinatorPosition)->blockCode);
     coordinator->isCoordinator = true;
@@ -262,7 +274,7 @@ void RePoStBlockCode::probeGreenLight() {
         (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, 0, 2);
     }
 
-    if (operation->getDirection() == Direction::DOWN) {
+    if (operation->getDirection() == Direction::DOWN and not operation->isBuild()) {
         if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, 1, -2)) {
             (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(2, 1, -2);
         }
@@ -290,7 +302,10 @@ void RePoStBlockCode::probeGreenLight() {
                 (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,0);
             } 
         } else if (not operation->isZeven() and operation->getMMShape() == BACKFRONT) {
-             if(mvt_it >= 13 and (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,-1,1)
+            if( (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,0,0)) {
+                (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,-1,1);
+            }
+            if(mvt_it >= 13 and (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,-1,1)
                 and not lattice->cellHasBlock(seedPosition + Cell3DPosition(5,0,0))) {
                 (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,0);
             } 
@@ -816,15 +831,15 @@ Cell3DPosition RePoStBlockCode::getSeedPositionFromMMPosition(Cell3DPosition &MM
     return seedPos;
 }
 
-P2PNetworkInterface * RePoStBlockCode::interfaceTo(Cell3DPosition& dstPos, P2PNetworkInterface *sender) {
-    if(sender)
-        return module->getInterface(nearestPositionTo(dstPos, sender));
+P2PNetworkInterface * RePoStBlockCode::interfaceTo(Cell3DPosition& dstPos, P2PNetworkInterface *except) {
+    if(except)
+        return module->getInterface(nearestPositionTo(dstPos, except));
     else 
         return module->getInterface(nearestPositionTo(dstPos));
 }
 
 P2PNetworkInterface* RePoStBlockCode::interfaceTo(Cell3DPosition& fromMM, Cell3DPosition& toMM,
-                                                  P2PNetworkInterface* sender) {
+                                                  P2PNetworkInterface* except) {
     Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(toMM);
     if (not lattice->cellHasBlock(toSeedPosition)) {
         cerr << toSeedPosition << "\n";
@@ -901,7 +916,12 @@ void RePoStBlockCode::onMotionEnd() {
                 NbOfDestinationsReached++;
                 cerr << NbOfDestinationsReached << " " << NbOfStreamlines << endl;
                 if(NbOfDestinationsReached == NbOfStreamlines) {
-
+                    if(modulesAreMoving()) {
+                        getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + getRoundDuration(), module,
+                                                 IT_MODE_WAIT_MOVINGMODULES));
+                        updateState();
+                        return;
+                    }
                     cerr << "REINITIALIZE" << endl;
                     reinitialize();
                     RePoStBlockCode* seedMM = static_cast<RePoStBlockCode*>(GC->blockCode);
@@ -944,27 +964,27 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
             HandleableMessage* msg;
             switch (message->type) {
                 case 1008:
-                    fromMMPosition = static_cast<BFSMessage*>(message.get())->getFromMMPosition();
+                    fromMMPosition = dynamic_cast<BFSMessage*>(message.get())->getFromMMPosition();
                     break;
                 case 1009:
                     fromMMPosition =
-                        static_cast<ConfirmEdgeMessage*>(message.get())->getFromMMPosition();
+                        dynamic_cast<ConfirmEdgeMessage*>(message.get())->getFromMMPosition();
                     break;
                 case 1010:
                     fromMMPosition =
-                        static_cast<ConfirmPathMessage*>(message.get())->getFromMMPosition();
+                        dynamic_cast<ConfirmPathMessage*>(message.get())->getFromMMPosition();
                     break;
                 case 1011:
                     fromMMPosition =
-                        static_cast<ConfirmStreamlineMessage*>(message.get())->getFromMMPosition();
+                        dynamic_cast<ConfirmStreamlineMessage*>(message.get())->getFromMMPosition();
                     break;
                 case 1012:
                     fromMMPosition =
-                        static_cast<AvailableMessage*>(message.get())->getFromMMPosition();
+                        dynamic_cast<AvailableMessage*>(message.get())->getFromMMPosition();
                     break;
                 case 1013:
                     fromMMPosition =
-                        static_cast<CutOffMessage*>(message.get())->getFromMMPosition();
+                        dynamic_cast<CutOffMessage*>(message.get())->getFromMMPosition();
                     break;
 
                 default: {
@@ -1111,7 +1131,6 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                 } break;
 
                 case IT_MODE_TRANSFERBACK: {
-                 
                     if(not awaitingCoordinator or not operation) return;
                     Cell3DPosition targetModule =
                         seedPosition + (*operation->localRules)[mvt_it].currentPosition;
@@ -1193,6 +1212,32 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                                                   module, IT_MODE_NBMOVEMENTS));
                     }
                 } break;
+
+                case IT_MODE_WAIT_MOVINGMODULES: {
+                    getScheduler()->trace("WAIT MOVING MODULES", module->blockId, RED);
+                    if(modulesAreMoving()) {
+                        getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + getRoundDuration(), module, IT_MODE_WAIT_MOVINGMODULES));
+                    } else {
+                        cerr << "REINITIALIZE" << endl;
+                        reinitialize();
+                        RePoStBlockCode* seedMM = static_cast<RePoStBlockCode*>(GC->blockCode);
+                        reconfigurationStep = SRCDEST;
+                        nbOfIterations++;
+                        seedMM->nbWaitedAnswers = 0;
+                        seedMM->distanceSrc = 0;
+                        for (auto p : seedMM->getAdjacentMMSeeds()) {
+                            Cell3DPosition toMMPosition =
+                                    static_cast<RePoStBlockCode*>(
+                                            BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
+                                            ->MMPosition;
+                            seedMM->sendHandleableMessage(new GoMessage(seedMM->MMPosition, toMMPosition, seedMM->distanceSrc),
+                                                          seedMM->interfaceTo(seedMM->MMPosition, toMMPosition), 100, 200);
+                            seedMM->nbWaitedAnswers++;
+                        }
+                    }
+                } break;
+
+                default: break;
             }
         }
     }
@@ -1291,8 +1336,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("FB_Dismantle_Down.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(10,6,10);
+    file.open("BF_Dismantle_Right.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(17,8,34);
     if(!file.is_open()) return; 
 
     if(c == 'o') {
@@ -1444,4 +1489,12 @@ string RePoStBlockCode::onInterfaceDraw() {
     // trace << "Nb of modules " << BaseSimulator::getWorld()->getNbBlocks();
     return trace.str();
 }
- 
+
+bool RePoStBlockCode::modulesAreMoving() {
+    for(auto &id_block: BaseSimulator::getWorld()->buildingBlocksMap) {
+        auto* block = dynamic_cast<RePoStBlockCode*>(id_block.second->blockCode);
+        if(block->movingState != IN_POSITION)
+            return true;
+    }
+    return false;
+}
