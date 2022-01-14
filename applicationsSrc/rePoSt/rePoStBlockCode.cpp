@@ -12,7 +12,7 @@ using namespace Catoms3D;
 Catoms3DBlock* RePoStBlockCode::GC = nullptr; 
 int RePoStBlockCode::NbOfStreamlines = 0;
 int RePoStBlockCode::NbOfPotentialSources = 0;
-
+vector<Cell3DPosition> RePoStBlockCode::destinations;
 vector<array<int, 4>> RePoStBlockCode::initialMap;
 vector<array<int, 4>> RePoStBlockCode::targetMap;
 
@@ -626,9 +626,11 @@ bool RePoStBlockCode::isPotentialDestination() {
         if (inTargetShape(adjPos) and not inInitialShape(adjPos) and
             not lattice->cellHasBlock(getSeedPositionFromMMPosition(adjPos))) {
             if (find(destinations.begin(), destinations.end(), adjPos) != destinations.end()) {
+                 for(auto &c: destinations) cerr << c << endl;
                 continue;
             }
             destinationOut = adjPos;
+            if(module->position == seedPosition) destinations.push_back(destinationOut);
             return true;
         }
     }
@@ -1043,11 +1045,11 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
             /**Special logic when the end position of previous transfer back with FB shape operation is (0,1,1) relative to the coordinator
              Specify if the module must move to the starting position if next operation is not transfer back BF **/
             if (isCoordinator and pos == module->position + Cell3DPosition(0, 1, 1)) {
-                if ( (operation->isTransfer() or operation->isFill()) and operation->getDirection() == Direction::UP and
-                     operation->getPrevOpDirection() == Direction::BACK /*or
-                    (operation->isBuild() and operation->getDirection() == Direction::BACK and
-                     operation->getMMShape() == BACKFRONT and not
-                        static_cast<Build_Operation*>(operation)->isComingFromBack())*/) {
+                if ( ((operation->isTransfer() or operation->isFill()) and operation->getDirection() == Direction::UP  and
+                     operation->getPrevOpDirection() == Direction::BACK) or
+                    (operation->isBuild() and operation->getDirection() == Direction::RIGHT and
+                     operation->getMMShape() == BACKFRONT and
+                        static_cast<Build_Operation*>(operation)->isComingFromBack())) {
                     if (posBlock->module->canMoveTo(module->position.offsetY(1)) and not posBlock->sendingCoordinateBack) {
                         console << "move pos BF\n";
                         posBlock->module->moveTo(module->position.offsetY(1));
@@ -1336,8 +1338,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("BF_Dismantle_Right.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(17,8,34);
+    file.open("BF_Build_Right.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(8,17,28);
     if(!file.is_open()) return; 
 
     if(c == 'o') {

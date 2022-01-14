@@ -120,6 +120,7 @@ void CoordinateBackMessage::handle(BaseSimulator::BlockCode *bc) {
 }
 
 void PLSMessage::handle(BaseSimulator::BlockCode *bc) {
+    //TODO: Clean
     RePoStBlockCode &rbc = *static_cast<RePoStBlockCode *>(bc);
     P2PNetworkInterface *sender = this->destinationInterface;
 
@@ -327,7 +328,7 @@ void FTRMessage::handle(BaseSimulator::BlockCode *bc) {
         return;
     }
     if (rbc.isCoordinator and rbc.getPreviousOpDir() == Direction::BACK and
-        rbc.operation->getDirection() == Direction::DOWN) {
+        rbc.operation->getDirection() == Direction::DOWN and not rbc.operation->isBuild()) {
         return;
     }
 

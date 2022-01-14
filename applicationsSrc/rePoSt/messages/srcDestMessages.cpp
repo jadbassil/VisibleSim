@@ -135,7 +135,7 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
                     }
                 }
                 rbc.start_wave();
-                rbc.switchModulesColors();
+                RePoStBlockCode::switchModulesColors();
             } else if (RePoStBlockCode::targetMap.size() < RePoStBlockCode::initialMap.size()) {
                 // choose one source and find non blocking destinations to be filled
                 cerr << "Nb of potential sources: " << RePoStBlockCode::NbOfPotentialSources << endl;

@@ -65,7 +65,7 @@ enum RenconfigurationStep {SRCDEST, MAXFLOW, TRANSPORT, DONE};
 static bool showSrcAndDst = false;
 static RenconfigurationStep reconfigurationStep;
 static int NbOfDestinationsReached = 0;
-static vector<Cell3DPosition> destinations;
+
 static int timeStep = 0;
 static int nbOfIterations = 0;
 
@@ -77,6 +77,7 @@ public:
     static Catoms3DBlock *GC;
     static int NbOfStreamlines;
     static int NbOfPotentialSources;
+    static vector<Cell3DPosition> destinations;
     static vector<array<int, 4>> initialMap;
     static vector<array<int, 4>> targetMap;
 /* ----------------------- COORDINATION TREE VARIABLES ---------------------- */
