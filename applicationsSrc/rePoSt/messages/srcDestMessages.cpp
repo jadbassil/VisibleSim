@@ -100,7 +100,7 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
             rbc.module->position == rbc.GC->position) {
             cerr << rbc.module->blockId << ": Coordination Tree is Built\n";
             reconfigurationStep = MAXFLOW;
-            destinations.clear();
+            RePoStBlockCode::destinations.clear();
             // Start MaxFlow
 
             // Choosing destinations
@@ -186,7 +186,7 @@ void GoDstMessage::handle(BaseSimulator::BlockCode *bc) {
     rbc.console << "distanceDst: " << rbc.distanceDst << "\n";
     //rbc.nbWaitedAnswers = 0;
     if (rbc.fillingState == FULL or distance >= RePoStBlockCode::NbOfPotentialSources) {
-        // ignore Full MM while building the tree
+        // ignore Full MM while building and bound the tree depth by the number of potential sources
         rbc.sendHandleableMessage(new BackDstMessage(rbc.MMPosition, fromMMPosition, false),
                                   rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
         return;
