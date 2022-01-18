@@ -84,9 +84,9 @@ private:
     /* data */
 public:
     bool filled;
-
+    bool fill;
     Dismantle_Operation(Direction _direction, MMShape _mmShape, Direction _prevOpDirection,
-                        int Z = 0, bool _filled = false);
+                        int Z = 0, bool _filled = false, bool _fill = false);
 
     ~Dismantle_Operation();
 

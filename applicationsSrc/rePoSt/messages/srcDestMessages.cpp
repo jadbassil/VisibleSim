@@ -107,7 +107,7 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
             cerr << "targetMap size: " <<  RePoStBlockCode::targetMap.size() << endl;
             cerr << "initialMap size: " << RePoStBlockCode::initialMap.size() << endl;
 
-            if (RePoStBlockCode::initialMap.size() == RePoStBlockCode::targetMap.size()) {
+            if (RePoStBlockCode::buildOpsExist) {
                 for (auto block : BaseSimulator::getWorld()->buildingBlocksMap) {
                     RePoStBlockCode *MMblock =
                         static_cast<RePoStBlockCode *>(block.second->blockCode);
@@ -136,7 +136,7 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
                 }
                 rbc.start_wave();
                 RePoStBlockCode::switchModulesColors();
-            } else if (RePoStBlockCode::targetMap.size() < RePoStBlockCode::initialMap.size()) {
+            } else /*if (RePoStBlockCode::targetMap.size() < RePoStBlockCode::initialMap.size()) */{
                 // choose one source and find non blocking destinations to be filled
                 cerr << "Nb of potential sources: " << RePoStBlockCode::NbOfPotentialSources << endl;
                 for (auto MMPos : RePoStBlockCode::initialMap) {
@@ -194,7 +194,7 @@ void GoDstMessage::handle(BaseSimulator::BlockCode *bc) {
     if (rbc.parentPositionDst == Cell3DPosition(-1, -1, -1)) {
         rbc.parentPositionDst = fromMMPosition;
         // distance = data->distance + 1;
-        rbc.isPotentialDestination() ? rbc.distanceDst = distance + 1 : rbc.distanceDst = distance;
+        rbc.isPotentialFillingDestination() ? rbc.distanceDst = distance + 1 : rbc.distanceDst = distance;
         rbc.console << "distance1: " << rbc.distanceDst << "\n";
         rbc.nbWaitedAnswers = 0;
         for (auto p: rbc.getAdjacentMMSeeds()) {
@@ -215,15 +215,15 @@ void GoDstMessage::handle(BaseSimulator::BlockCode *bc) {
                                       rbc.interfaceTo(rbc.MMPosition, rbc.parentPositionDst), 100,
                                       200);
         }
-    } else if ((not rbc.isPotentialDestination() and distance < rbc.distanceDst) or
-               (rbc.isPotentialDestination() and distance + 1 < rbc.distanceDst)) {
+    } else if ((not rbc.isDestination and distance < rbc.distanceDst) or
+               (rbc.isDestination and distance + 1 < rbc.distanceDst)) {
 
         rbc.sendHandleableMessage(new BackDstMessage(rbc.MMPosition, rbc.parentPositionDst, false),
                                   rbc.interfaceTo(rbc.MMPosition, rbc.parentPositionDst), 100, 200);
 
         rbc.parentPositionDst = fromMMPosition;
         rbc.childrenPositionsDst.clear();
-        rbc.isPotentialDestination() ? rbc.distanceDst = distance + 1 : rbc.distanceDst = distance;
+        rbc.isDestination ? rbc.distanceDst = distance + 1 : rbc.distanceDst = distance;
         rbc.console << "distance2 : " << rbc.distanceDst << "\n";
 
         rbc.nbWaitedAnswers = 0;
@@ -264,7 +264,7 @@ void BackDstMessage::handle(BaseSimulator::BlockCode *bc) {
         find(rbc.childrenPositionsDst.begin(), rbc.childrenPositionsDst.end(), fromMMPosition);
     if (isChild and it == rbc.childrenPositionsDst.end()) {
         rbc.childrenPositionsDst.push_back(fromMMPosition);
-        if(rbc.isPotentialDestination())
+        if(rbc.isDestination)
             rbc.isDestination = false;
     } else if (not isChild) {
         if (it != rbc.childrenPositionsDst.end()) {

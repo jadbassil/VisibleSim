@@ -80,6 +80,7 @@ public:
     static vector<Cell3DPosition> destinations;
     static vector<array<int, 4>> initialMap;
     static vector<array<int, 4>> targetMap;
+    static bool buildOpsExist;
 /* ----------------------- COORDINATION TREE VARIABLES ---------------------- */
     Cell3DPosition parentPosition = Cell3DPosition(-1,-1,-1);
     vector<Cell3DPosition> childrenPositions;
@@ -180,6 +181,7 @@ public:
      *  
      */
     bool isPotentialDestination();
+    bool isPotentialFillingDestination();
     /**
      * @brief test if the Meta-Module is a source for Max-Flow
      * 

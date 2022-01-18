@@ -15,6 +15,7 @@ int RePoStBlockCode::NbOfPotentialSources = 0;
 vector<Cell3DPosition> RePoStBlockCode::destinations;
 vector<array<int, 4>> RePoStBlockCode::initialMap;
 vector<array<int, 4>> RePoStBlockCode::targetMap;
+bool RePoStBlockCode::buildOpsExist = false;
 
 RePoStBlockCode::RePoStBlockCode(Catoms3DBlock *host) : Catoms3DBlockCode(host) {
     // @warning Do not remove block below, as a blockcode with a NULL host might be created
@@ -58,7 +59,7 @@ void RePoStBlockCode::startup() {
 
     initialColor = module->color;
     initialized = true;
-    if(isPotentialSource()) {
+/*    if(isPotentialSource()) {
         isSource = true;
         if(seedPosition == module->position) RePoStBlockCode::NbOfPotentialSources++;
         distanceSrc = 1;
@@ -66,12 +67,13 @@ void RePoStBlockCode::startup() {
     if (isPotentialDestination()) {
         isDestination = true;
         distanceDst = 1;
-    }
+    }*/
    
     VS_ASSERT(Init::initialMapBuildDone);
       if(RePoStBlockCode::targetMap.empty()) return;
 
     if(module->blockId == GC->blockId) {
+        reinitialize();
         reconfigurationStep = SRCDEST;
         nbOfIterations++;
         nbWaitedAnswers = 0;
@@ -90,14 +92,13 @@ void RePoStBlockCode::startup() {
             nbWaitedAnswers++;
         }
     }
-
-    
 }
 
 void RePoStBlockCode::reinitialize() {
     cerr << "REINITIALIZE!\n";
     RePoStBlockCode::NbOfPotentialSources = 0;
     RePoStBlockCode::NbOfStreamlines = 0;
+    RePoStBlockCode::buildOpsExist = false;
     NbOfDestinationsReached = 0;
     destinations.clear();
     for (auto id_block : BaseSimulator::getWorld()->buildingBlocksMap) {
@@ -120,6 +121,12 @@ void RePoStBlockCode::reinitialize() {
             block->isDestination = true;
             block->distanceDst = 1;
         }
+
+       /* if (block->isPotentialFillingDestination()) {
+            VS_ASSERT(false);
+            block->isDestination = true;
+            block->distanceDst = 1;
+        }*/
         block->mainPathState = block->aug1PathState = block->aug2PathState = NONE;
         block->mainPathIn = block->aug1PathIn = block->aug2PathIn = Cell3DPosition(-1, -1, -1);
         block->mainPathOut.clear();
@@ -136,6 +143,16 @@ void RePoStBlockCode::reinitialize() {
         block->transferCount = 0;
         if(block->movingState != MOVING ) block->mvt_it = 0;
     }
+    if(not RePoStBlockCode::buildOpsExist) {
+        for (auto id_block : BaseSimulator::getWorld()->buildingBlocksMap) {
+            auto *block = dynamic_cast<RePoStBlockCode *>(id_block.second->blockCode);
+            if (block->isPotentialFillingDestination()) {
+                block->isDestination = true;
+                block->distanceDst = 1;
+            }
+        }
+    }
+
 }
 
 
@@ -197,7 +214,13 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
         BaseSimulator::getWorld()->getBlockByPosition(coordinatorPosition)->blockCode);
     coordinator->isCoordinator = true;
     if (isSource) {
-        if (mustFillMMPos(outPosition)) {
+        bool filled, fill;
+        (fillingState == FULL) ? filled = true: filled = false;
+        mustFillMMPos(outPosition) ? fill = true: fill = false;
+        coordinator->operation = new Dismantle_Operation(direction, shapeState,
+                                                         getPreviousOpDir(),
+                                                         MMPosition.pt[2], filled, fill);
+   /*     if (mustFillMMPos(outPosition)) {
             coordinator->operation = new Dismantle_Operation(direction, shapeState,
                                                              getPreviousOpDir(),
                                                              MMPosition.pt[2], true);
@@ -205,7 +228,7 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
             coordinator->operation = new Dismantle_Operation(direction, shapeState,
                                                              getPreviousOpDir(),
                                                              MMPosition.pt[2], false);
-        }
+        }*/
 
     } else if (isDestination) {
         if(destinationOut == MMPosition) {
@@ -630,18 +653,30 @@ bool RePoStBlockCode::isPotentialDestination() {
                 continue;
             }
             destinationOut = adjPos;
+            RePoStBlockCode::buildOpsExist = true;
             if(module->position == seedPosition) destinations.push_back(destinationOut);
             return true;
         }
     }
 
-    if (RePoStBlockCode::targetMap.size() < RePoStBlockCode::initialMap.size() and inInitialShape(MMPosition) and
+/*    if (RePoStBlockCode::targetMap.size() < RePoStBlockCode::initialMap.size() and inInitialShape(MMPosition) and
         inTargetShape(MMPosition) and fillingState == EMPTY) {
+        destinationOut = MMPosition;
+        return true;
+    }*/
+    return false;
+}
+
+
+bool RePoStBlockCode::isPotentialFillingDestination() {
+    if (RePoStBlockCode::targetMap.size() < RePoStBlockCode::initialMap.size() and inInitialShape(MMPosition) and
+        inTargetShape(MMPosition) and fillingState == EMPTY and not RePoStBlockCode::buildOpsExist) {
         destinationOut = MMPosition;
         return true;
     }
     return false;
 }
+
 
 bool RePoStBlockCode::isPotentialSource() {
     if(inInitialShape(MMPosition) and not inTargetShape(MMPosition)) {
@@ -1338,8 +1373,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("BF_Build_Right.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(8,17,28);
+    file.open("BF_Dismantle_Left.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(49,9,30);
     if(!file.is_open()) return; 
 
     if(c == 'o') {

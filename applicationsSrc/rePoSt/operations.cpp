@@ -100,18 +100,25 @@ void Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Catoms3
  *************************  DISMANTLE OPERATION  ************************
  ***********************************************************************/
 
-Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape, Direction _prevOpDirection, int Z, bool _filled)
-    :Operation(_direction, _mmShape, _prevOpDirection, Z), filled(_filled)  {
+Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape, Direction _prevOpDirection, int Z, bool _filled, bool _fill)
+    :Operation(_direction, _mmShape, _prevOpDirection, Z), filled(_filled) , fill(_fill) {
     
     switch (direction) {
     case Direction::LEFT: {
         if(mmShape == BACKFRONT) {
             if(filled){
+                if(fill)  VS_ASSERT_MSG(false, "Not implemented");
                 Zeven ? localRules.reset(&LocalRules_BF_DismantleFilled_Left_Zeven)
                     : localRules.reset(&LocalRules_BF_DismantleFilled_Left_Zodd);
-            } else{
-                Zeven ? localRules.reset(&LocalRules_BF_Dismantle_Left):
-                    localRules.reset(&LocalRules_BF_Dismantle_Left_Zodd);
+            } else { // not filled
+                if(fill) {
+                    Zeven ? localRules.reset(&LocalRules_BF_DismantleAndFill_Left_Zeven) :
+                        VS_ASSERT_MSG(false, "Not implemented");;
+                } else {
+                    Zeven ? localRules.reset(&LocalRules_BF_Dismantle_Left) :
+                        localRules.reset(&LocalRules_BF_Dismantle_Left_Zodd);
+                }
+
             }
         } else if(mmShape == FRONTBACK) {
             Zeven ? localRules.reset(&LocalRules_FB_Dismantle_Left):
