@@ -16,40 +16,40 @@ static const int IT_MODE_STARTWAVE = 2004;
 static const int IT_MODE_NBMOVEMENTS = 2009;
 static const int IT_MODE_WAIT_MOVINGMODULES = 2011;
 
-static vector<Cell3DPosition> FrontBackMM = {Cell3DPosition(0, 0, 0),   Cell3DPosition(1, 0, 0),
+inline const vector<Cell3DPosition> FrontBackMM = {Cell3DPosition(0, 0, 0),   Cell3DPosition(1, 0, 0),
                                              Cell3DPosition(1, 0, 1),   Cell3DPosition(2, 1, 2),
                                              Cell3DPosition(1, 0, 3),   Cell3DPosition(1, 0, 4),
                                              Cell3DPosition(0, 0, 4),   Cell3DPosition(-1, -1, 3),
                                              Cell3DPosition(-1, -1, 2), Cell3DPosition(-1, -1, 1)};
 
-static vector<Cell3DPosition> BackFrontMM = {Cell3DPosition(0, 0, 0),  Cell3DPosition(1, 0, 0),
+const vector<Cell3DPosition> BackFrontMM = {Cell3DPosition(0, 0, 0),  Cell3DPosition(1, 0, 0),
                                              Cell3DPosition(1, -1, 1), Cell3DPosition(2, -1, 2),
                                              Cell3DPosition(1, -1, 3), Cell3DPosition(1, 0, 4),
                                              Cell3DPosition(0, 0, 4),  Cell3DPosition(-1, 0, 3),
                                              Cell3DPosition(-1, 1, 2), Cell3DPosition(-1, 0, 1)};
 
-static vector<Cell3DPosition> FillingPositions_FrontBack_Zodd = {
+const vector<Cell3DPosition> FillingPositions_FrontBack_Zodd = {
     Cell3DPosition(0, 1, 2),  Cell3DPosition(1, 1, 2), Cell3DPosition(-1, 1, 2),
     Cell3DPosition(-1, 0, 1), Cell3DPosition(0, 0, 1), Cell3DPosition(0, -1, 1),
     Cell3DPosition(1, -1, 1), Cell3DPosition(2, 0, 2), Cell3DPosition(1, -1, 3),
     Cell3DPosition(0, -1, 3)
 };
 
-static vector<Cell3DPosition> FillingPositions_BackFront_Zodd = {
+const vector<Cell3DPosition> FillingPositions_BackFront_Zodd = {
     Cell3DPosition(1, 1, 2),   Cell3DPosition(0, 1, 2),  Cell3DPosition(2, 0, 2),
     Cell3DPosition(1, 0, 1),   Cell3DPosition(0, 0, 1),  Cell3DPosition(0, -1, 1),
     Cell3DPosition(-1, -1, 1), Cell3DPosition(-1, 0, 2), Cell3DPosition(-1, -1, 3),
     Cell3DPosition(0, -1, 3),
 };
 
-static vector<Cell3DPosition> FillingPositions_FrontBack_Zeven = {
+const vector<Cell3DPosition> FillingPositions_FrontBack_Zeven = {
     Cell3DPosition(0, -1, 1),  Cell3DPosition(1, -1, 1), Cell3DPosition(0, -1, 2),
     Cell3DPosition(1, -1, 2), Cell3DPosition(2, -1, 2), Cell3DPosition(0, 0, 1),
     Cell3DPosition(-1, 0, 1), Cell3DPosition(-1, 0, 2), Cell3DPosition(-1, 0, 3),
     Cell3DPosition(0, 0, 3)
 };
 
-static vector<Cell3DPosition> FillingPositions_BackFront_Zeven = {
+const vector<Cell3DPosition> FillingPositions_BackFront_Zeven = {
     Cell3DPosition(-1, -1, 1),   Cell3DPosition(0, -1, 1),  Cell3DPosition(0, -1, 2),
     Cell3DPosition(1, -1, 2),   Cell3DPosition(-1, 0, 2),  Cell3DPosition(0, 0, 1),
     Cell3DPosition(1, 0, 1), Cell3DPosition(2, 0, 2), Cell3DPosition(1, 0, 3),
@@ -67,8 +67,6 @@ static RenconfigurationStep reconfigurationStep;
 static int NbOfDestinationsReached = 0;
 
 static int timeStep = 0;
-static int nbOfIterations = 0;
-
 
 class RePoStBlockCode : public Catoms3DBlockCode {
 private:
@@ -81,6 +79,7 @@ public:
     static vector<array<int, 4>> initialMap;
     static vector<array<int, 4>> targetMap;
     static bool buildOpsExist;
+    static int nbOfIterations;
 /* ----------------------- COORDINATION TREE VARIABLES ---------------------- */
     Cell3DPosition parentPosition = Cell3DPosition(-1,-1,-1);
     vector<Cell3DPosition> childrenPositions;

@@ -95,7 +95,7 @@ void BackTermMessage::handle(BaseSimulator::BlockCode *bc) {
 
                     if (end) {
                         reconfigurationStep = DONE;
-                        cout << "Nb of iterations: " << nbOfIterations - 1 << "\n";
+                        cout << "Nb of iterations: " << RePoStBlockCode::nbOfIterations - 1 << "\n";
                     }
                 } else {
                     rbc.start_wave();

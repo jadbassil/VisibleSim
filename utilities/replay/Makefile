@@ -16,7 +16,7 @@ SRCS = replay.cpp replayPlayer.cpp replayGlutContext.cpp replayWorld.cpp replayI
 OUT = replay
 #
 # MODULELIB is the library for your target module type: e.g., -lsimBlinkyBlocks
-MODULELIB = -lsimBlinkyBlocks -lsimSmartBlocks -lsimSlidingCubes -lsimCatoms2D -lsimCatoms3D -lsimOkteen -lsimDatoms -lsimNodes2D -lsimHexanodes
+MODULELIB = -lsimBlinkyBlocks -lsimSmartBlocks -lsimSlidingCubes -lsimCatoms2D -lsimCatoms3D -lsimDatoms -lsimNodes2D -lsimHexanodes
 #
 # CUSTOM_LIBS are the external dependencies of your blockcode, empty by default
 CUSTOM_LIBS =
@@ -40,7 +40,7 @@ ifeq ($(GLOBAL_LIBS), )
 ifeq ($(OS),Darwin)
 LIBS = -L./ -L../../simulatorCore/lib -L/usr/local/lib -lGLEW -lglut -framework GLUT -framework OpenGL -L/usr/X11/lib /usr/local/lib/libglut.dylib /usr/local/lib/libmuparser.dylib $(MODULELIB)
 else
-LIBS = -L./ -L../../simulatorCore/lib -L/usr/local/lib -L/opt/local/lib -L/usr/X11/lib -lglut -lGL -lGLU -lGLEW -lpthread -lm -ldl -lmuparser $(MODULELIB)
+LIBS = -L./ -L../../simulatorCore/lib $(MODULELIB) -L/usr/local/lib -L/opt/local/lib -L/usr/X11/lib -lglut -lGL -lGLU -lGLEW -lpthread -lm  -lmuparser  -ldl
 endif				#OS
 else
 LIBS = $(GLOBAL_LIBS) -L../../simulatorCore/lib

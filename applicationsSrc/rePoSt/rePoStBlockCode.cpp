@@ -16,6 +16,7 @@ vector<Cell3DPosition> RePoStBlockCode::destinations;
 vector<array<int, 4>> RePoStBlockCode::initialMap;
 vector<array<int, 4>> RePoStBlockCode::targetMap;
 bool RePoStBlockCode::buildOpsExist = false;
+int RePoStBlockCode::nbOfIterations = 0;
 
 RePoStBlockCode::RePoStBlockCode(Catoms3DBlock *host) : Catoms3DBlockCode(host) {
     // @warning Do not remove block below, as a blockcode with a NULL host might be created
@@ -178,11 +179,13 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
     Direction direction;
     Cell3DPosition directionVector = outPosition - MMPosition;
     if (directionVector.pt[0] == -1) direction = Direction::LEFT;
-    if (directionVector.pt[0] == 1) direction = Direction::RIGHT;
-    if (directionVector.pt[1] == -1) direction = Direction::FRONT;
-    if (directionVector.pt[1] == 1) direction = Direction::BACK;
-    if (directionVector.pt[2] == -1) direction = Direction::DOWN;
-    if (directionVector.pt[2] == 1) direction = Direction::UP;
+    else if (directionVector.pt[0] == 1) direction = Direction::RIGHT;
+    else if (directionVector.pt[1] == -1) direction = Direction::FRONT;
+    else if (directionVector.pt[1] == 1) direction = Direction::BACK;
+    else if (directionVector.pt[2] == -1) direction = Direction::DOWN;
+    else if (directionVector.pt[2] == 1) direction = Direction::UP;
+
+    //set operation's coordinator position
     if (isSource) {
         if (direction == Direction::LEFT or (direction == Direction::BACK and shapeState == BACKFRONT)) {
             (shapeState == FRONTBACK)
@@ -213,6 +216,11 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
     auto* coordinator = dynamic_cast<RePoStBlockCode*>(
         BaseSimulator::getWorld()->getBlockByPosition(coordinatorPosition)->blockCode);
     coordinator->isCoordinator = true;
+
+    bool comingFromBack =
+            (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and
+             shapeState == BACKFRONT);
+    // set coordinator's operation
     if (isSource) {
         bool filled, fill;
         (fillingState == FULL) ? filled = true: filled = false;
@@ -237,9 +245,7 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
             fillingState = FULL;
             return;
         }
-        bool comingFromBack =
-                (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and
-                 shapeState == BACKFRONT);
+
         if (isFilledInTarget(outPosition)) {
             coordinator->operation = new Fill_Operation(direction, shapeState, getPreviousOpDir(),
                                                         comingFromBack, MMPosition.pt[2]);
@@ -250,13 +256,11 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
 
     } else { //Transfer MM
         if(mustFillMMPos(MMPosition)) {
+            VS_ASSERT(false);
             coordinator->operation = new Operation();
             coordinator->isCoordinator = false;
             return;
         }
-        bool comingFromBack =
-            (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and
-             shapeState == BACKFRONT);
         if (mustFillMMPos(outPosition)) {
             //isDestination = true;
             switchModulesColors();
@@ -271,7 +275,7 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
 
 bool RePoStBlockCode::mustFillMMPos(Cell3DPosition &outPosition) {
     RePoStBlockCode* outSeed = 
-        static_cast<RePoStBlockCode*>(lattice->getBlock(getSeedPositionFromMMPosition(outPosition))->blockCode);
+        dynamic_cast<RePoStBlockCode*>(lattice->getBlock(getSeedPositionFromMMPosition(outPosition))->blockCode);
     if(outSeed->isDestination and outSeed->destinationOut == outPosition) {
         outSeed->fillingState = FULL;
         return true;
@@ -649,7 +653,7 @@ bool RePoStBlockCode::isPotentialDestination() {
         if (inTargetShape(adjPos) and not inInitialShape(adjPos) and
             not lattice->cellHasBlock(getSeedPositionFromMMPosition(adjPos))) {
             if (find(destinations.begin(), destinations.end(), adjPos) != destinations.end()) {
-                 for(auto &c: destinations) cerr << c << endl;
+                 //for(auto &c: destinations) cerr << c << endl;
                 continue;
             }
             destinationOut = adjPos;
@@ -669,8 +673,8 @@ bool RePoStBlockCode::isPotentialDestination() {
 
 
 bool RePoStBlockCode::isPotentialFillingDestination() {
-    if (RePoStBlockCode::targetMap.size() < RePoStBlockCode::initialMap.size() and inInitialShape(MMPosition) and
-        inTargetShape(MMPosition) and fillingState == EMPTY and not RePoStBlockCode::buildOpsExist) {
+    if (RePoStBlockCode::targetMap.size() < RePoStBlockCode::initialMap.size() and not isPotentialSource() and
+        fillingState == EMPTY and not RePoStBlockCode::buildOpsExist) {
         destinationOut = MMPosition;
         return true;
     }
@@ -959,16 +963,16 @@ void RePoStBlockCode::onMotionEnd() {
                         updateState();
                         return;
                     }
-                    cerr << "REINITIALIZE" << endl;
                     reinitialize();
-                    RePoStBlockCode* seedMM = static_cast<RePoStBlockCode*>(GC->blockCode);
+                    auto* seedMM = dynamic_cast<RePoStBlockCode*>(GC->blockCode);
                     reconfigurationStep = SRCDEST;
-                    nbOfIterations++;
+                    RePoStBlockCode::nbOfIterations++;
                     seedMM->nbWaitedAnswers = 0;
                     seedMM->distanceSrc = 0;
-                    for (auto p : seedMM->getAdjacentMMSeeds()) {
+                    cerr << "NbOfIterations: " << RePoStBlockCode::nbOfIterations << endl;
+                    for (auto &p : seedMM->getAdjacentMMSeeds()) {
                         Cell3DPosition toMMPosition =
-                            static_cast<RePoStBlockCode*>(
+                            dynamic_cast<RePoStBlockCode*>(
                                 BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode)
                                 ->MMPosition;
                         seedMM->sendHandleableMessage(new GoMessage(seedMM->MMPosition, toMMPosition, seedMM->distanceSrc),
@@ -1255,13 +1259,13 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                     if(modulesAreMoving()) {
                         getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + getRoundDuration(), module, IT_MODE_WAIT_MOVINGMODULES));
                     } else {
-                        cerr << "REINITIALIZE" << endl;
                         reinitialize();
                         RePoStBlockCode* seedMM = static_cast<RePoStBlockCode*>(GC->blockCode);
                         reconfigurationStep = SRCDEST;
-                        nbOfIterations++;
+                        RePoStBlockCode::nbOfIterations++;
                         seedMM->nbWaitedAnswers = 0;
                         seedMM->distanceSrc = 0;
+                        cerr << "NbOfIterations: " << RePoStBlockCode::nbOfIterations << endl;
                         for (auto p : seedMM->getAdjacentMMSeeds()) {
                             Cell3DPosition toMMPosition =
                                     static_cast<RePoStBlockCode*>(
@@ -1285,61 +1289,61 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
 void RePoStBlockCode::onBlockSelected() {
     // Debug stuff:
     cerr << endl << "--- PRINT MODULE " << *module << "---" << endl;
-    cerr << "isSeed: " << (seedPosition == module->position ? "true": "false") << endl;
+/*    cerr << "isSeed: " << (seedPosition == module->position ? "true": "false") << endl;
     cerr << "isCoordinator: " << (isCoordinator ? "true": "false") << endl;
     cerr << "coordinatorPosition: " << coordinatorPosition << endl;
     cerr << "ShapeState: " << shapeState << endl;
-    cerr << "FillingState: " << (fillingState == EMPTY ? "EMPTY": "FULL") << endl;
+    cerr << "FillingState: " << (fillingState == EMPTY ? "EMPTY": "FULL") << endl;*/
     cerr << "seedPosition: " << seedPosition << endl;
     cerr << "MMPostion: " << MMPosition << endl;
-    cerr << "CurrentPos: " << module->position - seedPosition << endl;
+/*    cerr << "CurrentPos: " << module->position - seedPosition << endl;
     cerr << "mvt_it: " << mvt_it << endl;
     cerr << "MovingState: " << movingState << endl;
-    cerr << "GreenLight: " << greenLightIsOn << endl;
+    cerr << "GreenLight: " << greenLightIsOn << endl;*/
     cerr << "isSource: " << isSource << endl;
     cerr << "isDestination: " << isDestination << endl;
-    cerr << "destinationOut: " << destinationOut << endl; 
+/*    cerr << "destinationOut: " << destinationOut << endl;
     cerr << "parentPosition: " << parentPosition << endl;
     cerr << "childrenPostions: ";
-    for(auto c: childrenPositions) cerr << c << "; ";
+    for(auto &c: childrenPositions) cerr << c << "; ";
     cerr << endl;
     cerr << "distanceDst: " << distanceDst << endl;
     cerr << "parentPositionDst: " << parentPositionDst << endl;
     cerr << "childrenPostionsDst: ";
-    for(auto c: childrenPositionsDst) cerr << c << "; ";
-    cerr << endl;
+    for(auto &c: childrenPositionsDst) cerr << c << "; ";
+    cerr << endl;*/
     cerr << "mainPathState: " << mainPathState << endl;
     // // cerr << "aug1PathState: " << aug1PathState << endl;
     // // cerr << "aug2PathState: " << aug2PathState << endl;
     cerr << "mainPathIn: " << mainPathIn << endl;
     cerr << "mainPathOut: ";
-    for(auto out: mainPathOut) cerr << out << " | "; 
+    for(auto &out: mainPathOut) cerr << out << " | ";
     cerr << endl;
     // if(isDestination) cerr << "destinationFor: " << destinationOut << endl;
     if(operation) {
         if(operation->isTransfer())
         cerr << "prevOpDir: " << operation->getPrevOpDirection() << endl;
     }
-    // cerr << endl;
-    // cerr << "aug1PathIn: " << aug1PathIn << endl;
-    // cerr << "aug1PathOut: ";
-    // for(auto out: aug1PathOut) cerr << out << " | ";
-    // cerr << endl;
-    // cerr << "aug2PathIn: " << aug2PathIn << endl;
-    // cerr << "aug2PathOut: ";
-    // for(auto out: aug2PathOut) cerr << out << " | ";
-    // cerr << endl;
-    // cerr << "mainPathsOld: ";
-    // for(auto old: mainPathsOld) cerr << old << " | ";
-    // cerr << endl;
-    // cerr << "aug1PathsOld: ";
-    // for(auto old: aug1PathsOld) cerr << old << " | ";
-    // cerr << endl;
-    // cerr << "aug2PathsOld: ";
-    // for(auto old: aug2PathsOld) cerr << old << " | ";
-    // cerr << endl;
-    // cerr << "deficit: " << deficit << endl;
-    // cerr << "state: " << state << endl;
+    cerr << endl;
+    cerr << "aug1PathIn: " << aug1PathIn << endl;
+    cerr << "aug1PathOut: ";
+    for(auto out: aug1PathOut) cerr << out << " | ";
+    cerr << endl;
+    cerr << "aug2PathIn: " << aug2PathIn << endl;
+    cerr << "aug2PathOut: ";
+    for(auto out: aug2PathOut) cerr << out << " | ";
+    cerr << endl;
+    cerr << "mainPathsOld: ";
+    for(auto old: mainPathsOld) cerr << old << " | ";
+    cerr << endl;
+    cerr << "aug1PathsOld: ";
+    for(auto old: aug1PathsOld) cerr << old << " | ";
+    cerr << endl;
+    cerr << "aug2PathsOld: ";
+    for(auto old: aug2PathsOld) cerr << old << " | ";
+    cerr << endl;
+    cerr << "deficit: " << deficit << endl;
+    cerr << "state: " << state << endl;
 }
 
 void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
@@ -1457,6 +1461,7 @@ bool RePoStBlockCode::parseUserCommandLineArgument(int &argc, char **argv[]) {
 void RePoStBlockCode::parseUserElements(TiXmlDocument *config) {
     TiXmlElement *worldElement = 
         config->RootElement()->NextSiblingElement();
+    if(worldElement == NULL) return;
     TiXmlElement *MMblocksElement = worldElement->FirstChildElement()->NextSiblingElement()->NextSiblingElement()->NextSiblingElement();
     TiXmlElement *blockElement = MMblocksElement->FirstChildElement();
     cerr << "Parsing MM positions\n";

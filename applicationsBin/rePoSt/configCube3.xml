@@ -1,0 +1,97 @@
+<?xml version="1.0" standalone="no" ?>
+<visuals enableShadows="false" showGrid="false" windowSize="1800,1000"
+         backgroundColor="#ffffff"  />
+<world gridSize="15,19,20" windowSize="1800,900">
+<camera target="99.7739,207.101,45.0787" directionSpherical="-1.35211,1.35211,380" angle="35.000000" near="75.000000" far="1500.000000" />
+<spotlight target="200,200,100" directionSpherical="60,30,900" angle="33.690068" />
+<blockList color="0,255,0" size="1,1,1" blockSize="40,40,41" >
+    <block position="2,6,4"/>
+</blockList>
+
+<MMBlockList>
+    <block position="0,0,0"/>
+    <block position="1,0,0"/>
+    <block position="2,0,0"/>
+    <block position="0,0,1"/>
+    <block position="1,0,1"/>
+    <block position="2,0,1"/>
+    <block position="0,0,2"/>
+    <block position="1,0,2"/>
+    <block position="2,0,2"/>
+
+
+    <block position="0,1,0"/>
+    <block position="1,1,0"/>
+    <block position="2,1,0"/>
+    <block position="0,1,1"/>
+    <block position="1,1,1"/>
+    <block position="2,1,1"/>
+    <block position="0,1,2"/>
+    <block position="1,1,2"/>
+    <block position="2,1,2"/>
+
+    <block position="0,2,0"/>
+    <block position="1,2,0"/>
+    <block position="2,2,0"/>
+    <block position="0,2,1"/>
+    <block position="1,2,1"/>
+    <block position="2,2,1"/>
+    <block position="0,2,2"/>
+    <block position="1,2,2"/>
+    <block position="2,2,2"/>
+
+<!--
+    <block position="0,3,0"/>
+    <block position="1,3,0"/>
+    <block position="2,3,0"/>
+    <block position="0,3,1"/>
+    <block position="1,3,1"/>
+    <block position="2,3,1"/>
+    <block position="0,3,2"/>
+    <block position="1,3,2"/>
+    <block position="2,3,2"/>
+-->
+
+
+
+</MMBlockList>
+
+<MMTargetList>
+
+    <block position="0,0,0"/>
+    <block position="1,0,0"/>
+    <block position="2,0,0"/>
+    <block position="0,0,1"/>
+    <block position="1,0,1"/>
+    <block position="2,0,1"/>
+    <block position="0,0,2"/>
+    <block position="1,0,2"/>
+    <block position="2,0,2"/>
+
+    <block position="0,1,0"/>
+    <block position="1,1,0"/>
+    <block position="2,1,0"/>
+    <block position="0,1,1"/>
+    <block position="1,1,1"/>
+    <block position="2,1,1"/>
+    <block position="0,1,2"/>
+    <block position="1,1,2"/>
+    <block position="2,1,2"/>
+
+    <block position="0,2,0"/>
+    <block position="1,2,0"/>
+    <block position="2,2,0"/>
+    <block position="0,2,1"/>
+    <block position="1,2,1"/>
+    <block position="2,2,1"/>
+    <block position="0,2,2"/>
+    <block position="1,2,2"/>
+    <block position="2,2,2"/>
+
+</MMTargetList>
+
+
+</world>
+
+
+

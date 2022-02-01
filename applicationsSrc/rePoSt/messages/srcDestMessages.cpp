@@ -121,8 +121,6 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
 
                         // Start MaxFlow
                         for (const auto& p : MMblock->getAdjacentMMSeeds()) {
-                            cerr << "MMPosition"
-                                 << ": " << p << endl;
                             RePoStBlockCode *toSeed = static_cast<RePoStBlockCode *>(
                                 BaseSimulator::getWorld()->getBlockByPosition(p)->blockCode);
                             MMblock->deficit++;

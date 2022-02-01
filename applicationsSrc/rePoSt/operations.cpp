@@ -240,7 +240,7 @@ void Dismantle_Operation::updateState(BaseSimulator::BlockCode* bc) {
 
 bool Dismantle_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
     RePoStBlockCode* rbc = static_cast<RePoStBlockCode*>(bc);
-    return rbc->isCoordinator? false:  true;
+    return !rbc->isCoordinator;
 }
 
 void
@@ -604,8 +604,7 @@ Transfer_Operation::Transfer_Operation(Direction _direction, MMShape _mmShape, D
     switch (direction){
     case Direction::LEFT: {
         if(mmShape == FRONTBACK){
-            cout << "nextOpDir: " << nextOpDir << "\n";
-            if(Zeven and nextOpDir == Direction::DOWN){
+             if(Zeven and nextOpDir == Direction::DOWN){
                 localRules.reset(&LocalRules_FB_Transfer_Left_GoingDown);
             } else {
                 localRules.reset(&LocalRules_FB_Transfer_Left);

@@ -333,13 +333,15 @@ void Catoms3DRotation::init(const Matrix& m) {
 
 
 void Catoms3DRotation::exportMatrix(const Matrix& m) {
-// #define ROTATION_STEP_MATRIX_EXPORT
+//#define ROTATION_STEP_MATRIX_EXPORT
 #ifdef ROTATION_STEP_MATRIX_EXPORT
+    std::ofstream out;
+    out.open("mvtsData.txt", ios::app);
     Catoms3DBlock* block = static_cast<Catoms3DBlock*>
         (BaseSimulator::getWorld()->getBlockById(catomId));
 
     if ((exportMatrixCount % 2) == 0 or exportMatrixCount == 40) {
-        OUTPUT << getScheduler()->now() << "|";
+        out << getScheduler()->now() << "|";
 
         if (exportMatrixCount == 40) {
             short ori;
@@ -348,9 +350,9 @@ void Catoms3DRotation::exportMatrix(const Matrix& m) {
 
         block->blockCode->onBlockSelected();
 
-        OUTPUT << catomId << "|";
+        out << catomId << "|";
         // OUTPUT << block->color << "|";
-        OUTPUT << "(matrix3 "
+        out << "(matrix3 "
                << "[" << m.m[0] << "," << m.m[4] << "," << m.m[8] << "] "
                << "[" << m.m[1] << "," << m.m[5] << "," << m.m[9] << "] "
                << "[" << m.m[2] << "," << m.m[6] << "," << m.m[10] << "] "
