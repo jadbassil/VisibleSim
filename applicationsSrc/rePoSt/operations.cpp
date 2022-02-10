@@ -127,9 +127,16 @@ Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape
         } else if(mmShape == FRONTBACK) {
             if(filled) {
                 VS_ASSERT_MSG(false, "Not implemented");
+            } else {
+                if(fill) {
+                    Zeven ? localRules.reset(&LocalRules_FB_DismantleAndFill_Left_Zeven):
+                        localRules.reset(&LocalRules_FB_DismantleAndFill_Left_Zodd);
+                } else {
+                    Zeven ? localRules.reset(&LocalRules_FB_Dismantle_Left):
+                        localRules.reset(&LocalRules_FB_Dismantle_Left_Zodd);
+                }
             }
-            Zeven ? localRules.reset(&LocalRules_FB_Dismantle_Left):
-                    localRules.reset(&LocalRules_FB_Dismantle_Left_Zodd);
+
         }
     } break;
     
@@ -143,11 +150,30 @@ Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape
 
     case Direction::UP: {
         if(mmShape == BACKFRONT) {
-            Zeven ? localRules.reset(&LocalRules_BF_Dismantle_Up_Zeven):
+            if(filled){
+                if(fill)  {
+                    VS_ASSERT_MSG(false, "Not implemented");
+                } else {
+                    Zeven ? VS_ASSERT_MSG(false, "Not implemented")
+                          : localRules.reset(&LocalRules_BF_DismantleFilled_Up_Zodd);
+                }
+            }else {
+                Zeven ? localRules.reset(&LocalRules_BF_Dismantle_Up_Zeven):
                 localRules.reset(&LocalRules_BF_Dismantle_Up_Zodd);
-        } else if(mmShape == FRONTBACK) {
-             Zeven ? VS_ASSERT_MSG(false, "Not implemented"): 
+            }
+
+        } else if (mmShape == FRONTBACK) {
+            if (filled) {
+                if(fill)  {
+                    VS_ASSERT_MSG(false, "Not implemented");
+                } else {
+                    Zeven ? VS_ASSERT_MSG(false, "Not implemented")
+                          : localRules.reset(&LocalRules_FB_DismantleFilled_Up_Zodd);
+                }
+            } else {
+                Zeven ? VS_ASSERT_MSG(false, "Not implemented") :
                 localRules.reset(&LocalRules_FB_Dismantle_Up_Zodd);
+            }
         }
     } break;
 
@@ -218,6 +244,7 @@ void Dismantle_Operation::updateState(BaseSimulator::BlockCode* bc) {
         } break;
 
         case Direction::UP: {
+            if(filled and rbc->mvt_it == 0 and rbc->shapeState == BACKFRONT and not isZeven()) return;
             Init::getNeighborMMSeedPos(rbc->seedPosition, rbc->MMPosition, Direction::UP,
                                        rbc->seedPosition);
             rbc->MMPosition = rbc->MMPosition.offsetZ(1);
@@ -257,6 +284,29 @@ Dismantle_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Ca
     Operation::updateProbingPoints(bc, latchingPoints, targetPos);
     switch (direction) {
         case Direction::LEFT: {
+            if(fill) {
+                if (rbc.relativePos() == Cell3DPosition(1, -1, 1) or
+                    rbc.relativePos() == Cell3DPosition(1, 0, 1)) {
+                    latchingPoints.clear();
+                    return;
+                }
+
+                if(mmShape == FRONTBACK and rbc.relativePos() == Cell3DPosition(-3,0,2)) {
+                    latchingPoints.clear();
+                    return;
+                }
+
+                if (mmShape == BACKFRONT and isZeven() and
+                    rbc.mvt_it >= 39) {
+                    latchingPoints.clear();
+                    return;
+                }
+
+                if(mmShape == FRONTBACK and not isZeven() and rbc.mvt_it >= 37) {
+                    latchingPoints.clear();
+                    return;
+                }
+            }
             /* ------ Avoid blocking when FB dismantling left then transferring down ----- */
             if (targetPos - rbc.seedPosition == Cell3DPosition(-1, 0, 2) and
                 rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(-2, 0, 1))) {

@@ -197,11 +197,16 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
         } else if (direction == Direction::BACK and shapeState == FRONTBACK) {
             coordinatorPosition = seedPosition + Cell3DPosition(2, 1, 2);
         } else if (direction == Direction::UP) {
-            if (MMPosition.pt[2] % 2 != 0) {
-                coordinatorPosition = seedPosition + Cell3DPosition(1, 0, 4);
+            if(fillingState == FULL) {
+                coordinatorPosition = seedPosition;
             } else {
-                coordinatorPosition = seedPosition + Cell3DPosition(0, 0, 4);
+                if (MMPosition.pt[2] % 2 != 0) {
+                    coordinatorPosition = seedPosition + Cell3DPosition(1, 0, 4);
+                } else {
+                    coordinatorPosition = seedPosition + Cell3DPosition(0, 0, 4);
+                }
             }
+
         } else if (direction == Direction::DOWN) {
             coordinatorPosition = seedPosition;
         } else if (direction == Direction::RIGHT) {
@@ -325,6 +330,7 @@ void RePoStBlockCode::probeGreenLight() {
             (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, -1, -2);
         }
     }
+
 
     if(operation->getDirection() == Direction::RIGHT) {
         // When pivot cannot be found when coming from Right then transferring down
@@ -490,11 +496,11 @@ void RePoStBlockCode::probeGreenLight() {
     console << "\n";
     
     if(latchingPoints.empty()) {
-        switch ((*operation->localRules)[mvt_it].state) {
+  /*      switch ((*operation->localRules)[mvt_it].state) {
             case MOVING: module->setColor(BLUE); animationColor="blue"; break;
             case WAITING: module->setColor(MAGENTA); animationColor="magenta"; break;
             case IN_POSITION: module->setColor(GREEN); animationColor="green"; break;
-        }
+        }*/
         module->moveTo(targetPosition);
     } else {
         nbWaitedAnswers = 0;
@@ -664,6 +670,7 @@ bool RePoStBlockCode::isPotentialDestination() {
     for (auto adjPos : getAdjacentMMPositions()) {
         if (inTargetShape(adjPos) and not inInitialShape(adjPos) and
             not lattice->cellHasBlock(getSeedPositionFromMMPosition(adjPos))) {
+            if(getSeedPositionFromMMPosition(adjPos) == seedPosition.offsetY(3)) continue;
             if (find(destinations.begin(), destinations.end(), adjPos) != destinations.end()) {
                  //for(auto &c: destinations) cerr << c << endl;
                 continue;
@@ -695,7 +702,7 @@ bool RePoStBlockCode::isPotentialFillingDestination() {
 
 
 bool RePoStBlockCode::isPotentialSource() {
-    if((inInitialShape(MMPosition) and not inTargetShape(MMPosition)) or fillingState == FULL) {
+    if(inInitialShape(MMPosition) and (not inTargetShape(MMPosition) or fillingState == FULL)) {
         return true;
     } else {
         return false;
@@ -934,28 +941,18 @@ void RePoStBlockCode::onMotionEnd() {
     console << lmvt.nextPosition << "\n";
     movingState = lmvt.state;
     movingSteps++;
-/*    switch (movingState) {
-        case MOVING: module->setColor(BLUE); animationColor="blue"; break;
-        case WAITING: module->setColor(MAGENTA); animationColor="magenta"; break;
-        case IN_POSITION: module->setColor(GREEN); animationColor="green"; break;
-    }*/
     console << "movingSteps: " << movingSteps << "\n"; 
     if (movingState == MOVING) {
         mvt_it++;
-        switch ((*operation->localRules)[mvt_it].state) {
+        probeGreenLight();
+    } else if (movingState == WAITING or movingState == IN_POSITION) {
+        transferCount = 0;
+         switch ((*operation->localRules)[mvt_it].state) {
             case MOVING: module->setColor(BLUE); animationColor="blue"; break;
             case WAITING: module->setColor(MAGENTA); animationColor="magenta"; break;
             case IN_POSITION: module->setColor(GREEN); animationColor="green"; break;
         }
-        probeGreenLight();
-    } else if (movingState == WAITING or movingState == IN_POSITION) {
-        transferCount = 0;
-      /*   switch ((*operation->localRules)[mvt_it].state) {
-            case MOVING: module->setColor(BLUE); animationColor="blue"; break;
-            case WAITING: module->setColor(MAGENTA); animationColor="magenta"; break;
-            case IN_POSITION: module->setColor(GREEN); animationColor="green"; break;
-        }*/
-        //module->exportMatrix();
+        module->exportMatrix();
         rotating = false;
         if ((*operation->localRules)[mvt_it].state == IN_POSITION) {
            module->setColor(GREEN);
@@ -976,7 +973,6 @@ void RePoStBlockCode::onMotionEnd() {
         //     }
         // } else if (pivotItf and pivotItf->isConnected()) {
         //     sendHandleableMessage(new FTRMessage(), module->getInterface(pivotPosition), 100, 200);
-                
         // }
         for(auto neighbor: module->getNeighbors()) {
             sendHandleableMessage(new FTRMessage(), module->getP2PNetworkInterfaceByBlockRef(neighbor),
@@ -1089,6 +1085,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
         case EVENT_ROTATION3D_START: {
             VS_ASSERT(module->pivot);
             pivotPosition = module->pivot->position;
+            module->setColor(BLUE);
             break;
         }
         case EVENT_ROTATION3D_END: {
@@ -1410,8 +1407,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("BF_Dismantle_Left.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(24,19,14);
+    file.open("BF_Dismantle_Up.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(2,5,0);
     if(!file.is_open()) return; 
 
     if(c == 'o') {

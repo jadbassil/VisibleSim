@@ -28,7 +28,7 @@ public:
     static const int ANIMATION_DELAY;
     static const int COM_DELAY;
     static const int nbRotationSteps; //<! @attention MUST BE AN EVEN NUMBER!!!
-
+    static short exportMatrixCount;
     const Catoms3DBlock *mobile = NULL;
     const Catoms3DBlock *pivot = NULL;
     short conFromP, conToP;
@@ -78,7 +78,7 @@ public:
     [[nodiscard]] inline Vector3D getAxe1() const { return axe1; };
     [[nodiscard]] inline Vector3D getAxe2() const { return axe2; };
 protected :
-    static short exportMatrixCount;
+
     bool firstRotation;
     short step;
     Matrix initialMatrix,finalMatrix;

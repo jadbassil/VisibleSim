@@ -275,20 +275,20 @@ void GLOMessage::handle(BaseSimulator::BlockCode *bc) {
                 rbc.relativePos() == Cell3DPosition(1, 2, 2) or
                 rbc.relativePos() == Cell3DPosition(1, 0, 2)) {
                 // if(relativePos() == Cell3DPosition(1,2,2)) VS_ASSERT(false);
-                switch ((*rbc.operation->localRules)[ rbc.mvt_it].state) {
+             /*   switch ((*rbc.operation->localRules)[ rbc.mvt_it].state) {
                     case MOVING: rbc.module->setColor(BLUE);  rbc.animationColor="blue"; break;
                     case WAITING:  rbc.module->setColor(MAGENTA);  rbc.animationColor="magenta"; break;
                     case IN_POSITION:  rbc.module->setColor(GREEN);  rbc.animationColor="green"; break;
-                }
+                }*/
                 getScheduler()->schedule(new Catoms3DRotationStartEvent(
                         getScheduler()->now(), rbc.module, targetPosition, RotationLinkType::OctaFace,
                         false));
             } else {
-                switch ((*rbc.operation->localRules)[ rbc.mvt_it].state) {
+              /*  switch ((*rbc.operation->localRules)[ rbc.mvt_it].state) {
                     case MOVING: rbc.module->setColor(BLUE);  rbc.animationColor="blue"; break;
                     case WAITING:  rbc.module->setColor(MAGENTA);  rbc.animationColor="magenta"; break;
                     case IN_POSITION:  rbc.module->setColor(GREEN);  rbc.animationColor="green"; break;
-                }
+                }*/
                 getScheduler()->schedule(
                         new Catoms3DRotationStartEvent(getScheduler()->now(), rbc.module,
                                                        targetPosition, RotationLinkType::Any, false));

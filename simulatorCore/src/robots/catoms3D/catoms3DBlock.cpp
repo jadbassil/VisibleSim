@@ -273,19 +273,41 @@ namespace Catoms3D {
         return bitset;
     }
 
-    void Catoms3DBlock::exportMatrix() const {
+    void Catoms3DBlock::exportMatrix() {
+//#define ROTATION_STEP_MATRIX_EXPORT
+#ifdef ROTATION_STEP_MATRIX_EXPORT
         std::ofstream out;
         out.open("mvtsData.txt", ios::app);
-        out << 0 << "|";
+        const Matrix &m = getMatrixFromPositionAndOrientation(position, orientationCode);
+
+      /*  out << Catoms3DRotation::exportMatrixCount << "|";
+        out << blockId << "|";*/
+        if(color != prevColor and Catoms3DRotation::exportMatrixCount != 0) {
+            out << Catoms3DRotation::exportMatrixCount << "|";
+            out << blockId << "|";
+            out << prevColor << "|";
+            out << "out" << "|";
+            out << color << "|";
+            out << "(matrix3 "
+                << "[" << m.m[0] << "," << m.m[4] << "," << m.m[8] << "] "
+                << "[" << m.m[1] << "," << m.m[5] << "," << m.m[9] << "] "
+                << "[" << m.m[2] << "," << m.m[6] << "," << m.m[10] << "] "
+                << "[" << m.m[3] << "," << m.m[7] << "," << m.m[11] << "])"
+                << endl;
+            prevColor = color;
+        }
+        out << Catoms3DRotation::exportMatrixCount << "|";
         out << blockId << "|";
         out << color << "|";
-        const Matrix &m = getMatrixFromPositionAndOrientation(position, orientationCode);
         out << "(matrix3 "
                << "[" << m.m[0] << "," << m.m[4] << "," << m.m[8] << "] "
                << "[" << m.m[1] << "," << m.m[5] << "," << m.m[9] << "] "
                << "[" << m.m[2] << "," << m.m[6] << "," << m.m[10] << "] "
                << "[" << m.m[3] << "," << m.m[7] << "," << m.m[11] << "])"
                << endl;
+        if(Catoms3DRotation::exportMatrixCount > 0)
+            Catoms3DRotation::exportMatrixCount++;
+#endif
     }
 
     bool Catoms3DBlock::canMoveTo(const Cell3DPosition &dest) const {

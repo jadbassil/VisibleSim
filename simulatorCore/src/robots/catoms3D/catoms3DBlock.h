@@ -219,7 +219,7 @@ public:
     /**
      * Exports the time, ID, and matrix to the log file
      */
-    void exportMatrix() const;
+    void exportMatrix() ;
 };
 
 }
