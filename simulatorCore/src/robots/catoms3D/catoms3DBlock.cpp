@@ -274,11 +274,13 @@ namespace Catoms3D {
     }
 
     void Catoms3DBlock::exportMatrix() const {
-        OUTPUT << getScheduler()->now() << "|";
-        OUTPUT << blockId << "|";
-        OUTPUT << color << "|";
+        std::ofstream out;
+        out.open("mvtsData.txt", ios::app);
+        out << 0 << "|";
+        out << blockId << "|";
+        out << color << "|";
         const Matrix &m = getMatrixFromPositionAndOrientation(position, orientationCode);
-        OUTPUT << "(matrix3 "
+        out << "(matrix3 "
                << "[" << m.m[0] << "," << m.m[4] << "," << m.m[8] << "] "
                << "[" << m.m[1] << "," << m.m[5] << "," << m.m[9] << "] "
                << "[" << m.m[2] << "," << m.m[6] << "," << m.m[10] << "] "

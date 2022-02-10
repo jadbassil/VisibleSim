@@ -26,7 +26,7 @@ void Init::buildInitialMap(Cell3DPosition firstSeedPos, vector<array<int, 4>> &m
             y -= 1;
         }
         int col = rand() % NB_COLORS;
-        BaseSimulator::getWorld()->addBlock(0, RePoStBlockCode::buildNewBlockCode, Cell3DPosition(x,y,z),  Colors[col] );
+        BaseSimulator::getWorld()->addBlock(0, RePoStBlockCode::buildNewBlockCode, Cell3DPosition(x,y,z),  GREY );
 
         RePoStBlockCode *newSeed = static_cast<RePoStBlockCode*>(
             BaseSimulator::getWorld()->getBlockByPosition(Cell3DPosition(x,y,z))->blockCode
@@ -52,11 +52,11 @@ void Init::buildInitialMap(Cell3DPosition firstSeedPos, vector<array<int, 4>> &m
             );
             neighborsColors.push_back(neighbSeed->module->color);
         }
-        while(isIn(neighborsColors, newSeed->module->color)) {
+        /*while(isIn(neighborsColors, newSeed->module->color)) {
             col = rand() % NB_COLORS;
-            newSeed->module->setColor( Colors[col]);
-        }
-        buildMM(newSeed->module, newSeed->shapeState, Colors[col]);
+            //newSeed->module->setColor( Colors[col]);
+        }*/
+        buildMM(newSeed->module, newSeed->shapeState, GREY);
         if(map[i][3] == 1)
             fillMM(newSeed->module);
     }
@@ -78,7 +78,7 @@ void Init::buildMM(Catoms3DBlock *s, MMShape shape, Color col) {
                 newBlock_position.pt[j] = seed_position.pt[j] + BackFrontMM[i].pt[j];
         }
         //cout << newBlock_position << endl;
-        BaseSimulator::getWorld()->addBlock(0, RePoStBlockCode::buildNewBlockCode, newBlock_position, col);
+        BaseSimulator::getWorld()->addBlock(0, RePoStBlockCode::buildNewBlockCode, newBlock_position, GREY);
         RePoStBlockCode* newBlock = static_cast<RePoStBlockCode*>(
             BaseSimulator::getWorld()->getBlockByPosition(newBlock_position)->blockCode);
 

@@ -177,7 +177,9 @@ public:
      * @param pos target position
      * @param faceReq face requirement, if indicated the function will return true only if the
      *  motion is possible using the type of face passed as argument. Any by default.
-     * @attention this does not guarantee an absence of collision, as might occur if
+     * @attention this does not guarantee an absence of col
+     *
+     * lision, as might occur if
      *  a blocking modules exists in the 2nd-order neighborhood of the current block
      * @return true if motion is possible, false otherwise
      */

@@ -68,6 +68,7 @@ public:
     BlockCode *blockCode; //!< blockcode program executed by the block
     Clock *clock; //!< internal clock of the block
     Color color; //!< color of the block
+    Color prevColor;
     Cell3DPosition position; //!< position of the block in the grid of cells;
     bool isMaster; //!< indicates is the block is a master block
     GlBlock *ptrGlBlock; //!< ptr to the GL object corresponding to this block

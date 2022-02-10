@@ -22,7 +22,7 @@ Catoms3DRotation::randomAnimationDelay = uniform_int_distribution<std::mt19937::
     (-(ANIMATION_DELAY / DELTA),ANIMATION_DELAY / DELTA);
 const int Catoms3DRotation::ANIMATION_DELAY = 400000;
 const int Catoms3DRotation::COM_DELAY = 0;//2000;
-const int Catoms3DRotation::nbRotationSteps = 20;
+const int Catoms3DRotation::nbRotationSteps = 10;
 
 std::ostream& Catoms3D::operator<<(std::ostream &stream, Catoms3DRotation const& rots) {
     stream << rots.axe1 << "/" << rots.angle1 << " -- " << rots.axe2 << "/" << rots.angle2;
@@ -331,34 +331,47 @@ void Catoms3DRotation::init(const Matrix& m) {
     exportMatrix(initialMatrix);
 }
 
-
+short Catoms3DRotation::exportMatrixCount = 1;
 void Catoms3DRotation::exportMatrix(const Matrix& m) {
-//#define ROTATION_STEP_MATRIX_EXPORT
+#define ROTATION_STEP_MATRIX_EXPORT
 #ifdef ROTATION_STEP_MATRIX_EXPORT
     std::ofstream out;
     out.open("mvtsData.txt", ios::app);
     Catoms3DBlock* block = static_cast<Catoms3DBlock*>
         (BaseSimulator::getWorld()->getBlockById(catomId));
 
-    if ((exportMatrixCount % 2) == 0 or exportMatrixCount == 40) {
-        out << getScheduler()->now() << "|";
+    if(block->color != block->prevColor) {
+        out << exportMatrixCount << "|";
+        out << block->blockId << "|";
+        out << block->prevColor << "|";
+        out << "out" << "|";
+        out << "(matrix3 "
+            << "[" << m.m[0] << "," << m.m[4] << "," << m.m[8] << "] "
+            << "[" << m.m[1] << "," << m.m[5] << "," << m.m[9] << "] "
+            << "[" << m.m[2] << "," << m.m[6] << "," << m.m[10] << "] "
+            << "[" << m.m[3] << "," << m.m[7] << "," << m.m[11] << "])"
+            << endl;
+        block->prevColor = block->color;
+    }
+    //if ((exportMatrixCount % 2) == 0 or exportMatrixCount == 40) {
+        out << exportMatrixCount << "|";
 
-        if (exportMatrixCount == 40) {
+/*        if (exportMatrixCount == 40) {
             short ori;
             getFinalPositionAndOrientation(block->blockCode->motionDest, ori);
-        }
+        }*/
 
         block->blockCode->onBlockSelected();
 
-        out << catomId << "|";
-        // OUTPUT << block->color << "|";
+        out << block->blockId << "|";
+        out << block->color << "|";
         out << "(matrix3 "
                << "[" << m.m[0] << "," << m.m[4] << "," << m.m[8] << "] "
                << "[" << m.m[1] << "," << m.m[5] << "," << m.m[9] << "] "
                << "[" << m.m[2] << "," << m.m[6] << "," << m.m[10] << "] "
                << "[" << m.m[3] << "," << m.m[7] << "," << m.m[11] << "])"
                << endl;
-    }
+    //}
 
     exportMatrixCount++;
 #endif

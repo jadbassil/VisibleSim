@@ -159,6 +159,7 @@ public:
     bool mustFillMMPos(Cell3DPosition &outPosition);
 
     Color initialColor;
+    string animationColor = "grey";
 
     explicit RePoStBlockCode(Catoms3DBlock *host);
     ~RePoStBlockCode() override = default;

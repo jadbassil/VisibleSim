@@ -98,7 +98,7 @@ public:
 
     bool isDismantle() const override { return true; };
 
-    bool isFill() const override { return filled; };
+    bool isFill() const override { return fill; };
 
     void updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Catoms3D::Catoms3DBlock *> &latchingPoints,
                              const Cell3DPosition &targetPos) const override;

@@ -107,13 +107,17 @@ Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape
     case Direction::LEFT: {
         if(mmShape == BACKFRONT) {
             if(filled){
-                if(fill)  VS_ASSERT_MSG(false, "Not implemented");
-                Zeven ? localRules.reset(&LocalRules_BF_DismantleFilled_Left_Zeven)
-                    : localRules.reset(&LocalRules_BF_DismantleFilled_Left_Zodd);
+                if(fill)  {
+                    VS_ASSERT_MSG(false, "Not implemented");
+                } else {
+                    Zeven ? localRules.reset(&LocalRules_BF_DismantleFilled_Left_Zeven)
+                          : VS_ASSERT_MSG(false, "Not implemented");;
+                }
+
             } else { // not filled
                 if(fill) {
                     Zeven ? localRules.reset(&LocalRules_BF_DismantleAndFill_Left_Zeven) :
-                        VS_ASSERT_MSG(false, "Not implemented");;
+                    localRules.reset(&LocalRules_BF_DismantleAndFill_Left_Zodd);
                 } else {
                     Zeven ? localRules.reset(&LocalRules_BF_Dismantle_Left) :
                         localRules.reset(&LocalRules_BF_Dismantle_Left_Zodd);
@@ -121,6 +125,9 @@ Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape
 
             }
         } else if(mmShape == FRONTBACK) {
+            if(filled) {
+                VS_ASSERT_MSG(false, "Not implemented");
+            }
             Zeven ? localRules.reset(&LocalRules_FB_Dismantle_Left):
                     localRules.reset(&LocalRules_FB_Dismantle_Left_Zodd);
         }
@@ -1207,7 +1214,7 @@ bool Transfer_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
 bool Transfer_Operation::handleBridgeMovements(BaseSimulator::BlockCode* bc) {
     RePoStBlockCode* rbc = static_cast<RePoStBlockCode*>(bc);
     LocalMovement lmvt = (*localRules)[rbc->mvt_it];
- 
+
     if(lmvt.currentPosition == lmvt.nextPosition /**and not isFirstTransferOperation**/) {
         rbc->mvt_it++;
         rbc->movingState = IN_POSITION;

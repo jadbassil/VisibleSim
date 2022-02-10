@@ -52,7 +52,7 @@ void MaxFlowSCCode::startup() {
         module->setColor(GREEN);
     } else {
         console << "isModule\n";
-        module->setColor(GREY);
+        //module->setColor(GREY);
     }
 }
 

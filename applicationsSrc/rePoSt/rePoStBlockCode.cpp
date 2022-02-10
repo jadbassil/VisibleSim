@@ -31,8 +31,10 @@ RePoStBlockCode::RePoStBlockCode(Catoms3DBlock *host) : Catoms3DBlockCode(host) 
 void RePoStBlockCode::startup() {
     console << "start\n";
     //operation = new Operation();
+
     if(not Init::initialMapBuildDone) {
-        initialColor = GREEN;
+        initialColor = GREY;
+        //module->setColor(GREY);
         initialized = false;
         MMPosition = Cell3DPosition(0,0,0);
         shapeState = FRONTBACK;
@@ -57,7 +59,8 @@ void RePoStBlockCode::startup() {
         //                     new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
         //                                           module, IT_MODE_NBMOVEMENTS));
     }
-
+    module->setColor(GREY);
+    module->exportMatrix();
     initialColor = module->color;
     initialized = true;
 /*    if(isPotentialSource()) {
@@ -290,13 +293,15 @@ bool RePoStBlockCode::mustFillMMPos(Cell3DPosition &outPosition) {
  /* -------------------------------------------------------------------------- */
 void RePoStBlockCode::probeGreenLight() {
     VS_ASSERT(operation->localRules != NULL);
-    if (operation->getDirection() == Direction::UP and not(operation->isFill() and operation->getMMShape() == FRONTBACK) and
+     if (operation->getDirection() == Direction::UP and
+         not(operation->isBuild() and operation->getMMShape() == BACKFRONT and operation->isZeven()) and
+         not(operation->isFill() and operation->getMMShape() == FRONTBACK) and
         (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, 0, 2)) {
         (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(2, 0, 2);
     }
 
     if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(2, 0, 2) and
-        lattice->cellHasBlock(module->position.offsetX(1)) and
+            (lattice->cellHasBlock(module->position.offsetX(1)) /*or operation->getPrevOpDirection() == Direction::LEFT*/) and
         operation->getDirection() == Direction::UP /*and operation->isTransfer()*/) {
         (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, 0, 2);
     }
@@ -395,6 +400,7 @@ void RePoStBlockCode::probeGreenLight() {
         coordinator.console << "right_back it4: " << coordinator.mvt_it << "\n";
         if (module->canMoveTo(seedPosition + Cell3DPosition(1, 1, 2))) {
             // module->moveTo(seedPosition + Cell3DPosition(1, 1, 2));
+            module->setColor(BLUE);
             getScheduler()->schedule(new Catoms3DRotationStartEvent(
                 getScheduler()->now() + 150, module, seedPosition + Cell3DPosition(1, 1, 2),
                 RotationLinkType::Any, false));
@@ -442,6 +448,7 @@ void RePoStBlockCode::probeGreenLight() {
         coordinator.console << "right_back it4: " << coordinator.mvt_it << "\n";
         if (module->canMoveTo(seedPosition + Cell3DPosition(1, -1, 2))) {
             // module->moveTo(seedPosition + Cell3DPosition(1, 1, 2));
+            module->setColor(BLUE);
             getScheduler()->schedule(new Catoms3DRotationStartEvent(
                 getScheduler()->now() + 150, module, seedPosition + Cell3DPosition(1, -1, 2),
                 RotationLinkType::Any, false));
@@ -452,7 +459,7 @@ void RePoStBlockCode::probeGreenLight() {
         return;
     }
     rotating = true;
-    module->setColor(BLUE);
+
     LocalMovement lmvt = (*operation->localRules)[mvt_it];
     console << "mvt_it1: " << mvt_it << "\n";
 
@@ -483,6 +490,11 @@ void RePoStBlockCode::probeGreenLight() {
     console << "\n";
     
     if(latchingPoints.empty()) {
+        switch ((*operation->localRules)[mvt_it].state) {
+            case MOVING: module->setColor(BLUE); animationColor="blue"; break;
+            case WAITING: module->setColor(MAGENTA); animationColor="magenta"; break;
+            case IN_POSITION: module->setColor(GREEN); animationColor="green"; break;
+        }
         module->moveTo(targetPosition);
     } else {
         nbWaitedAnswers = 0;
@@ -624,7 +636,7 @@ bool RePoStBlockCode::setGreenLight(bool onoff) {
         info << "green: ";
         greenLightIsOn = true;
         // module->setColor(initialColor);
-        module->setColor(GREY);
+        //module->setColor(GREY);
         // Resume flow if needed
         if (not awaitingSources.empty()) {
             for (auto as : awaitingSources) {
@@ -683,7 +695,7 @@ bool RePoStBlockCode::isPotentialFillingDestination() {
 
 
 bool RePoStBlockCode::isPotentialSource() {
-    if(inInitialShape(MMPosition) and not inTargetShape(MMPosition)) {
+    if((inInitialShape(MMPosition) and not inTargetShape(MMPosition)) or fillingState == FULL) {
         return true;
     } else {
         return false;
@@ -751,7 +763,7 @@ void RePoStBlockCode::updateState() {
    
     mvt_it = 0;
     isCoordinator = false;
-    module->setColor(BLUE);
+    //module->setColor(BLUE);
     if(not greenLightIsOn) {
         setGreenLight(true);
     }
@@ -922,13 +934,33 @@ void RePoStBlockCode::onMotionEnd() {
     console << lmvt.nextPosition << "\n";
     movingState = lmvt.state;
     movingSteps++;
+/*    switch (movingState) {
+        case MOVING: module->setColor(BLUE); animationColor="blue"; break;
+        case WAITING: module->setColor(MAGENTA); animationColor="magenta"; break;
+        case IN_POSITION: module->setColor(GREEN); animationColor="green"; break;
+    }*/
     console << "movingSteps: " << movingSteps << "\n"; 
     if (movingState == MOVING) {
         mvt_it++;
+        switch ((*operation->localRules)[mvt_it].state) {
+            case MOVING: module->setColor(BLUE); animationColor="blue"; break;
+            case WAITING: module->setColor(MAGENTA); animationColor="magenta"; break;
+            case IN_POSITION: module->setColor(GREEN); animationColor="green"; break;
+        }
         probeGreenLight();
     } else if (movingState == WAITING or movingState == IN_POSITION) {
         transferCount = 0;
+      /*   switch ((*operation->localRules)[mvt_it].state) {
+            case MOVING: module->setColor(BLUE); animationColor="blue"; break;
+            case WAITING: module->setColor(MAGENTA); animationColor="magenta"; break;
+            case IN_POSITION: module->setColor(GREEN); animationColor="green"; break;
+        }*/
+        //module->exportMatrix();
         rotating = false;
+        if ((*operation->localRules)[mvt_it].state == IN_POSITION) {
+           module->setColor(GREEN);
+           animationColor="green";
+        }
         if (operation->mustSendCoordinateBack(this)) {
             sendingCoordinateBack = true;
             sendHandleableMessage(new CoordinateBackMessage(movingSteps, coordinatorPosition),
@@ -953,7 +985,8 @@ void RePoStBlockCode::onMotionEnd() {
         if (movingState == IN_POSITION) {
             console << "mvt_it in pos: " << mvt_it << "\n";
             if((operation->isBuild() or operation->isFill()) and mvt_it >= (*operation->localRules).size() -1) {
-                cerr << MMPosition << ": Destination reached" << endl;
+                cerr << module->blockId << " " << MMPosition << ": Destination reached" << endl;
+                console << module->blockId << " " << MMPosition << ": Destination reached" << "\n";
                 NbOfDestinationsReached++;
                 cerr << NbOfDestinationsReached << " " << NbOfStreamlines << endl;
                 if(NbOfDestinationsReached == NbOfStreamlines) {
@@ -1289,17 +1322,17 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
 void RePoStBlockCode::onBlockSelected() {
     // Debug stuff:
     cerr << endl << "--- PRINT MODULE " << *module << "---" << endl;
-/*    cerr << "isSeed: " << (seedPosition == module->position ? "true": "false") << endl;
+/*    cerr << "isSeed: " << (seedPosition == module->position ? "true": "false") << endl;*/
     cerr << "isCoordinator: " << (isCoordinator ? "true": "false") << endl;
     cerr << "coordinatorPosition: " << coordinatorPosition << endl;
     cerr << "ShapeState: " << shapeState << endl;
-    cerr << "FillingState: " << (fillingState == EMPTY ? "EMPTY": "FULL") << endl;*/
+    cerr << "FillingState: " << (fillingState == EMPTY ? "EMPTY": "FULL") << endl;
     cerr << "seedPosition: " << seedPosition << endl;
     cerr << "MMPostion: " << MMPosition << endl;
-/*    cerr << "CurrentPos: " << module->position - seedPosition << endl;
+    cerr << "CurrentPos: " << module->position - seedPosition << endl;
     cerr << "mvt_it: " << mvt_it << endl;
     cerr << "MovingState: " << movingState << endl;
-    cerr << "GreenLight: " << greenLightIsOn << endl;*/
+    cerr << "GreenLight: " << greenLightIsOn << endl;
     cerr << "isSource: " << isSource << endl;
     cerr << "isDestination: " << isDestination << endl;
 /*    cerr << "destinationOut: " << destinationOut << endl;
@@ -1320,7 +1353,7 @@ void RePoStBlockCode::onBlockSelected() {
     for(auto &out: mainPathOut) cerr << out << " | ";
     cerr << endl;
     // if(isDestination) cerr << "destinationFor: " << destinationOut << endl;
-    if(operation) {
+/*    if(operation) {
         if(operation->isTransfer())
         cerr << "prevOpDir: " << operation->getPrevOpDirection() << endl;
     }
@@ -1343,7 +1376,7 @@ void RePoStBlockCode::onBlockSelected() {
     for(auto old: aug2PathsOld) cerr << old << " | ";
     cerr << endl;
     cerr << "deficit: " << deficit << endl;
-    cerr << "state: " << state << endl;
+    cerr << "state: " << state << endl;*/
 }
 
 void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
@@ -1378,7 +1411,7 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     return;
     // }
     file.open("BF_Dismantle_Left.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(49,9,30);
+    seedPosition = Cell3DPosition(24,19,14);
     if(!file.is_open()) return; 
 
     if(c == 'o') {

@@ -10,37 +10,23 @@
 
 <MMBlockList>
     <block position="0,0,0"/>
-    <block position="1,0,0"/>
+    <block position="1,0,0" filled="true"/>
 
-    <!--		<block position="0,0,-1"/>
-            <block position="1,0,-1"/>
-
-            <block position="0,1,0"/>
-            <block position="1,1,0"/>
-
-            <block position="0,0,1"/>
-            <block position="1,0,1"/>
-
-            <block position="0,-1,0"/>
-            <block position="1,-1,0"/>-->
+    <block position="0,0,1"/>
+    <block position="1,0,1" filled="true"/>
 
 
 </MMBlockList>
 <MMTargetList>
 
     <block position="0,0,0"/>
-    <!--
-            <block position="1,0,0"/>
-    -->
+    <block position="1,0,0" filled="true"/>
+    <block position="-1,0,0"/>
 
-    <!--		<block position="0,0,-1"/>
-            <block position="1,0,-1"/>
+    <block position="0,0,1"/>
+    <block position="1,0,1" filled="true"/>
+    <block position="-1,0,1"/>
 
-            <block position="0,1,0"/>
-            <block position="1,1,0"/>
-
-            <block position="0,1,1"/>
-            <block position="1,1,1"/>-->
 
 </MMTargetList>
 </world>

@@ -78,7 +78,7 @@ public:
     [[nodiscard]] inline Vector3D getAxe1() const { return axe1; };
     [[nodiscard]] inline Vector3D getAxe2() const { return axe2; };
 protected :
-    short exportMatrixCount = 0;
+    static short exportMatrixCount;
     bool firstRotation;
     short step;
     Matrix initialMatrix,finalMatrix;

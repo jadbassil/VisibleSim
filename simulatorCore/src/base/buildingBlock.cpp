@@ -265,6 +265,9 @@ void BuildingBlock::setColor(int idColor) {
 
 void BuildingBlock::setColor(const Color &c) {
     if (state.load() >= ALIVE) {
+        if(c != color) {
+            prevColor = color;
+        }
         color = c;
         // getWorld()->updateGlData(this); // separate update color and update position
         getWorld()->updateGlData(this,color);
