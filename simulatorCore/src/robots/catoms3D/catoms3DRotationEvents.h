@@ -28,7 +28,7 @@ public:
     static const int ANIMATION_DELAY;
     static const int COM_DELAY;
     static const int nbRotationSteps; //<! @attention MUST BE AN EVEN NUMBER!!!
-    static short exportMatrixCount;
+    static int exportMatrixCount;
     const Catoms3DBlock *mobile = NULL;
     const Catoms3DBlock *pivot = NULL;
     short conFromP, conToP;

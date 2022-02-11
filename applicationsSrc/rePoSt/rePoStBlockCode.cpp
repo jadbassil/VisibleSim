@@ -33,7 +33,7 @@ void RePoStBlockCode::startup() {
     //operation = new Operation();
 
     if(not Init::initialMapBuildDone) {
-        initialColor = GREY;
+        initialColor = module->color;
         //module->setColor(GREY);
         initialized = false;
         MMPosition = Cell3DPosition(0,0,0);
@@ -49,8 +49,7 @@ void RePoStBlockCode::startup() {
         rotating = false;
         seedPosition = module->position;
         Cell3DPosition targetModule;
-     
-        
+
         Init::initialMapBuildDone = true;
         // ofstream file;
         // file.open("nbMovementsPerTimeStep.txt", ios::out);
@@ -58,10 +57,15 @@ void RePoStBlockCode::startup() {
         // getScheduler()->schedule(
         //                     new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
         //                                           module, IT_MODE_NBMOVEMENTS));
+        for(auto id_block: BaseSimulator::getWorld()->getMap()) {
+            auto* block = dynamic_cast<RePoStBlockCode*>(id_block.second->blockCode);
+            block->module->prevColor = block->module->color;
+            block->module->exportMatrix();
+        }
     }
+    initialColor = module->color;
     module->setColor(GREY);
     module->exportMatrix();
-    initialColor = module->color;
     initialized = true;
 /*    if(isPotentialSource()) {
         isSource = true;
@@ -1382,12 +1386,15 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
         // color sources in RED, destinations in GREEN in other MMs in White
         for(auto id_block: BaseSimulator::getWorld()->buildingBlocksMap) {
             RePoStBlockCode* block = static_cast<RePoStBlockCode*>(id_block.second->blockCode);
-            if(showSrcAndDst) {
+           /* if(showSrcAndDst) {
                 switchModulesColors();
-            } else {
+            } else {*/
                 block->module->setColor(block->initialColor);
-            }
+                block->module->exportMatrix();
+
+            //}
         }
+        return;
     }
   
     if(!BaseSimulator::getWorld()->selectedGlBlock) {
@@ -1407,8 +1414,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("BF_Dismantle_Up.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(2,5,0);
+    file.open("FB_Dismantle_Up.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(49,12,46);
     if(!file.is_open()) return; 
 
     if(c == 'o') {

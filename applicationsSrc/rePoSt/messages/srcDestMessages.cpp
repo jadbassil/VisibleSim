@@ -133,7 +133,7 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
                     }
                 }
                 rbc.start_wave();
-                //RePoStBlockCode::switchModulesColors();
+                RePoStBlockCode::switchModulesColors();
             } else /*if (RePoStBlockCode::targetMap.size() < RePoStBlockCode::initialMap.size()) */{
                 // choose one source and find non blocking destinations to be filled
                 cerr << "Nb of potential sources: " << RePoStBlockCode::NbOfPotentialSources << endl;
@@ -299,7 +299,7 @@ void BackDstMessage::handle(BaseSimulator::BlockCode *bc) {
                 }
             }
             static_cast<RePoStBlockCode*>(RePoStBlockCode::GC->blockCode)->start_wave();
-            //rbc.switchModulesColors();
+            rbc.switchModulesColors();
  
         } else {
             rbc.sendHandleableMessage(new BackDstMessage(rbc.MMPosition, rbc.parentPositionDst, true),

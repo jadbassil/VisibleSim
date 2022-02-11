@@ -26,7 +26,7 @@ void Init::buildInitialMap(Cell3DPosition firstSeedPos, vector<array<int, 4>> &m
             y -= 1;
         }
         int col = rand() % NB_COLORS;
-        BaseSimulator::getWorld()->addBlock(0, RePoStBlockCode::buildNewBlockCode, Cell3DPosition(x,y,z),  GREY );
+        BaseSimulator::getWorld()->addBlock(0, RePoStBlockCode::buildNewBlockCode, Cell3DPosition(x,y,z),  Colors[col] );
 
         RePoStBlockCode *newSeed = static_cast<RePoStBlockCode*>(
             BaseSimulator::getWorld()->getBlockByPosition(Cell3DPosition(x,y,z))->blockCode
@@ -52,11 +52,11 @@ void Init::buildInitialMap(Cell3DPosition firstSeedPos, vector<array<int, 4>> &m
             );
             neighborsColors.push_back(neighbSeed->module->color);
         }
-        /*while(isIn(neighborsColors, newSeed->module->color)) {
+        while(isIn(neighborsColors, newSeed->module->color)) {
             col = rand() % NB_COLORS;
-            //newSeed->module->setColor( Colors[col]);
-        }*/
-        buildMM(newSeed->module, newSeed->shapeState, GREY);
+            newSeed->module->setColor( Colors[col]);
+        }
+        buildMM(newSeed->module, newSeed->shapeState, Colors[col]);
         if(map[i][3] == 1)
             fillMM(newSeed->module);
     }
@@ -78,7 +78,7 @@ void Init::buildMM(Catoms3DBlock *s, MMShape shape, Color col) {
                 newBlock_position.pt[j] = seed_position.pt[j] + BackFrontMM[i].pt[j];
         }
         //cout << newBlock_position << endl;
-        BaseSimulator::getWorld()->addBlock(0, RePoStBlockCode::buildNewBlockCode, newBlock_position, GREY);
+        BaseSimulator::getWorld()->addBlock(0, RePoStBlockCode::buildNewBlockCode, newBlock_position, col);
         RePoStBlockCode* newBlock = static_cast<RePoStBlockCode*>(
             BaseSimulator::getWorld()->getBlockByPosition(newBlock_position)->blockCode);
 
@@ -144,7 +144,7 @@ void Init::fillMM(Catoms3DBlock *s) {
                 Cell3DPosition newBlockPos =
                     s->position + Cell3DPosition(FillingPositions_FrontBack_Zeven[i]);
                 BaseSimulator::getWorld()->addBlock(0, RePoStBlockCode::buildNewBlockCode,
-                                                    newBlockPos, Color(LIGHTBLUE));
+                                                    newBlockPos, s->color);
                 RePoStBlockCode *newBlock = static_cast<RePoStBlockCode *>(
                     BaseSimulator::getWorld()->getBlockByPosition(newBlockPos)->blockCode);
                 newBlock->seedPosition = s->position;
@@ -156,7 +156,7 @@ void Init::fillMM(Catoms3DBlock *s) {
                 Cell3DPosition newBlockPos =
                     s->position + Cell3DPosition(FillingPositions_BackFront_Zeven[i]);
                 BaseSimulator::getWorld()->addBlock(0, RePoStBlockCode::buildNewBlockCode,
-                                                    newBlockPos, Color(LIGHTBLUE));
+                                                    newBlockPos, s->color);
                 RePoStBlockCode *newBlock = static_cast<RePoStBlockCode *>(
                     BaseSimulator::getWorld()->getBlockByPosition(newBlockPos)->blockCode);
                 newBlock->seedPosition = s->position;
@@ -170,7 +170,7 @@ void Init::fillMM(Catoms3DBlock *s) {
                 Cell3DPosition newBlockPos =
                     s->position + Cell3DPosition(FillingPositions_FrontBack_Zodd[i]);
                 BaseSimulator::getWorld()->addBlock(0, RePoStBlockCode::buildNewBlockCode,
-                                                    newBlockPos, Color(LIGHTBLUE));
+                                                    newBlockPos, s->color);
                 RePoStBlockCode *newBlock = static_cast<RePoStBlockCode *>(
                     BaseSimulator::getWorld()->getBlockByPosition(newBlockPos)->blockCode);
                 newBlock->seedPosition = s->position;
@@ -182,7 +182,7 @@ void Init::fillMM(Catoms3DBlock *s) {
                 Cell3DPosition newBlockPos =
                     s->position + Cell3DPosition(FillingPositions_BackFront_Zodd[i]);
                 BaseSimulator::getWorld()->addBlock(0, RePoStBlockCode::buildNewBlockCode,
-                                                    newBlockPos, Color(LIGHTBLUE));
+                                                    newBlockPos, s->color);
                 RePoStBlockCode *newBlock = static_cast<RePoStBlockCode *>(
                     BaseSimulator::getWorld()->getBlockByPosition(newBlockPos)->blockCode);
                 newBlock->seedPosition = s->position;

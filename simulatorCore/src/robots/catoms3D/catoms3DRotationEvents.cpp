@@ -331,7 +331,7 @@ void Catoms3DRotation::init(const Matrix& m) {
     exportMatrix(initialMatrix);
 }
 
-short Catoms3DRotation::exportMatrixCount = 0;
+int Catoms3DRotation::exportMatrixCount = 0;
 void Catoms3DRotation::exportMatrix(const Matrix& m) {
 //#define ROTATION_STEP_MATRIX_EXPORT
 #ifdef ROTATION_STEP_MATRIX_EXPORT
