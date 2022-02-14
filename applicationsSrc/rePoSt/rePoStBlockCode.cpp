@@ -321,7 +321,8 @@ void RePoStBlockCode::probeGreenLight() {
         }
 
         if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(2, 1, -2) and
-            lattice->cellHasBlock((*operation->localRules)[mvt_it].nextPosition + seedPosition)) {
+            lattice->cellHasBlock((*operation->localRules)[mvt_it].nextPosition + seedPosition) and mvt_it == 29) {
+    /*        VS_ASSERT(false);*/
             (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, 1, -2);
         }
 
@@ -339,7 +340,10 @@ void RePoStBlockCode::probeGreenLight() {
     if(operation->getDirection() == Direction::RIGHT) {
         // When pivot cannot be found when coming from Right then transferring down
         if(operation->isZeven() and operation->getMMShape() == FRONTBACK) {
-            if(mvt_it >= 13 and (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,0,1)
+            if( (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,0,0)) {
+                (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,1);
+            }
+            if(/*mvt_it >= 13 and*/ (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,0,1)
                 and not lattice->cellHasBlock(seedPosition + Cell3DPosition(5,0,0))) {
                 (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,0);
             } 
@@ -347,7 +351,7 @@ void RePoStBlockCode::probeGreenLight() {
             if( (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,0,0)) {
                 (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,-1,1);
             }
-            if(mvt_it >= 13 and (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,-1,1)
+            if(/*mvt_it >= 13 and*/ (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,-1,1)
                 and not lattice->cellHasBlock(seedPosition + Cell3DPosition(5,0,0))) {
                 (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,0);
             } 
@@ -367,6 +371,16 @@ void RePoStBlockCode::probeGreenLight() {
                 }
         }
     }
+
+     if(operation->getDirection() == Direction::FRONT) {
+         if( (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1,-3,0)) {
+             (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1,-3,1);
+         }
+         if(mvt_it >= 7 and (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1,-3,1)
+            and not lattice->cellHasBlock(seedPosition + Cell3DPosition(1,-3,0))) {
+             (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1,-3,0);
+         }
+     }
 
     if (relativePos() == Cell3DPosition(4, 0, 2) and
         module->getInterface(module->position.offsetY(1))->isConnected()) {
@@ -674,7 +688,7 @@ bool RePoStBlockCode::isPotentialDestination() {
     for (auto adjPos : getAdjacentMMPositions()) {
         if (inTargetShape(adjPos) and not inInitialShape(adjPos) and
             not lattice->cellHasBlock(getSeedPositionFromMMPosition(adjPos))) {
-            if(getSeedPositionFromMMPosition(adjPos) == seedPosition.offsetY(3)) continue;
+            //if(getSeedPositionFromMMPosition(adjPos) == seedPosition.offsetY(3)) continue;
             if (find(destinations.begin(), destinations.end(), adjPos) != destinations.end()) {
                  //for(auto &c: destinations) cerr << c << endl;
                 continue;
@@ -706,7 +720,7 @@ bool RePoStBlockCode::isPotentialFillingDestination() {
 
 
 bool RePoStBlockCode::isPotentialSource() {
-    if(inInitialShape(MMPosition) and (not inTargetShape(MMPosition) or fillingState == FULL)) {
+    if(inInitialShape(MMPosition) and (not inTargetShape(MMPosition) /*or fillingState == FULL*/)) {
         return true;
     } else {
         return false;
@@ -947,6 +961,7 @@ void RePoStBlockCode::onMotionEnd() {
     movingSteps++;
     console << "movingSteps: " << movingSteps << "\n"; 
     if (movingState == MOVING) {
+
         mvt_it++;
         probeGreenLight();
     } else if (movingState == WAITING or movingState == IN_POSITION) {
@@ -1414,8 +1429,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("FB_Dismantle_Up.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(49,12,46);
+    file.open("FB_Fill_Left.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(2,6,4);
     if(!file.is_open()) return; 
 
     if(c == 'o') {

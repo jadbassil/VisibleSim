@@ -201,9 +201,28 @@ void PLSMessage::handle(BaseSimulator::BlockCode *bc) {
             return;
         }
 
+        if (rbc.isCoordinator and rbc.operation->getPrevOpDirection() == Direction::FRONT and
+            rbc.module->getInterface(rbc.module->position.offsetY(1))->isConnected() and rbc.relativePos() != Cell3DPosition(-1,1,2)) {
+            getScheduler()->trace("light turned orange5\n", rbc.module->blockId, ORANGE);
+            if (not rbc.awaitingSources.empty()) rbc.setGreenLight(true);
+            rbc.awaitingSources.insert(srcPos);
+            //rbc.module->setColor(DARKORANGE);
+            return;
+        }
+
         if(rbc.isCoordinator and rbc.getPreviousOpDir() == Direction::DOWN and
                 rbc.module->getInterface(rbc.module->position.offsetY(-1))->isConnected()) {
 
+            getScheduler()->trace("light turned orange5\n", rbc.module->blockId, ORANGE);
+            if (not rbc.awaitingSources.empty()) rbc.setGreenLight(true);
+            rbc.awaitingSources.insert(srcPos);
+            //rbc.module->setColor(DARKORANGE);
+            return;
+        }
+
+        if(rbc.isCoordinator and rbc.getPreviousOpDir() == Direction::UP and
+           rbc.module->getInterface(rbc.module->position.offsetY(-1))->isConnected()) {
+            //VS_ASSERT(false);
             getScheduler()->trace("light turned orange5\n", rbc.module->blockId, ORANGE);
             if (not rbc.awaitingSources.empty()) rbc.setGreenLight(true);
             rbc.awaitingSources.insert(srcPos);
@@ -341,6 +360,7 @@ void FTRMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.operation->getDirection() == Direction::DOWN and not rbc.operation->isBuild()) {
         return;
     }
+
 
     if (not rbc.greenLightIsOn) {
         rbc.setGreenLight(true);

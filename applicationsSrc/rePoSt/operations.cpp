@@ -31,9 +31,11 @@ bool Operation::mustHandleBridgeOnAdd(const Cell3DPosition& pos) {
 
     if (posbc->operation->isTransfer()) {
         if (posbc->operation->getDirection() == Direction::LEFT and
-            posbc->operation->getMMShape() == FRONTBACK and posbc->operation->isZeven() and
+                posbc->operation->getMMShape() == FRONTBACK and posbc->operation->isZeven() and
             static_cast<Transfer_Operation*>(posbc->operation)->getNextOpDir() == Direction::DOWN)
             return false;
+        if(posbc->operation->getDirection() == Direction::LEFT and posbc->operation->getMMShape() == BACKFRONT and not posbc->operation->isZeven())
+            return  false;
         if (posbc->operation->getDirection() == Direction::LEFT) {
             return true;
         }
@@ -41,6 +43,7 @@ bool Operation::mustHandleBridgeOnAdd(const Cell3DPosition& pos) {
     if (posbc->operation->isDismantle()) {
         if (static_cast<Dismantle_Operation*>(posbc->operation)->filled and
             (posbc->operation->getDirection() == Direction::LEFT))
+
             return true;
     }
     return false;
@@ -171,7 +174,7 @@ Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape
                           : localRules.reset(&LocalRules_FB_DismantleFilled_Up_Zodd);
                 }
             } else {
-                Zeven ? VS_ASSERT_MSG(false, "Not implemented") :
+                Zeven ? localRules.reset(&LocalRules_FB_Dismantle_Up_Zeven) :
                 localRules.reset(&LocalRules_FB_Dismantle_Up_Zodd);
             }
         }
@@ -202,8 +205,18 @@ Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape
                 Zeven ? localRules.reset(&LocalRules_BF_Dismantle_Right_Zeven) :
                 localRules.reset(&LocalRules_BF_Dismantle_Right_Zodd);
             } else { //FRONTBACK
-                Zeven ? localRules.reset(&LocalRules_FB_Dismantle_Right_Zeven) :
-                localRules.reset(&LocalRules_FB_Dismantle_Right_Zodd);
+                if(filled) {
+                    VS_ASSERT_MSG(false, "Not implemented");
+                } else {
+                    if(fill) {
+                        Zeven ? localRules.reset(&LocalRules_FB_DismantleAndFill_Right_Zeven) :
+                        VS_ASSERT_MSG(false, "Not implemented");
+                    } else {
+                        Zeven ? localRules.reset(&LocalRules_FB_Dismantle_Right_Zeven) :
+                        localRules.reset(&LocalRules_FB_Dismantle_Right_Zodd);
+                    }
+                }
+
             }
         } break;
 
@@ -323,6 +336,18 @@ Dismantle_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Ca
                                                  rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(2, -1, -3))));
             }
         } break;
+
+        case Direction::UP: {
+            if(rbc.relativePos().pt[2] <= 3) {
+                latchingPoints.clear();
+                return;
+            }
+
+            if(mmShape == BACKFRONT and not isZeven() and (*localRules)[rbc.mvt_it].nextPosition == Cell3DPosition(1,1,5)) {
+                latchingPoints.push_back(static_cast<Catoms3DBlock *>(
+                                                 rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(2, 0, 6))));
+            }
+        }
         default: return;
     }
 }
@@ -670,7 +695,12 @@ Transfer_Operation::Transfer_Operation(Direction _direction, MMShape _mmShape, D
             
         } 
         else if(mmShape == BACKFRONT) {
-            localRules.reset(&LocalRules_BF_Transfer_Left);
+            if(not Zeven  and nextOpDir == Direction::DOWN) {
+                localRules.reset(&LocalRules_BF_Transfer_Left_Zodd);
+            } else {
+                localRules.reset(&LocalRules_BF_Transfer_Left);
+            }
+
         }   
     } break; 
 
@@ -780,6 +810,21 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                     if (rbc->transferCount < 10) {
                         setMvtItToNextModule(bc);
                     }
+                    return;
+                } else if(mmShape == BACKFRONT and not Zeven  and nextOpDir == Direction::DOWN){
+                    rbc->console << "mvt_itr: " << rbc->mvt_it << "\n";
+                    if(rbc->transferCount == 3) setMvtItToNextModule(bc);
+                    rbc->console << "mvt_itr: " << rbc->mvt_it << "\n";
+                    targetModule =
+                            rbc->seedPosition + (*localRules)[rbc->mvt_it].currentPosition;
+                    rbc->sendHandleableMessage(
+                            new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
+                                                  rbc->mvt_it),
+                            rbc->module->getInterface(pos), 100, 200);
+                    if (rbc->transferCount < 10) {
+                        setMvtItToNextModule(bc);
+                    }
+                    rbc->console << "mvt_itr: " << rbc->mvt_it << "\n";
                     return;
                 }
                 if (rbc->transferCount == 8 and mustHandleBridgeOnAdd(pos)) {
@@ -912,7 +957,8 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                     setMvtItToNextModule(bc);
                     rbc->console << "mvt_itX: " << rbc->mvt_it << "\n";
                 }
-            } else if ((pos == rbc->seedPosition + Cell3DPosition(1, 0, 0)) and rbc->getPreviousOpDir() == Direction::RIGHT) {
+            } else if ((pos == rbc->seedPosition + Cell3DPosition(1, 0, 0))
+                and (rbc->getPreviousOpDir() == Direction::RIGHT or rbc->getPreviousOpDir() == Direction::FRONT)) {
                 // When coming from right and trandfering down modules will be connected below to
                 // the coordinator at position rbc->seedPosition + Cell3DPosition(1,0,0)
                 rbc->transferCount++;
@@ -1124,6 +1170,15 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
         rbc->transferCount++;
         rbc->scheduler->trace("transferCount: " + to_string(rbc->transferCount),
                               rbc->module->blockId, Color(CYAN));
+        if(direction == Direction::LEFT and not Zeven and mmShape == BACKFRONT  and nextOpDir == Direction::DOWN) {
+            if(rbc->relativePos() == Cell3DPosition(-1,0,2) and rbc->transferCount == 6) {
+                rbc->mvt_it = 9;
+                rbc->probeGreenLight();
+
+            }
+
+            return;
+        }
         if ((rbc->transferCount == 33 and (direction == Direction::LEFT)) or
             /*(rbc->transferCount == 30 and direction == Direction::RIGHT) or*/
             (rbc->transferCount == 30 and getMMShape() == FRONTBACK and
@@ -1133,9 +1188,9 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
               (direction == Direction::BACK or direction == Direction::FRONT)) or
              (rbc->transferCount == 30 and getMMShape() == BACKFRONT and
               direction == Direction::FRONT) or
-             (rbc->transferCount == 19 and rbc->relativePos() == Cell3DPosition(0, -1, 2) and
+             ((rbc->transferCount == 19 and rbc->relativePos() == Cell3DPosition(0, -1, 2) and
               prevOpDirection == Direction::FRONT and getMMShape() == FRONTBACK) and
-                 direction == Direction::FRONT)) {  // when all modules passed the bridge
+                 direction == Direction::FRONT))) {  // when all modules passed the bridge
             rbc->sendHandleableMessage(
                 new CoordinateBackMessage(0, rbc->coordinatorPosition),
                 rbc->module->getInterface(rbc->nearestPositionTo(rbc->coordinatorPosition)), 100,
@@ -1216,15 +1271,13 @@ bool Transfer_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
     RePoStBlockCode* rbc = static_cast<RePoStBlockCode*>(bc);
     if (rbc->isCoordinator) return false;
     if (direction == Direction::LEFT) {
-    if(mmShape == FRONTBACK and Zeven and nextOpDir == Direction::DOWN ) {
-        if(rbc->mvt_it >= 56) return true;
-    } else {
-        if(rbc->mvt_it >= 14) return true;
-    }
-        
-    
-        
-    } else if(direction == Direction::RIGHT) {  
+        if (mmShape == FRONTBACK and Zeven and nextOpDir == Direction::DOWN) {
+            if (rbc->mvt_it >= 56) return true;
+        } else if (mmShape == BACKFRONT and not Zeven  and nextOpDir == Direction::DOWN) {
+            if(rbc->mvt_it == 58) return  true;
+        } else if (rbc->mvt_it >= 14) return true;
+
+    } else if(direction == Direction::RIGHT) {
         if(/*Zeven and*/ rbc->mvt_it >= 46) return true;
         else if(rbc->mvt_it == 2) return true;
     } else if (direction == Direction::BACK) {
@@ -1318,6 +1371,11 @@ Transfer_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Cat
     switch (direction) {
         case Direction::FRONT: {
             if (mmShape == FRONTBACK) {
+                if(rbc.relativePos() == Cell3DPosition(0,-2,2)) {
+                    latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
+                                                     rbc.lattice->getBlock(
+                                                             rbc.module->position + Cell3DPosition(1, -2, -1))));
+                }
                 if (rbc.relativePos() == Cell3DPosition(-1, -4, 3)) {
                     latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
                                                      rbc.lattice->getBlock(
@@ -1416,6 +1474,31 @@ Transfer_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Cat
                 latchingPoints.clear();
                 return;
             }
+
+            if(rbc.relativePos() == Cell3DPosition(-1,0,0)) {
+                latchingPoints.clear();
+                return;
+            }
+
+            if(mmShape == BACKFRONT and getPrevOpDirection() == Direction::FRONT) {
+                if(rbc.relativePos() == Cell3DPosition(0,-1,1)) {
+                    latchingPoints.clear();
+                    return;
+                }
+            }
+
+            if(mmShape == BACKFRONT and (*localRules)[rbc.mvt_it].nextPosition == Cell3DPosition(-2,0,0) and rbc.getNextOpDir() == Direction::DOWN) {
+                if(rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(-3, 1, -1))){
+                    latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
+                                                     rbc.lattice->getBlock(
+                                                             rbc.seedPosition + Cell3DPosition(-3, 1, -1))));
+                }
+                if(rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(-3, 1, 0))){
+                    latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
+                                                     rbc.lattice->getBlock(
+                                                             rbc.seedPosition + Cell3DPosition(-3, 1, 0))));
+                }
+            }
         }
             break;
 
@@ -1490,6 +1573,10 @@ Transfer_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Cat
                                                      rbc.lattice->getBlock(rbc.module->position + Cell3DPosition(1, -2, -2))));
                     latchingPoints.push_back(static_cast<Catoms3DBlock*>(
                                                      rbc.lattice->getBlock(rbc.module->position + Cell3DPosition(0, -2, -3))));
+                    if(getNextOpDir() == Direction::RIGHT and rbc.mvt_it > 6) {
+                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                         rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(2, -1, -3))));
+                    }
                 } else if (rbc.relativePos() == Cell3DPosition(1, 1, 0)) {
                     // Zodd
                     latchingPoints.push_back(static_cast<Catoms3DBlock*>(
@@ -1500,6 +1587,25 @@ Transfer_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Cat
             }
         }
             break;
+
+        case Direction::UP: {
+            if(not Zeven and mmShape == FRONTBACK) {
+                if(rbc.relativePos() == Cell3DPosition(2,0,4)) {
+                    if(rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(1, 1, 5))){
+                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                         rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(1, 1, 5))));
+                    }
+                }
+                if(rbc.relativePos() == Cell3DPosition(1,-1,3) and nextOpDir == Direction::LEFT) {
+                    if(rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(1, 1, 5))){
+                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                         rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(1, 1, 5))));
+                    }
+                }
+            }
+
+
+        }
         default:
             break;
     }
@@ -1537,7 +1643,8 @@ Build_Operation::Build_Operation (Direction _direction, MMShape _mmShape, Direct
             (Zeven) ?  localRules.reset(&LocalRules_BF_Build_Down_Zeven):
                 localRules.reset(&LocalRules_BF_Build_Down_Zodd);
         } else { //FRONTBACK
-            VS_ASSERT_MSG(false, "Not implemented");
+            (Zeven) ?  localRules.reset(&LocalRules_FB_Build_Down_Zeven):
+            localRules.reset(&LocalRules_FB_Build_Down_Zodd);
         }
 
     } break;
@@ -1555,7 +1662,9 @@ Build_Operation::Build_Operation (Direction _direction, MMShape _mmShape, Direct
         if(mmShape == BACKFRONT) {
             if(getPrevOpDirection() == Direction::BACK) {
                localRules.reset(&LocalRules_BF_Build_Left_Zodd_ComingFromBack);
-            } else {
+            } else if(getPrevOpDirection() == Direction::FRONT) {
+                localRules.reset(&LocalRules_BF_Build_Left_Zodd_ComingFromFront);
+            }else {
                 localRules.reset(&LocalRules_BF_Build_Left_Zodd);
             }
 
@@ -1715,7 +1824,7 @@ bool Build_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
 
         case Direction::LEFT: {
             if(mmShape == FRONTBACK) {
-                if(rbc->mvt_it >= 83 and rbc->mvt_it < localRules->size() - 1) return true;
+                if(rbc->mvt_it >= 82 and rbc->mvt_it < localRules->size() - 1) return true;
             } else { //BACKFRONT
                 if (rbc->mvt_it == 85) return true;
                 if (getPrevOpDirection() != Direction::BACK and rbc->mvt_it >= 74 and
@@ -1726,7 +1835,7 @@ bool Build_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
         } break;
 
         case Direction::RIGHT: {
-            if (rbc->mvt_it >= 57 and rbc->mvt_it != localRules->size() - 1) return true; //FB & BF
+            if (rbc->mvt_it >= 54 and rbc->mvt_it != localRules->size() - 1) return true; //FB & BF
         } break;
 
         default: return false;
@@ -1739,6 +1848,11 @@ void Build_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<C
     RePoStBlockCode &rbc = *dynamic_cast<RePoStBlockCode *>(bc);
     Operation::updateProbingPoints(bc, latchingPoints, targetPos);
     switch (direction) {
+
+        case Direction::LEFT: {
+            latchingPoints.clear();
+        } break;
+
         case Direction::UP: {
             if (mmShape == FRONTBACK) {
                 if (rbc.relativePos() == Cell3DPosition(1, -1, 3) or rbc.relativePos() == Cell3DPosition(2,0,2)) {
@@ -1754,6 +1868,14 @@ void Build_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<C
                 }
             }
         } break;
+
+        case Direction::DOWN: {
+            for(auto &p: latchingPoints){
+                if(rbc.relativePos() == Cell3DPosition(1,-1,1) or rbc.relativePos() == Cell3DPosition(1,1,2) ) {
+                    latchingPoints.clear();
+                }
+            }
+        }
 
         default:
             break;

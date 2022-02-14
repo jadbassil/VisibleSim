@@ -283,7 +283,8 @@ namespace Catoms3D {
       /*  out << Catoms3DRotation::exportMatrixCount << "|";
         out << blockId << "|";*/
         if(color != prevColor /*and Catoms3DRotation::exportMatrixCount != 0*/) {
-            Catoms3DRotation::exportMatrixCount++;
+
+            //Catoms3DRotation::exportMatrixCount++;
             out << Catoms3DRotation::exportMatrixCount << "|";
             out << blockId << "|";
             out << prevColor << "|";
@@ -297,7 +298,7 @@ namespace Catoms3D {
                 << endl;
             prevColor = color;
         }
-        out << Catoms3DRotation::exportMatrixCount << "|";
+/*        out << Catoms3DRotation::exportMatrixCount << "|";
         out << blockId << "|";
         out << color << "|";
         out << "(matrix3 "
@@ -305,7 +306,7 @@ namespace Catoms3D {
                << "[" << m.m[1] << "," << m.m[5] << "," << m.m[9] << "] "
                << "[" << m.m[2] << "," << m.m[6] << "," << m.m[10] << "] "
                << "[" << m.m[3] << "," << m.m[7] << "," << m.m[11] << "])"
-               << endl;
+               << endl;*/
 /*        if(Catoms3DRotation::exportMatrixCount > 0)
             Catoms3DRotation::exportMatrixCount++;*/
 #endif

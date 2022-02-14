@@ -134,6 +134,10 @@ void BFSMessage::handle(BaseSimulator::BlockCode *bc) {
                                    rbc.interfaceTo(fromMMPosition, toMMPosition), 100, 200);
         return;
     }
+/*    if(fromMMPosition == toMMPosition.offsetY(1)) {
+        rbc.state = PASSIVE;
+        return;
+    }*/
     vector<Cell3DPosition> pathsOld;
     pathsOld += rbc.mainPathsOld;
     pathsOld += rbc.aug1PathsOld;
@@ -146,6 +150,7 @@ void BFSMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.state = PASSIVE;
         return;
     }
+
     if (rbc.mainPathState == NONE and !isIn(pathsOld, sourceMM)) {
         rbc.mainPathsOld.push_back(sourceMM);
         Cell3DPosition fromSeedPosition = rbc.getSeedPositionFromMMPosition(fromMMPosition);
