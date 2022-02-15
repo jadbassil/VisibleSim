@@ -137,6 +137,7 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
             } else /*if (RePoStBlockCode::targetMap.size() < RePoStBlockCode::initialMap.size()) */{
                 // choose one source and find non blocking destinations to be filled
                 cerr << "Nb of potential sources: " << RePoStBlockCode::NbOfPotentialSources << endl;
+                if(RePoStBlockCode::NbOfPotentialSources == 0) return;
                 for (auto MMPos : RePoStBlockCode::initialMap) {
                     Cell3DPosition MMPos1 = Cell3DPosition(MMPos[0], MMPos[1], MMPos[2]);
                     if(not rbc.lattice->cellHasBlock((rbc.getSeedPositionFromMMPosition(MMPos1)))) continue;

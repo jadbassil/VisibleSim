@@ -349,11 +349,19 @@ void RePoStBlockCode::probeGreenLight() {
             } 
         } else if (not operation->isZeven() and operation->getMMShape() == BACKFRONT) {
             if( (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,0,0)) {
-                (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,-1,1);
+                (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5, -1, 1);
             }
-            if(/*mvt_it >= 13 and*/ (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,-1,1)
-                and not lattice->cellHasBlock(seedPosition + Cell3DPosition(5,0,0))) {
-                (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,0);
+            if(/*mvt_it >= 13 and*/ (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,-1,1)) {
+                if(not lattice->cellHasBlock(seedPosition + Cell3DPosition(5,0,0))) {
+                    (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,0);
+                } else if (lattice->cellHasBlock(seedPosition + Cell3DPosition(5, 0, 0))) {
+                    RePoStBlockCode* rbc = dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()->getBlockByPosition(
+                            seedPosition + Cell3DPosition(5, 0, 0))->blockCode);
+                    if (rbc) {
+                        if(rbc->rotating)
+                            (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5, 0, 0);
+                    }
+                }
             } 
         }
         
