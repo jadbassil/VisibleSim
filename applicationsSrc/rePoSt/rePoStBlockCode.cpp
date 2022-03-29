@@ -11,6 +11,7 @@ using namespace Catoms3D;
 
 Catoms3DBlock* RePoStBlockCode::GC = nullptr; 
 int RePoStBlockCode::NbOfStreamlines = 0;
+int RePoStBlockCode::NbofModulesInMvt= 0;
 int RePoStBlockCode::NbOfPotentialSources = 0;
 vector<Cell3DPosition> RePoStBlockCode::destinations;
 vector<array<int, 4>> RePoStBlockCode::initialMap;
@@ -61,7 +62,9 @@ void RePoStBlockCode::startup() {
             auto* block = dynamic_cast<RePoStBlockCode*>(id_block.second->blockCode);
             block->module->prevColor = block->module->color;
             block->module->exportMatrix();
+
         }
+        Catoms3DRotation::exportMatrixCount++;
     }
     initialColor = module->color;
     module->setColor(GREY);
@@ -275,7 +278,7 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
         }
         if (mustFillMMPos(outPosition)) {
             //isDestination = true;
-            switchModulesColors();
+           // switchModulesColors();
             coordinator->operation = new Fill_Operation(direction, shapeState, getPreviousOpDir(),
                                                         comingFromBack, MMPosition.pt[2]);
             return;
@@ -1292,7 +1295,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                 case IT_MODE_NBMOVEMENTS: {
                     if (reconfigurationStep != DONE) {
                         timeStep++;
-                        int nbOfModulesInMvt = 0;
+                       /* int nbOfModulesInMvt = 0;
                         for (auto id_block : BaseSimulator::getWorld()->buildingBlocksMap) {
                             RePoStBlockCode* MMBlock =
                                 static_cast<RePoStBlockCode*>(id_block.second->blockCode);
@@ -1301,9 +1304,10 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                                 nbOfModulesInMvt++;
                             }
                         }
+                        RePoStBlockCode::NbofModulesInMvt = nbOfModulesInMvt;*/
                         ofstream file;
                         file.open("nbMovementsPerTimeStep.txt", ios::out | ios::app);
-                        file << timeStep << ',' << nbOfModulesInMvt << ',' << NbOfStreamlines
+                        file << timeStep << ',' << countMvts() << ',' << NbOfStreamlines
                              << '\n';
                         getScheduler()->schedule(
                             new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
@@ -1453,23 +1457,33 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
 void RePoStBlockCode::switchModulesColors() {
     showSrcAndDst = true;
     // color sources in RED, destinations in GREEN in other MMs in White
+    Catoms3DRotation::exportMatrixCount++;
     for (auto id_block : BaseSimulator::getWorld()->buildingBlocksMap) {
         auto block = dynamic_cast<RePoStBlockCode*>(id_block.second->blockCode);
         if (dynamic_cast<RePoStBlockCode*>(
                 BaseSimulator::getWorld()->getBlockByPosition(block->seedPosition)->blockCode)
                 ->isSource) {
             block->module->setColor(RED);
+
+            block->module->exportMatrix();
         } else if (
                    dynamic_cast<RePoStBlockCode*>(BaseSimulator::getWorld()
                                                      ->getBlockByPosition(block->seedPosition)
                                                      ->blockCode)
                        ->isDestination) {
             block->module->setColor(GREEN);
+
+            block->module->exportMatrix();
         } else if (not dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()
                 ->getBlockByPosition(block->seedPosition)
                 ->blockCode)
-                ->isDestination) { block->getModule()->setColor(GREY); }
+                ->isDestination) { block->getModule()->setColor(GREY);
+
+
+        }
     }
+
+
 }
 
 void RePoStBlockCode::onAssertTriggered() {
@@ -1586,9 +1600,25 @@ void RePoStBlockCode::parseUserElements(TiXmlDocument *config) {
     }
 }
 
+int RePoStBlockCode::countMvts() {
+    int nbOfModulesInMvt = 0;
+    for (auto id_block : BaseSimulator::getWorld()->buildingBlocksMap) {
+        RePoStBlockCode* MMBlock =
+                static_cast<RePoStBlockCode*>(id_block.second->blockCode);
+
+        if (MMBlock->movingState == MOVING or MMBlock->movingState == WAITING) {
+            nbOfModulesInMvt++;
+        }
+    }
+    return nbOfModulesInMvt;
+}
+
 string RePoStBlockCode::onInterfaceDraw() {
     stringstream trace;
-    // trace << "Nb of modules " << BaseSimulator::getWorld()->getNbBlocks();
+    trace << "Nb of modules " << BaseSimulator::getWorld()->getNbBlocks()  << "\n";
+    trace << "Nb of iterations: " << RePoStBlockCode::nbOfIterations << "\n";
+    trace << "Nb of streamlines: " << RePoStBlockCode::NbOfStreamlines << "\n";
+    trace << "Nb of moving modules: " << RePoStBlockCode::countMvts() ;
     return trace.str();
 }
 

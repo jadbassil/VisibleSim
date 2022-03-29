@@ -22,7 +22,7 @@ Catoms3DRotation::randomAnimationDelay = uniform_int_distribution<std::mt19937::
     (-(ANIMATION_DELAY / DELTA),ANIMATION_DELAY / DELTA);
 const int Catoms3DRotation::ANIMATION_DELAY = 400000;
 const int Catoms3DRotation::COM_DELAY = 0;//2000;
-const int Catoms3DRotation::nbRotationSteps = 10;
+const int Catoms3DRotation::nbRotationSteps = 5;
 
 std::ostream& Catoms3D::operator<<(std::ostream &stream, Catoms3DRotation const& rots) {
     stream << rots.axe1 << "/" << rots.angle1 << " -- " << rots.axe2 << "/" << rots.angle2;
@@ -339,9 +339,10 @@ void Catoms3DRotation::exportMatrix(const Matrix& m) {
     out.open("mvtsData.txt", ios::app);
     Catoms3DBlock* block = static_cast<Catoms3DBlock*>
         (BaseSimulator::getWorld()->getBlockById(catomId));
-    if(exportMatrixCount == 0) exportMatrixCount++;
+    if(exportMatrixCount == 2) exportMatrixCount++;
     if(block->color != block->prevColor) {
-        out << exportMatrixCount << "|";
+        out << getScheduler()->now() << "|";
+        out << Catoms3DRotation::exportMatrixCount << "|";
         out << block->blockId << "|";
         out << block->prevColor << "|";
         out << "out" << "|";
@@ -355,7 +356,8 @@ void Catoms3DRotation::exportMatrix(const Matrix& m) {
         block->prevColor = block->color;
     }
     //if ((exportMatrixCount % 2) == 0 or exportMatrixCount == 40) {
-        out << exportMatrixCount << "|";
+        out << getScheduler()->now()  << "|";
+        out << Catoms3DRotation::exportMatrixCount << "|";
 
 /*        if (exportMatrixCount == 40) {
             short ori;

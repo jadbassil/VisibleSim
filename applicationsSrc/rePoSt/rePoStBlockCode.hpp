@@ -74,12 +74,15 @@ private:
 public:
     static Catoms3DBlock *GC;
     static int NbOfStreamlines;
+    static int NbofModulesInMvt;
     static int NbOfPotentialSources;
     static vector<Cell3DPosition> destinations;
     static vector<array<int, 4>> initialMap;
     static vector<array<int, 4>> targetMap;
     static bool buildOpsExist;
     static int nbOfIterations;
+
+    static int countMvts();
 /* ----------------------- COORDINATION TREE VARIABLES ---------------------- */
     Cell3DPosition parentPosition = Cell3DPosition(-1,-1,-1);
     vector<Cell3DPosition> childrenPositions;
@@ -171,7 +174,7 @@ public:
 
     MMShape getShapeState() const { return shapeState; };
     void setShapeState(MMShape _shapeState) { shapeState = _shapeState; };
-    
+
 
     Catoms3DBlock *getModule() const { return module; };
     Cell3DPosition getMMPosition() const { return MMPosition; };

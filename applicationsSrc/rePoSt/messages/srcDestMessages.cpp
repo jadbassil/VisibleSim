@@ -144,7 +144,10 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
                     RePoStBlockCode *MMBlock = dynamic_cast<RePoStBlockCode *>(
                         rbc.lattice->getBlock(rbc.getSeedPositionFromMMPosition(MMPos1))
                             ->blockCode);
-                    if (MMBlock->isSource) {
+                   /*if (MMBlock->isSource and (MMBlock->module->blockId == 1461 or MMBlock->module->blockId == 1791)) {
+                        if(RePoStBlockCode::nbOfIterations == 11)RePoStBlockCode::NbOfPotentialSources = 2;
+*/
+                       if (MMBlock->isSource) {
                         MMBlock->nbWaitedAnswers = 0;
                         for (auto p : MMBlock->getAdjacentMMSeeds()) {
                             Cell3DPosition toMMPosition =
@@ -300,7 +303,7 @@ void BackDstMessage::handle(BaseSimulator::BlockCode *bc) {
                 }
             }
             static_cast<RePoStBlockCode*>(RePoStBlockCode::GC->blockCode)->start_wave();
-            rbc.switchModulesColors();
+           // rbc.switchModulesColors();
  
         } else {
             rbc.sendHandleableMessage(new BackDstMessage(rbc.MMPosition, rbc.parentPositionDst, true),
