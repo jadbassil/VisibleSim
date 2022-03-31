@@ -4,6 +4,7 @@
 #include "./messages/srcDestMessages.hpp"
 #include "./messages/maxFlowMessages.hpp"
 #include "./messages/transportMessages.hpp"
+#include "./messages/asyncMessages.hpp"
 #include <fstream>
 #include "robots/catoms3D/catoms3DMotionEngine.h"
 
@@ -67,8 +68,7 @@ void RePoStBlockCode::startup() {
         Catoms3DRotation::exportMatrixCount++;
     }
     initialColor = module->color;
-    module->setColor(GREY);
-    module->exportMatrix();
+    //module->exportMatrix();
     initialized = true;
 /*    if(isPotentialSource()) {
         isSource = true;
@@ -81,9 +81,9 @@ void RePoStBlockCode::startup() {
     }*/
    
     VS_ASSERT(Init::initialMapBuildDone);
-      if(RePoStBlockCode::targetMap.empty()) return;
+    if(RePoStBlockCode::targetMap.empty()) return;
 
-    if(module->blockId == GC->blockId) {
+/*    if(module->blockId == GC->blockId) {
         reinitialize();
         reconfigurationStep = SRCDEST;
         nbOfIterations++;
@@ -91,7 +91,7 @@ void RePoStBlockCode::startup() {
         distanceSrc = 0;
         cerr << "Building coordination tree\n";
         getScheduler()->toggle_pause();
-        
+
         for (auto p : getAdjacentMMSeeds()) {
             Cell3DPosition toMMPosition =
                 static_cast<RePoStBlockCode*>(
@@ -101,6 +101,46 @@ void RePoStBlockCode::startup() {
             sendHandleableMessage(new GoMessage(MMPosition, toMMPosition, distanceSrc),
                                   interfaceTo(MMPosition, toMMPosition), 100, 200);
             nbWaitedAnswers++;
+        }
+    }*/
+
+    if(isPotentialDestination()) {
+        isDestination = true;
+        setMMColor(GREEN);
+    }
+    if(isPotentialSource()) {
+        isSource = true;
+        module->setColor(RED);
+    }
+
+    if(seedPosition == module->position and !isSource and !isDestination) {
+        setMMColor(GREY);
+    }
+
+    if(not isSource and module->position == seedPosition) {
+        nbSrcCrossed = 0;
+        for (auto p: getAdjacentMMSeeds()) {
+            RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
+                    p)->blockCode);
+            if (toSeed->isPotentialSource()) {
+                Cell3DPosition toMMPosition = toSeed->MMPosition;
+                nbWaitedAnswersSrcCrossed++;
+                sendHandleableMessage(new CrossedSrcMessage(MMPosition, toMMPosition, nbSrcCrossed),
+                                      interfaceTo(MMPosition, toMMPosition), 100, 200);
+            }
+        }
+    }
+
+    if(isDestination) {
+        cerr << MMPosition << ": is destination for " << destinationOut << endl;
+            if(module->blockId == 141 or module->blockId == 841) {
+            for (auto p: getAdjacentMMSeeds()) {
+                RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
+                        p)->blockCode);
+                nbWaitedAnswersDestination[MMPosition]++;
+                sendHandleableMessage(new FindSrcMessage(MMPosition, toSeed->MMPosition, MMPosition),
+                                      interfaceTo(MMPosition, toSeed->MMPosition), 100, 200);
+            }
         }
     }
 }
@@ -132,7 +172,6 @@ void RePoStBlockCode::reinitialize() {
             block->isDestination = true;
             block->distanceDst = 1;
         }
-
        /* if (block->isPotentialFillingDestination()) {
             VS_ASSERT(false);
             block->isDestination = true;
@@ -163,10 +202,7 @@ void RePoStBlockCode::reinitialize() {
             }
         }
     }
-
 }
-
-
 
 void RePoStBlockCode::start_wave() {
     //cont_passive = false;
@@ -1351,35 +1387,56 @@ void RePoStBlockCode::onBlockSelected() {
     // Debug stuff:
     cerr << endl << "--- PRINT MODULE " << *module << "---" << endl;
 /*    cerr << "isSeed: " << (seedPosition == module->position ? "true": "false") << endl;*/
-    cerr << "isCoordinator: " << (isCoordinator ? "true": "false") << endl;
-    cerr << "coordinatorPosition: " << coordinatorPosition << endl;
-    cerr << "ShapeState: " << shapeState << endl;
-    cerr << "FillingState: " << (fillingState == EMPTY ? "EMPTY": "FULL") << endl;
+    //cerr << "isCoordinator: " << (isCoordinator ? "true": "false") << endl;
+    //cerr << "coordinatorPosition: " << coordinatorPosition << endl;
+    //cerr << "ShapeState: " << shapeState << endl;
+    //cerr << "FillingState: " << (fillingState == EMPTY ? "EMPTY": "FULL") << endl;
     cerr << "seedPosition: " << seedPosition << endl;
     cerr << "MMPostion: " << MMPosition << endl;
-    cerr << "CurrentPos: " << module->position - seedPosition << endl;
-    cerr << "mvt_it: " << mvt_it << endl;
-    cerr << "MovingState: " << movingState << endl;
-    cerr << "GreenLight: " << greenLightIsOn << endl;
+    //cerr << "CurrentPos: " << module->position - seedPosition << endl;
+    //cerr << "mvt_it: " << mvt_it << endl;
+    //cerr << "MovingState: " << movingState << endl;
+    //cerr << "GreenLight: " << greenLightIsOn << endl;
     cerr << "isSource: " << isSource << endl;
     cerr << "isDestination: " << isDestination << endl;
-/*    cerr << "destinationOut: " << destinationOut << endl;
+    cerr << "destinationOut: " << destinationOut << endl;
     cerr << "parentPosition: " << parentPosition << endl;
     cerr << "childrenPostions: ";
     for(auto &c: childrenPositions) cerr << c << "; ";
     cerr << endl;
-    cerr << "distanceDst: " << distanceDst << endl;
+    cerr << "nbSrcCrossed: " << nbSrcCrossed << endl;
+    cerr << "lockedSrc: " << lockedSrc << endl;
+    cerr << "nbWaitedAnswersDestination: ";
+    for(auto &p: nbWaitedAnswersDestination) cerr << '{' << p.first << ", " << p.second << "}";
+    cerr << endl;
+    cerr << "PathIn: ";
+    for(auto &p: pathIn) cerr << '{' << p.first << ", " << p.second << "}";
+    cerr << endl;
+    cerr << "PathOut: ";
+    for(auto &dst: pathOut){
+        cerr << '{' << dst.first << ": ";
+        for(auto &p: dst.second) {
+            cerr << p << ", ";
+        }
+        cerr << '}' << endl;
+    }
+    cerr << endl;
+    cerr << "toSource: ";
+    for(auto &p: toSource) cerr << '{' << p.first << ", " << p.second << "}";
+    cerr << endl;
+
+ /*   cerr << "distanceDst: " << distanceDst << endl;
     cerr << "parentPositionDst: " << parentPositionDst << endl;
     cerr << "childrenPostionsDst: ";
     for(auto &c: childrenPositionsDst) cerr << c << "; ";
     cerr << endl;*/
-    cerr << "mainPathState: " << mainPathState << endl;
+    //cerr << "mainPathState: " << mainPathState << endl;
     // // cerr << "aug1PathState: " << aug1PathState << endl;
     // // cerr << "aug2PathState: " << aug2PathState << endl;
-    cerr << "mainPathIn: " << mainPathIn << endl;
+/*    cerr << "mainPathIn: " << mainPathIn << endl;
     cerr << "mainPathOut: ";
     for(auto &out: mainPathOut) cerr << out << " | ";
-    cerr << endl;
+    cerr << endl;*/
     // if(isDestination) cerr << "destinationFor: " << destinationOut << endl;
 /*    if(operation) {
         if(operation->isTransfer())
@@ -1629,4 +1686,18 @@ bool RePoStBlockCode::modulesAreMoving() {
             return true;
     }
     return false;
+}
+
+void RePoStBlockCode::setMMColor(Color c) {
+    if(shapeState == FRONTBACK) {
+        for(auto &p: FrontBackMM) {
+            auto *block = dynamic_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(seedPosition + p)->blockCode);
+            block->module->setColor(c);
+        }
+    } else {
+        for(auto &p: BackFrontMM) {
+            auto *block = dynamic_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(seedPosition + p)->blockCode);
+            block->module->setColor(c);
+        }
+    }
 }

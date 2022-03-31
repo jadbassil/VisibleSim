@@ -93,6 +93,9 @@ void BackMessage::handle(BaseSimulator::BlockCode *bc) {
     } else if (not isChild) {
         if (it != rbc.childrenPositions.end()) {
             rbc.childrenPositions.erase(it);
+            if(rbc.childrenPositions.empty()) {
+                rbc.isSource = true;
+            }
         }
     }
     if (rbc.nbWaitedAnswers == 0) {

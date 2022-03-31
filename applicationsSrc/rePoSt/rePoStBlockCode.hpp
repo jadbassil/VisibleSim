@@ -5,6 +5,7 @@
 #include "robots/catoms3D/catoms3DBlockCode.h"
 #include "operations.hpp"
 #include <set>
+#include <map>
 
 using namespace Catoms3D;
 
@@ -83,12 +84,21 @@ public:
     static int nbOfIterations;
 
     static int countMvts();
+
+/* ----------------------- ASYNC VARIABLES ---------------------- */
+    int nbSrcCrossed{-1};
+    int nbWaitedAnswersSrcCrossed{0};
+    int lockedSrc{0};
+    map<Cell3DPosition, int> nbWaitedAnswersDestination;
+    map<Cell3DPosition, Cell3DPosition> pathIn;
+    map<Cell3DPosition, vector<Cell3DPosition>> pathOut;
+    map<Cell3DPosition, Cell3DPosition> toSource;
 /* ----------------------- COORDINATION TREE VARIABLES ---------------------- */
     Cell3DPosition parentPosition = Cell3DPosition(-1,-1,-1);
     vector<Cell3DPosition> childrenPositions;
     Cell3DPosition parentPositionDst = Cell3DPosition(-1,-1,-1);
     vector<Cell3DPosition> childrenPositionsDst;
-    short distanceSrc{0}, distanceDst{0};
+    int distanceSrc{0}, distanceDst{0};
     short nbWaitedAnswers{0};
     bool isSource{false};
     bool isDestination{false};
@@ -286,6 +296,8 @@ public:
     inline Cell3DPosition relativePos() {
         return module->position - seedPosition;
     }
+
+    void setMMColor(Color c);
 
     Direction getPreviousOpDir();
     Direction getNextOpDir();
