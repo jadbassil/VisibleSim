@@ -88,7 +88,7 @@ public:
 /* ----------------------- ASYNC VARIABLES ---------------------- */
     int nbSrcCrossed{-1};
     int nbWaitedAnswersSrcCrossed{0};
-    int lockedSrc{0};
+    bool lockedSrc{false};
     map<Cell3DPosition, int> nbWaitedAnswersDestination;
     map<Cell3DPosition, Cell3DPosition> pathIn;
     map<Cell3DPosition, vector<Cell3DPosition>> pathOut;

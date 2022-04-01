@@ -133,14 +133,14 @@ void RePoStBlockCode::startup() {
 
     if(isDestination) {
         cerr << MMPosition << ": is destination for " << destinationOut << endl;
-            if(module->blockId == 141 or module->blockId == 841) {
-            for (auto p: getAdjacentMMSeeds()) {
-                RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
-                        p)->blockCode);
-                nbWaitedAnswersDestination[MMPosition]++;
-                sendHandleableMessage(new FindSrcMessage(MMPosition, toSeed->MMPosition, MMPosition),
-                                      interfaceTo(MMPosition, toSeed->MMPosition), 100, 200);
-            }
+            //if(module->blockId == 141 or module->blockId == 191) {
+                for (auto p: getAdjacentMMSeeds()) {
+                    RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
+                            p)->blockCode);
+                    nbWaitedAnswersDestination[MMPosition]++;
+                    sendHandleableMessage(new FindSrcMessage(MMPosition, toSeed->MMPosition, MMPosition),
+                                          interfaceTo(MMPosition, toSeed->MMPosition), 100, 200);
+            //}
         }
     }
 }

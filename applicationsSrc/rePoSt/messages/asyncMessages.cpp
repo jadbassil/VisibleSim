@@ -132,11 +132,23 @@ void FindSrcMessage::handle(BaseSimulator::BlockCode *bc) {
     if (rbc.pathIn.find(destination) == rbc.pathIn.end()) {
         rbc.pathIn[destination] = fromMMPosition;
         if (rbc.isSource) {
-            rbc.console << "lockedSrc: " << rbc.lockedSrc << "\n";
-            rbc.lockedSrc++;
-            rbc.sendHandleableMessage(
-                    new FoundSrcMessage(rbc.MMPosition, rbc.pathIn[destination], destination, true, true),
-                    rbc.interfaceTo(rbc.MMPosition, rbc.pathIn[destination]), 100, 200);
+            if (not rbc.lockedSrc) {
+                rbc.console << "lockedSrc: " << rbc.lockedSrc << "\n";
+                rbc.lockedSrc = true;
+                rbc.sendHandleableMessage(
+                        new FoundSrcMessage(rbc.MMPosition, rbc.pathIn[destination], destination, true, true),
+                        rbc.interfaceTo(rbc.MMPosition, rbc.pathIn[destination]), 100, 200);
+            } else {
+                getScheduler()->trace("Locked", rbc.module->blockId, RED);
+                /*getScheduler()->schedule(
+                        new NetworkInterfaceEnqueueOutgoingEvent(getScheduler()->now() + 100,
+                                                                 MessagePtr(this->clone()),
+                                                                 destinationInterface));*/
+                rbc.sendHandleableMessage(
+                        new FoundSrcMessage(rbc.MMPosition, rbc.pathIn[destination], destination, false, true),
+                        rbc.interfaceTo(rbc.MMPosition, rbc.pathIn[destination]), 100, 200);
+            }
+
             return;
         }
         for (auto &p: rbc.getAdjacentMMSeeds()) {
@@ -154,7 +166,6 @@ void FindSrcMessage::handle(BaseSimulator::BlockCode *bc) {
                     rbc.interfaceTo(rbc.MMPosition, rbc.pathIn[destination]), 100, 200);
 
         }
-
     } else {
         rbc.sendHandleableMessage(new FoundSrcMessage(rbc.MMPosition, fromMMPosition, destination, false, false),
                                   rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
@@ -181,24 +192,43 @@ void FoundSrcMessage::handle(BaseSimulator::BlockCode *bc) {
     }
 
     if (rbc.nbWaitedAnswersDestination[destination] == 0) {
-        //TODO: Cut when going branches when going up
         if (rbc.pathIn.find(destination) != rbc.pathIn.end()) {
             bool srcFound = (rbc.toSource.find(destination) != rbc.toSource.end());
             rbc.sendHandleableMessage(
                     new FoundSrcMessage(rbc.MMPosition, rbc.pathIn[destination], destination, srcFound, true),
                     rbc.interfaceTo(rbc.MMPosition, rbc.pathIn[destination]), 100, 200);
+
         } else {
-            cerr << "root\n";
-            rbc.sendHandleableMessage(new ConfirmSrcMessage(rbc.MMPosition, rbc.toSource[rbc.MMPosition], destination),
-                                      rbc.interfaceTo(rbc.MMPosition, rbc.toSource[rbc.MMPosition]), 100, 200);
+            rbc.console << "root\n";
+            if (rbc.toSource.find(destination) != rbc.toSource.end()) {
+                rbc.sendHandleableMessage(
+                        new ConfirmSrcMessage(rbc.MMPosition, rbc.toSource[rbc.MMPosition], destination),
+                        rbc.interfaceTo(rbc.MMPosition, rbc.toSource[rbc.MMPosition]), 100, 200);
+            }
+
             for (auto &p: rbc.pathOut[destination]) {
-                if (p != rbc.toSource[destination]) {
+                if (rbc.toSource.find(destination) != rbc.toSource.end()) {
+                    if (p != rbc.toSource[destination]) {
+                        rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, p, destination),
+                                                  rbc.interfaceTo(rbc.MMPosition, p), 100, 200);
+                    }
+                } else {
                     rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, p, destination),
                                               rbc.interfaceTo(rbc.MMPosition, p), 100, 200);
                 }
+
             }
+
+            /* for (auto &p: rbc.pathOut[destination]) {
+                 if (p != rbc.toSource[destination]) {
+                     rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, p, destination),
+                                               rbc.interfaceTo(rbc.MMPosition, p), 100, 200);
+                 }
+             }*/
         }
+
     }
+
 }
 
 void ConfirmSrcMessage::handle(BaseSimulator::BlockCode *bc) {
@@ -211,10 +241,26 @@ void ConfirmSrcMessage::handle(BaseSimulator::BlockCode *bc) {
         return;
     }
     if (rbc.toSource.find(destination) != rbc.toSource.end()) {
+        rbc.setMMColor(Colors[(destination.pt[0] + destination.pt[1] + destination.pt[2]) % 9]);
         rbc.sendHandleableMessage(new ConfirmSrcMessage(rbc.MMPosition, rbc.toSource[destination], destination),
                                   rbc.interfaceTo(rbc.MMPosition, rbc.toSource[destination]), 100, 200);
     } else {
         cerr << rbc.MMPosition << "->" << destination << endl;
+        /*for(auto it = rbc.pathIn.begin(); it != rbc.pathIn.end(); it++) {
+            (it->first != destination) ? rbc.pathIn.erase(it++) : (++it);
+        }*/
+    }
+    for (auto &p: rbc.pathOut[destination]) {
+        if (rbc.toSource.find(destination) != rbc.toSource.end()) {
+            if (p != rbc.toSource[destination]) {
+                rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, p, destination),
+                                          rbc.interfaceTo(rbc.MMPosition, p), 100, 200);
+            }
+        } else {
+            rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, p, destination),
+                                      rbc.interfaceTo(rbc.MMPosition, p), 100, 200);
+        }
+
     }
 }
 
@@ -227,8 +273,8 @@ void CutMessage::handle(BaseSimulator::BlockCode *bc) {
                                   rbc.interfaceTo(fromMMPosition, toMMPosition), 100, 200);
         return;
     }
-    if (rbc.pathOut.empty()) {
-
+    if (rbc.pathOut[destination].empty()) {
+        rbc.console << "empty: " << "\n";
     } else {
         for (auto &p: rbc.pathOut[destination]) {
             rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, p, destination),
@@ -240,5 +286,7 @@ void CutMessage::handle(BaseSimulator::BlockCode *bc) {
     rbc.pathOut.erase(destination);
     rbc.toSource.erase(destination);
     rbc.nbWaitedAnswersDestination.erase(destination);
-
+    if (rbc.isSource and rbc.lockedSrc) {
+        rbc.lockedSrc = false;
+    }
 }
