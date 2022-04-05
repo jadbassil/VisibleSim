@@ -42,6 +42,12 @@ void CrossedSrcMessage::handle(BaseSimulator::BlockCode *bc) {
             if (rbc.nbWaitedAnswersSrcCrossed == 0) {
                 rbc.sendHandleableMessage(new CrossedSrcAckMessage(rbc.MMPosition, rbc.parentPosition, true),
                                           rbc.interfaceTo(rbc.MMPosition, rbc.parentPosition), 100, 200);
+                while (not rbc.waitingMessages.empty()) {
+                    NetworkInterfaceEnqueueOutgoingEvent *ev = rbc.waitingMessages.front();
+                    ev->date = getScheduler()->now();
+                    getScheduler()->schedule(ev);
+                    rbc.waitingMessages.pop();
+                }
             }
         } else {
             rbc.sendHandleableMessage(new CrossedSrcAckMessage(rbc.MMPosition, fromMMPosition, false),
@@ -79,7 +85,12 @@ void CrossedSrcAckMessage::handle(BaseSimulator::BlockCode *bc) {
             rbc.sendHandleableMessage(new CrossedSrcAckMessage(rbc.MMPosition, rbc.parentPosition, true),
                                       rbc.interfaceTo(rbc.MMPosition, rbc.parentPosition), 100, 200);
         }
-
+        while (not rbc.waitingMessages.empty()) {
+            NetworkInterfaceEnqueueOutgoingEvent *ev = rbc.waitingMessages.front();
+            ev->date = getScheduler()->now();
+            getScheduler()->schedule(ev);
+            rbc.waitingMessages.pop();
+        }
     }
 }
 
@@ -87,6 +98,7 @@ void FindSrcMessage::handle(BaseSimulator::BlockCode *bc) {
     RePoStBlockCode &rbc = *dynamic_cast<RePoStBlockCode *>(bc);
 
     Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(toMMPosition);
+    rbc.mainPathState = BFS;
     if (rbc.module->position != toSeedPosition) {
         rbc.sendHandleableMessage(dynamic_cast<HandleableMessage *>(this->clone()),
                                   rbc.interfaceTo(fromMMPosition, toMMPosition), 100, 200);
@@ -96,54 +108,36 @@ void FindSrcMessage::handle(BaseSimulator::BlockCode *bc) {
         if (rbc.nbWaitedAnswersSrcCrossed > 0 or rbc.nbSrcCrossed == -1) {
             // Finding non disconnecting sources in progress
             getScheduler()->trace("Reschedule", rbc.module->blockId, MAGENTA);
+            rbc.waitingMessages.push(new NetworkInterfaceEnqueueOutgoingEvent(0, MessagePtr(this->clone()),
+                                                                              destinationInterface));/*
             bool test = getScheduler()->schedule(
                     new NetworkInterfaceEnqueueOutgoingEvent(getScheduler()->now() + 1000, MessagePtr(this->clone()),
                                                              destinationInterface));
-            if (not test) VS_ASSERT(false);
+            if (not test) VS_ASSERT(false);*/
             return;
         }
     }
 
-    /*if (rbc.pathIn.find(destination) == rbc.pathIn.end()) {
-        rbc.mainPathsOld.push_back(destination);
-        rbc.pathIn[destination] = fromMMPosition;
-        if (rbc.isSource) {
-            if(rbc.lockedSrc == 0) {
-                rbc.console << "lockedSrc: " << rbc.lockedSrc << "\n";
-                rbc.lockedSrc++;
-                rbc.sendHandleableMessage(
-                        new FoundSrcMessage(rbc.MMPosition, rbc.pathIn[destination], destination, rbc.MMPosition),
-                        rbc.interfaceTo(rbc.MMPosition, rbc.pathIn[destination]), 100, 200);
-            } else {
-                getScheduler()->trace("locked", rbc.module->blockId, RED);
-            }
-
-        } else {
-            for (auto &p: rbc.getAdjacentMMSeeds()) {
-                auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
-                        p)->blockCode);
-                if (toSeed->MMPosition != fromMMPosition) {
-                    rbc.sendHandleableMessage(new FindSrcMessage(rbc.MMPosition, toSeed->MMPosition, destination),
-                                              rbc.interfaceTo(rbc.MMPosition, toSeed->MMPosition), 100, 200);
-                }
-            }
-        }
-    }*/
     if (rbc.pathIn.find(destination) == rbc.pathIn.end()) {
         rbc.pathIn[destination] = fromMMPosition;
         if (rbc.isSource) {
             if (not rbc.lockedSrc) {
                 rbc.console << "lockedSrc: " << rbc.lockedSrc << "\n";
                 rbc.lockedSrc = true;
+
                 rbc.sendHandleableMessage(
                         new FoundSrcMessage(rbc.MMPosition, rbc.pathIn[destination], destination, true, true),
                         rbc.interfaceTo(rbc.MMPosition, rbc.pathIn[destination]), 100, 200);
+            } else if(rbc.mainPathState == ConfPath) {
+                getScheduler()->trace("Confirmed", rbc.module->blockId, RED);
             } else {
                 getScheduler()->trace("Locked", rbc.module->blockId, RED);
                 /*getScheduler()->schedule(
-                        new NetworkInterfaceEnqueueOutgoingEvent(getScheduler()->now() + 100,
+                        new NetworkInterfaceEnqueueOutgoingEvent(getScheduler()->now() + 1000,
                                                                  MessagePtr(this->clone()),
                                                                  destinationInterface));*/
+            /*    rbc.waitingMessages.push(new NetworkInterfaceEnqueueOutgoingEvent(0, MessagePtr(this->clone()),
+                                                                                  destinationInterface));*/
                 rbc.sendHandleableMessage(
                         new FoundSrcMessage(rbc.MMPosition, rbc.pathIn[destination], destination, false, true),
                         rbc.interfaceTo(rbc.MMPosition, rbc.pathIn[destination]), 100, 200);
@@ -201,23 +195,24 @@ void FoundSrcMessage::handle(BaseSimulator::BlockCode *bc) {
         } else {
             rbc.console << "root\n";
             if (rbc.toSource.find(destination) != rbc.toSource.end()) {
+                rbc.mainPathState = ConfPath;
                 rbc.sendHandleableMessage(
                         new ConfirmSrcMessage(rbc.MMPosition, rbc.toSource[rbc.MMPosition], destination),
                         rbc.interfaceTo(rbc.MMPosition, rbc.toSource[rbc.MMPosition]), 100, 200);
             }
 
-            for (auto &p: rbc.pathOut[destination]) {
-                if (rbc.toSource.find(destination) != rbc.toSource.end()) {
-                    if (p != rbc.toSource[destination]) {
+            /*    for (auto &p: rbc.pathOut[destination]) {
+                    if (rbc.toSource.find(destination) != rbc.toSource.end()) {
+                        if (p != rbc.toSource[destination]) {
+                            rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, p, destination),
+                                                      rbc.interfaceTo(rbc.MMPosition, p), 100, 200);
+                        }
+                    } else {
                         rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, p, destination),
                                                   rbc.interfaceTo(rbc.MMPosition, p), 100, 200);
                     }
-                } else {
-                    rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, p, destination),
-                                              rbc.interfaceTo(rbc.MMPosition, p), 100, 200);
-                }
 
-            }
+                }*/
 
             /* for (auto &p: rbc.pathOut[destination]) {
                  if (p != rbc.toSource[destination]) {
@@ -225,6 +220,19 @@ void FoundSrcMessage::handle(BaseSimulator::BlockCode *bc) {
                                                rbc.interfaceTo(rbc.MMPosition, p), 100, 200);
                  }
              }*/
+        }
+
+    }
+
+    for (auto &p: rbc.pathOut[destination]) {
+        if (rbc.toSource.find(destination) != rbc.toSource.end()) {
+            if (p != rbc.toSource[destination]) {
+                rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, p, destination),
+                                          rbc.interfaceTo(rbc.MMPosition, p), 100, 200);
+            }
+        } else {
+            rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, p, destination),
+                                      rbc.interfaceTo(rbc.MMPosition, p), 100, 200);
         }
 
     }
@@ -240,6 +248,7 @@ void ConfirmSrcMessage::handle(BaseSimulator::BlockCode *bc) {
                                   rbc.interfaceTo(fromMMPosition, toMMPosition), 100, 200);
         return;
     }
+    rbc.mainPathState = ConfPath;
     if (rbc.toSource.find(destination) != rbc.toSource.end()) {
         rbc.setMMColor(Colors[(destination.pt[0] + destination.pt[1] + destination.pt[2]) % 9]);
         rbc.sendHandleableMessage(new ConfirmSrcMessage(rbc.MMPosition, rbc.toSource[destination], destination),
@@ -250,18 +259,7 @@ void ConfirmSrcMessage::handle(BaseSimulator::BlockCode *bc) {
             (it->first != destination) ? rbc.pathIn.erase(it++) : (++it);
         }*/
     }
-    for (auto &p: rbc.pathOut[destination]) {
-        if (rbc.toSource.find(destination) != rbc.toSource.end()) {
-            if (p != rbc.toSource[destination]) {
-                rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, p, destination),
-                                          rbc.interfaceTo(rbc.MMPosition, p), 100, 200);
-            }
-        } else {
-            rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, p, destination),
-                                      rbc.interfaceTo(rbc.MMPosition, p), 100, 200);
-        }
 
-    }
 }
 
 void CutMessage::handle(BaseSimulator::BlockCode *bc) {
@@ -288,5 +286,12 @@ void CutMessage::handle(BaseSimulator::BlockCode *bc) {
     rbc.nbWaitedAnswersDestination.erase(destination);
     if (rbc.isSource and rbc.lockedSrc) {
         rbc.lockedSrc = false;
+        /*VS_ASSERT(false);*/
+        /*while (not rbc.waitingMessages.empty()) {
+            NetworkInterfaceEnqueueOutgoingEvent *ev = rbc.waitingMessages.front();
+            ev->date = getScheduler()->now();
+            getScheduler()->schedule(ev);
+            rbc.waitingMessages.pop();
+        }*/
     }
 }

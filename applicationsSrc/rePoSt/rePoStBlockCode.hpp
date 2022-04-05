@@ -6,6 +6,7 @@
 #include "operations.hpp"
 #include <set>
 #include <map>
+#include <queue>
 
 using namespace Catoms3D;
 
@@ -16,6 +17,7 @@ static const int IT_MODE_TERMINATION = 2003;
 static const int IT_MODE_STARTWAVE = 2004;
 static const int IT_MODE_NBMOVEMENTS = 2009;
 static const int IT_MODE_WAIT_MOVINGMODULES = 2011;
+
 
 inline const vector<Cell3DPosition> FrontBackMM = {Cell3DPosition(0, 0, 0),   Cell3DPosition(1, 0, 0),
                                              Cell3DPosition(1, 0, 1),   Cell3DPosition(2, 1, 2),
@@ -89,6 +91,8 @@ public:
     int nbSrcCrossed{-1};
     int nbWaitedAnswersSrcCrossed{0};
     bool lockedSrc{false};
+
+    queue<NetworkInterfaceEnqueueOutgoingEvent*> waitingMessages;
     map<Cell3DPosition, int> nbWaitedAnswersDestination;
     map<Cell3DPosition, Cell3DPosition> pathIn;
     map<Cell3DPosition, vector<Cell3DPosition>> pathOut;
