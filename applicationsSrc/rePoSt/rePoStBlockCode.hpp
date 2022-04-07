@@ -91,6 +91,7 @@ public:
     int nbSrcCrossed{-1};
     int nbWaitedAnswersSrcCrossed{0};
     bool lockedSrc{false};
+    bool chosenSrc{false};
 
     queue<NetworkInterfaceEnqueueOutgoingEvent*> waitingMessages;
     map<Cell3DPosition, int> nbWaitedAnswersDestination;

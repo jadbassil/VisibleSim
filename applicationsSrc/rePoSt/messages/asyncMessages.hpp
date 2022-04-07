@@ -99,7 +99,7 @@ public:
 
     [[nodiscard]] string getName() const override {
         return "FoundSrcMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
-               destination.to_string() + ", " + to_string(found) + "}";
+               destination.to_string() + ", " + to_string(found) + ", " + to_string(isChild) + "}";
     }
 };
 
