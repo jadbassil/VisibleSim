@@ -20,6 +20,9 @@
         <block position="3,0,1" />
         <block position="4,0,1" />
 
+        <block position="3,0,2" />
+        <block position="4,0,2" />
+
 		<block position="0,0,1" />
 		<block position="0,0,2" />
         <block position="0,0,3" />

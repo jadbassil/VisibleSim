@@ -59,7 +59,7 @@ const vector<Cell3DPosition> FillingPositions_BackFront_Zeven = {
     Cell3DPosition(0, 0, 3),
 };
 
-enum PathState {NONE, BFS, ConfPath, Streamline};
+enum PathState {NONE, BFS, Overlap, ConfPath, Streamline};
 enum FillingState {EMPTY, FULL};
 enum ProcessState {PASSIVE, ACTIVE};
 enum RenconfigurationStep {SRCDEST, MAXFLOW, TRANSPORT, DONE};

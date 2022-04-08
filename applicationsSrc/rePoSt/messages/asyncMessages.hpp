@@ -151,4 +151,51 @@ public:
     }
 };
 
+class OverlapMessage : public HandleableMessage {
+private:
+    Cell3DPosition fromMMPosition;
+    Cell3DPosition toMMPosition;
+    Cell3DPosition destination;
+
+
+public:
+    OverlapMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
+                      const Cell3DPosition &_destination)
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_destination) {};
+
+    ~OverlapMessage() override = default;
+
+    void handle(BaseSimulator::BlockCode *) override;
+
+    [[nodiscard]] Message *clone() const override { return new OverlapMessage(*this); }
+
+    [[nodiscard]] string getName() const override {
+        return "OverlapMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
+               destination.to_string() + "}";
+    }
+};
+
+class AvailableAsyncMessage : public HandleableMessage {
+private:
+    Cell3DPosition fromMMPosition;
+    Cell3DPosition toMMPosition;
+    Cell3DPosition destination;
+
+
+public:
+    AvailableAsyncMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
+                   const Cell3DPosition &_destination)
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_destination) {};
+
+    ~AvailableAsyncMessage() override = default;
+
+    void handle(BaseSimulator::BlockCode *) override;
+
+    [[nodiscard]] Message *clone() const override { return new AvailableAsyncMessage(*this); }
+
+    [[nodiscard]] string getName() const override {
+        return "AvailableMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
+               destination.to_string() + "}";
+    }
+};
 #endif //VISIBLESIM_ASYNCMESSAGES_HPP
