@@ -151,7 +151,7 @@ public:
     }
 };
 
-class OverlapMessage : public HandleableMessage {
+class ConfirmEdgeAsyncMessage : public HandleableMessage {
 private:
     Cell3DPosition fromMMPosition;
     Cell3DPosition toMMPosition;
@@ -159,18 +159,18 @@ private:
 
 
 public:
-    OverlapMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
-                      const Cell3DPosition &_destination)
+    ConfirmEdgeAsyncMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
+                          const Cell3DPosition &_destination)
             : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_destination) {};
 
-    ~OverlapMessage() override = default;
+    ~ConfirmEdgeAsyncMessage() override = default;
 
     void handle(BaseSimulator::BlockCode *) override;
 
-    [[nodiscard]] Message *clone() const override { return new OverlapMessage(*this); }
+    [[nodiscard]] Message *clone() const override { return new ConfirmEdgeAsyncMessage(*this); }
 
     [[nodiscard]] string getName() const override {
-        return "OverlapMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
+        return "ConfirmEdge{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
                destination.to_string() + "}";
     }
 };
