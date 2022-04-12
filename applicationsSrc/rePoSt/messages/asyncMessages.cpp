@@ -102,6 +102,7 @@ void FindSrcMessage::handle(BaseSimulator::BlockCode *bc) {
 
     if (rbc.module->position != toSeedPosition) {
         if(not rbc.interfaceTo(fromMMPosition, toMMPosition)->isConnected()) {
+            return;
             getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(getScheduler()->now()+100, MessagePtr(this->clone()),
                                                                               destinationInterface));
         } else {
@@ -235,6 +236,12 @@ void ConfirmSrcMessage::handle(BaseSimulator::BlockCode *bc) {
                 }
                 //VS_ASSERT(false);
             }*/
+            for(auto &p: rbc.getAdjacentMMSeeds()) {
+                auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
+                        p)->blockCode);
+                rbc.sendHandleableMessage(new AvailableAsyncMessage(rbc.MMPosition, toSeed->MMPosition, destination),
+                                          rbc.interfaceTo(rbc.MMPosition, toSeed->MMPosition), 100, 200);
+            }
         } else {
             rbc.setOperation(rbc.MMPosition, rbc.pathIn[destination]);
             rbc.isSource = false;
@@ -265,12 +272,7 @@ void ConfirmSrcMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.sendHandleableMessage(new AvailableAsyncMessage(rbc.MMPosition, out, destination),
                                   rbc.interfaceTo(rbc.MMPosition, out), 100, 200);
     }*/
-    for(auto &p: rbc.getAdjacentMMSeeds()) {
-        auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
-                p)->blockCode);
-        rbc.sendHandleableMessage(new AvailableAsyncMessage(rbc.MMPosition, toSeed->MMPosition, destination),
-                                  rbc.interfaceTo(rbc.MMPosition, toSeed->MMPosition), 100, 200);
-    }
+
 }
 
 void CutMessage::handle(BaseSimulator::BlockCode *bc) {
@@ -326,6 +328,7 @@ void AvailableAsyncMessage::handle(BaseSimulator::BlockCode *bc) {
     Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(toMMPosition);
     if (rbc.module->position != toSeedPosition) {
         if(not rbc.interfaceTo(fromMMPosition, toMMPosition)->isConnected()) {
+            return;
             getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(getScheduler()->now()+1000, MessagePtr(this->clone()),
                                                                               destinationInterface));
         } else {

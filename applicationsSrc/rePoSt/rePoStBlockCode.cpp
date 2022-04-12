@@ -142,7 +142,7 @@ void RePoStBlockCode::startup() {
                     nbWaitedAnswersDestination[MMPosition]++;
                /*     pathOut[MMPosition].push_back(toSeed->MMPosition);*/
                     sendHandleableMessage(new FindSrcMessage(MMPosition, toSeed->MMPosition, MMPosition),
-                                          interfaceTo(MMPosition, toSeed->MMPosition), 1000, 200);
+                                          interfaceTo(MMPosition, toSeed->MMPosition), 500, 200);
             }
         }
     }
@@ -1113,7 +1113,7 @@ void RePoStBlockCode::onMotionEnd() {
                         /*     pathOut[MMPosition].push_back(toSeed->MMPosition);*/
                         seed->sendHandleableMessage(
                                 new FindSrcMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition),
-                                seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 1000, 200);
+                                seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200);
 
                     }
                 }
@@ -1750,11 +1750,13 @@ bool RePoStBlockCode::modulesAreMoving() {
 void RePoStBlockCode::setMMColor(Color c) {
     if(shapeState == FRONTBACK) {
         for(auto &p: FrontBackMM) {
+            if(not lattice->cellHasBlock(seedPosition + p)) continue;
             auto *block = dynamic_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(seedPosition + p)->blockCode);
             block->module->setColor(c);
         }
     } else {
         for(auto &p: BackFrontMM) {
+            if(not lattice->cellHasBlock(seedPosition + p)) continue;
             auto *block = dynamic_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(seedPosition + p)->blockCode);
             block->module->setColor(c);
         }
@@ -1773,20 +1775,24 @@ void RePoStBlockCode::resetMM() {
     seed->console << "reset\n\n\n";
     //if(not seed->isDestination) {
         seed->module->setColor(CYAN);
-        if (not lattice->cellHasBlock(getSeedPositionFromMMPosition(seed->pathOut.begin()->second[0]))) {
-            if (auto it = std::find(childrenPositions.begin(), childrenPositions.end(),
-                                    seed->pathOut.begin()->second[0]);
-                    it != childrenPositions.end()) {
-                childrenPositions.erase(it);
-            }
-            if (childrenPositions.empty() and seed->isPotentialSource()) {
-                seed->isSource = true;
-                seed->setMMColor(RED);
-            }
-        }
+
 
         Cell3DPosition destination = seed->pathIn.begin()->first;
         if(not seed->pathOut.empty()) {
+            if( not seed->pathOut.begin()->second.empty()) {
+                if (not lattice->cellHasBlock(getSeedPositionFromMMPosition(seed->pathOut.begin()->second[0]))) {
+                    if (auto it = std::find(childrenPositions.begin(), childrenPositions.end(),
+                                            seed->pathOut.begin()->second[0]);
+                            it != childrenPositions.end()) {
+                        childrenPositions.erase(it);
+                    }
+                    if (childrenPositions.empty() and seed->isPotentialSource()) {
+                        seed->isSource = true;
+                        seed->setMMColor(RED);
+                    }
+                }
+            }
+
             seed->pathOut.begin()->second.clear();
             seed->pathOut.erase(seed->pathOut.begin());
         }
