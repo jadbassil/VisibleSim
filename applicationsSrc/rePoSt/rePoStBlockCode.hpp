@@ -298,7 +298,7 @@ public:
     /**
      * @return module's position relative to the meta-module seedPosition
     **/
-    inline Cell3DPosition relativePos() {
+    inline Cell3DPosition relativePos() const {
         return module->position - seedPosition;
     }
 
@@ -307,6 +307,8 @@ public:
     Direction getPreviousOpDir();
     Direction getNextOpDir();
     bool setGreenLight(bool onoff);
+
+    void resetMM();
 
     /**
      * This function is called on startup of the blockCode, it can be used to perform initial

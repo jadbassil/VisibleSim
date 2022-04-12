@@ -68,12 +68,12 @@ void BackTermMessage::handle(BaseSimulator::BlockCode *bc) {
                     reconfigurationStep = TRANSPORT;
                     bool end = true;
                     for (auto id_block : BaseSimulator::getWorld()->buildingBlocksMap) {
-                        RePoStBlockCode *block =
-                            static_cast<RePoStBlockCode *>(id_block.second->blockCode);
+                        auto *block =
+                            dynamic_cast<RePoStBlockCode *>(id_block.second->blockCode);
                         if (block->isSource and block->mainPathState == Streamline and
                             block->module->position == block->seedPosition) {
                             end = false;
-                            RePoStBlockCode *coord = static_cast<RePoStBlockCode *>(
+                            auto *coord = dynamic_cast<RePoStBlockCode *>(
                                 BaseSimulator::getWorld()
                                     ->getBlockByPosition(block->coordinatorPosition)
                                     ->blockCode);

@@ -133,7 +133,7 @@ void RePoStBlockCode::startup() {
 
     if(isDestination) {
         cerr << MMPosition << ": is destination for " << destinationOut << endl;
-            if(module->blockId == 1 or module->blockId == 11 /*or module->blockId == 161*/) {
+            if(module->blockId == 1 or module->blockId == 11 or true) {
                 mainPathState = BFS;
                 mainPathsOld.push_back(MMPosition);
                 for (auto p: getAdjacentMMSeeds()) {
@@ -838,6 +838,7 @@ void RePoStBlockCode::updateState() {
    
     mvt_it = 0;
     isCoordinator = false;
+    isSource = false;
     //module->setColor(BLUE);
     if(not greenLightIsOn) {
         setGreenLight(true);
@@ -1049,7 +1050,12 @@ void RePoStBlockCode::onMotionEnd() {
         }
         if (movingState == IN_POSITION) {
             console << "mvt_it in pos: " << mvt_it << "\n";
-            if((operation->isBuild() or operation->isFill()) and mvt_it >= (*operation->localRules).size() -1) {
+            if (mvt_it >= (operation->localRules->size() - 1)) {
+
+                cerr << "Operation ended: " << seedPosition << endl;
+                /*resetMM();*/
+            }
+         /*   if((operation->isBuild() or operation->isFill()) and mvt_it >= (*operation->localRules).size() -1) {
                 cerr << module->blockId << " " << MMPosition << ": Destination reached" << endl;
                 console << module->blockId << " " << MMPosition << ": Destination reached" << "\n";
                 NbOfDestinationsReached++;
@@ -1079,14 +1085,52 @@ void RePoStBlockCode::onMotionEnd() {
                     }
                     
                 }
+            }*/
+
+            bool opDone = false;
+            if ((operation->isBuild() or operation->isFill()) and mvt_it >= (*operation->localRules).size() - 1) {
+                opDone = true;
             }
             updateState();
+            if(opDone) {
+                auto *seed = dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()->getBlockByPosition(
+                        seedPosition)->blockCode);
+                if(seed->isPotentialDestination()) {
+                    seed->isDestination = true;
+                }
+                if (seed->isDestination) {
+                    cerr << seed->MMPosition << ": is destination for " << seed->destinationOut << endl;
+/*
+                    if(module->blockId == 25) VS_ASSERT(false);
+*/
+                    seed->mainPathState = BFS;
+                    seed->mainPathsOld.push_back(seed->MMPosition);
+
+                    for (auto p: seed->getAdjacentMMSeeds()) {
+                        RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
+                                p)->blockCode);
+                        seed->nbWaitedAnswersDestination[MMPosition]++;
+                        /*     pathOut[MMPosition].push_back(toSeed->MMPosition);*/
+                        seed->sendHandleableMessage(
+                                new FindSrcMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition),
+                                seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 1000, 200);
+
+                    }
+                }
+            }
+
+
         }
     }
 }
 
 int RePoStBlockCode::sendHandleableMessage(HandleableMessage* msg, P2PNetworkInterface* dest,
                                            Time t0, Time dt) {
+    if(not dest->isConnected()) {
+  /*      VS_ASSERT(false);*/
+        scheduler->schedule(new NetworkInterfaceEnqueueOutgoingEvent(t0, msg, dest));
+        return -1;
+    }
     return BlockCode::sendMessage(msg, dest, t0, dt);
 }
 
@@ -1173,7 +1217,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                 BaseSimulator::getWorld()->getBlockByPosition(pos)->blockCode
             );
             console << "ADD NEIGHBOR: " << pos << "\n";
-            if(not rotating and posBlock->rotating or (!posBlock->rotating and isCoordinator) ) {
+            if((not rotating and posBlock->rotating) or (!posBlock->rotating and isCoordinator) ) {
                 setGreenLight(false);
             }
             if(not operation) return;
@@ -1216,6 +1260,8 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                 }
             }
 
+
+
             break;
         }
 
@@ -1242,6 +1288,13 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                     //if(not hasMovingNeighbors)
                         setGreenLight(true);
                 }
+
+            }
+            if (isCoordinator and (mvt_it > operation->localRules->size() - 1 or
+                                   (transferCount == 10 and operation->isTransfer() and
+                                    operation->getDirection() == Direction::UP))) {
+                console << "test\n";
+                resetMM();
             }
             break;
         }
@@ -1274,7 +1327,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                     if(not awaitingCoordinator or not operation) return;
                     Cell3DPosition targetModule =
                         seedPosition + (*operation->localRules)[mvt_it].currentPosition;
-                    console << mvt_it  << " " << operation->localRules->size() << "\n";
+                    console << mvt_it  << " " << targetModule<< "\n";
                     if (not lattice->cellHasBlock(targetModule) and isCoordinator and mvt_it < operation->localRules->size()) {
                            getScheduler()->trace("TransferBack", module->blockId, RED);
                         getScheduler()->schedule(
@@ -1390,14 +1443,14 @@ void RePoStBlockCode::onBlockSelected() {
     // Debug stuff:
     cerr << endl << "--- PRINT MODULE " << *module << "---" << endl;
 /*    cerr << "isSeed: " << (seedPosition == module->position ? "true": "false") << endl;*/
-    //cerr << "isCoordinator: " << (isCoordinator ? "true": "false") << endl;
-    //cerr << "coordinatorPosition: " << coordinatorPosition << endl;
+    cerr << "isCoordinator: " << (isCoordinator ? "true": "false") << endl;
+    cerr << "coordinatorPosition: " << coordinatorPosition << endl;
     //cerr << "ShapeState: " << shapeState << endl;
     //cerr << "FillingState: " << (fillingState == EMPTY ? "EMPTY": "FULL") << endl;
     cerr << "seedPosition: " << seedPosition << endl;
     cerr << "MMPostion: " << MMPosition << endl;
     //cerr << "CurrentPos: " << module->position - seedPosition << endl;
-    //cerr << "mvt_it: " << mvt_it << endl;
+    cerr << "mvt_it: " << mvt_it << endl;
     //cerr << "MovingState: " << movingState << endl;
     //cerr << "GreenLight: " << greenLightIsOn << endl;
     cerr << "isSource: " << isSource << endl;
@@ -1427,8 +1480,11 @@ void RePoStBlockCode::onBlockSelected() {
     cerr << "toSource: ";
     for(auto &p: toSource) cerr << '{' << p.first << ", " << p.second << "}";
     cerr << endl;
-
- /*   cerr << "distanceDst: " << distanceDst << endl;
+    cerr << "mainPathsOld: ";
+    for(auto &p: mainPathsOld) cerr << p << "; ";
+    cerr << endl;
+    cerr << "PathState: " << mainPathState <<  endl;
+/*    cerr << "distanceDst: " << distanceDst << endl;
     cerr << "parentPositionDst: " << parentPositionDst << endl;
     cerr << "childrenPostionsDst: ";
     for(auto &c: childrenPositionsDst) cerr << c << "; ";
@@ -1703,4 +1759,56 @@ void RePoStBlockCode::setMMColor(Color c) {
             block->module->setColor(c);
         }
     }
+}
+
+void RePoStBlockCode::resetMM() {
+    if (operation->isDismantle()) {
+        return;
+    }
+    auto *seed = dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()->getBlockByPosition(
+            seedPosition)->blockCode);
+    free(seed->operation);
+    seed->operation = nullptr;
+
+    seed->console << "reset\n\n\n";
+    //if(not seed->isDestination) {
+        seed->module->setColor(CYAN);
+        if (not lattice->cellHasBlock(getSeedPositionFromMMPosition(seed->pathOut.begin()->second[0]))) {
+            if (auto it = std::find(childrenPositions.begin(), childrenPositions.end(),
+                                    seed->pathOut.begin()->second[0]);
+                    it != childrenPositions.end()) {
+                childrenPositions.erase(it);
+            }
+            if (childrenPositions.empty() and seed->isPotentialSource()) {
+                seed->isSource = true;
+                seed->setMMColor(RED);
+            }
+        }
+
+        Cell3DPosition destination = seed->pathIn.begin()->first;
+        if(not seed->pathOut.empty()) {
+            seed->pathOut.begin()->second.clear();
+            seed->pathOut.erase(seed->pathOut.begin());
+        }
+        if(not seed->pathIn.empty()) {
+            seed->pathIn.erase(seed->pathIn.begin());
+        }
+
+        seed->mainPathState = NONE;
+        seed->isDestination = false;
+        auto *coordinator = dynamic_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(seed->coordinatorPosition)->blockCode);
+        coordinator->transferCount = 0;
+        coordinator->mvt_it = 0;
+        coordinator->isCoordinator = false;
+        coordinator->console << "reset\n\n\n";
+        seed->console << "reset\n\n\n";
+        for(auto &p: seed->getAdjacentMMSeeds()) {
+            auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
+                    p)->blockCode);
+                seed->sendHandleableMessage(new AvailableAsyncMessage(seed->MMPosition, toSeed->MMPosition, destination),
+                                            seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200);
+        }
+    //}
+
+
 }

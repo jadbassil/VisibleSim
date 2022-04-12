@@ -51,6 +51,7 @@ void CoordinateBackMessage::handle(BaseSimulator::BlockCode *bc) {
     if (senderMM->sendingCoordinateBack) {
         senderMM->sendingCoordinateBack = false;
     }
+
     if (rbc.module->position == coordinatorPosition) {
         rbc.console << "mvt_it: " << rbc.mvt_it << "\n";
         rbc.console << "steps: " << steps << "\n";
@@ -65,6 +66,7 @@ void CoordinateBackMessage::handle(BaseSimulator::BlockCode *bc) {
             // operation ended
             rbc.isCoordinator = false;
             rbc.console << "Movement Done\n";
+            rbc.resetMM();
             return;
         }
         if ((*rbc.operation->localRules)[rbc.mvt_it].currentPosition + rbc.seedPosition ==

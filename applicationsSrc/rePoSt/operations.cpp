@@ -415,7 +415,7 @@ void Fill_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, const 
                     rbc->transferCount++;
                     rbc->console << "mvt_it1: " << rbc->mvt_it << "\n";
 
-                    getScheduler()->trace("transferCount: " + to_string(rbc->transferCount),
+                    getScheduler()->trace( "transferCount: " + to_string(rbc->transferCount),
                                           rbc->module->blockId, Color(MAGENTA));
 
                     Cell3DPosition targetModule =
@@ -1724,6 +1724,7 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
         rbc->console << "mvt_it: " << rbc->mvt_it << "\n";
     } else if (rbc->isCoordinator and pos == (rbc->module->position + Cell3DPosition(0, 1, 1)) and
                (direction == Direction::BACK or direction == Direction::UP or direction == Direction::LEFT) and mmShape == BACKFRONT and isComingFromBack() ) {
+
         if(rbc->transferCount >= 10) return;
         rbc->transferCount++; 
         getScheduler()->trace("transferCount: " + to_string(rbc->transferCount), rbc->module->blockId, Color(MAGENTA));
@@ -1733,7 +1734,7 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
                         new CoordinateMessage(rbc->operation, targetModule, rbc->module->position,
                                               rbc->mvt_it),
                         rbc->module->getInterface(pos), 100, 200);
-
+        if(direction == Direction::BACK and rbc->transferCount == 10) setMvtItToNextModule(bc);
         if(rbc->transferCount < 10)
             setMvtItToNextModule(bc);
     }
@@ -1813,12 +1814,12 @@ bool Build_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
     switch (direction) {
         case Direction::BACK: {
             if(mmShape == FRONTBACK) {
-                if(rbc->mvt_it == 49) return true;
+                if(rbc->mvt_it == 49 or rbc->mvt_it == localRules->size() - 1) return true;
             } else { //BACKFRONT
-                if (getPrevOpDirection() == Direction::BACK and rbc->mvt_it >= 37 and
-                    rbc->mvt_it < localRules->size() - 1)
+                if (getPrevOpDirection() == Direction::BACK and rbc->mvt_it >= 37/* and
+                    rbc->mvt_it < localRules->size() - 1*/)
                     return true;
-                if (rbc->mvt_it >= 42 and rbc->mvt_it < localRules->size() - 1) return true;
+                if (rbc->mvt_it >= 42 /*and rbc->mvt_it < localRules->size() - 1*/) return true;
             }
         } break;
 
