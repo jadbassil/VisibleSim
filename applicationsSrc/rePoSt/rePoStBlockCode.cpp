@@ -271,8 +271,7 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
         BaseSimulator::getWorld()->getBlockByPosition(coordinatorPosition)->blockCode);
     coordinator->isCoordinator = true;
 
-    bool comingFromBack =
-            (inPosition.pt[0] == MMPosition.pt[0] and inPosition.pt[1] == MMPosition.pt[1] - 1 and
+        bool comingFromBack = (getPreviousOpDir() == Direction::BACK  and
              shapeState == BACKFRONT);
     // set coordinator's operation
     if (isSource) {
@@ -631,40 +630,43 @@ Catoms3DBlock* RePoStBlockCode::findTargetLightAmongNeighbors(
 
 Direction RePoStBlockCode::getPreviousOpDir() {
     if(not lattice->cellHasBlock(seedPosition)) return Direction::UNDEFINED;
-    if( static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode)->mainPathIn == Cell3DPosition(-1,-1,-1)){
+    auto *seed = static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode);
+    if(seed->isSource or seed->pathOut.empty() or seed->pathOut.begin()->second.empty())
+        return Direction::UNDEFINED;
+    if( seed->pathOut.begin()->second[0] == Cell3DPosition(-1,-1,-1)){
         return Direction::UNDEFINED;
     }
     //if(not operation) return Direction::UNDEFINED;
     
 //    if(not operation->isTransfer()) VS_ASSERT(false);
     
-    if(static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode)->isSource)
-        return Direction::UNDEFINED;
-    Cell3DPosition prevDirVector = MMPosition - 
-        static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode)->mainPathIn;
+
+    Cell3DPosition prevDirVector = MMPosition - seed->pathOut.begin()->second[0] ;
     if (prevDirVector.pt[0] == -1) return Direction::LEFT;
     if (prevDirVector.pt[0] == 1) return  Direction::RIGHT;
     if (prevDirVector.pt[1] == -1)return Direction::FRONT;
     if (prevDirVector.pt[1] == 1) return  Direction::BACK;
     if (prevDirVector.pt[2] == -1)return Direction::DOWN;
     if (prevDirVector.pt[2] == 1) return  Direction::UP;
+    return Direction::UNDEFINED;
 }
 
 Direction RePoStBlockCode::getNextOpDir() {
     if (not lattice->cellHasBlock(seedPosition)) return Direction::UNDEFINED;
+    auto *seed = static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode);
     if ((static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode))
-            ->mainPathOut.empty())
+            ->pathIn.empty())
         return Direction::UNDEFINED;
 
     Cell3DPosition nextSeedPosition;
     nextSeedPosition = getSeedPositionFromMMPosition(
         static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode)
-            ->mainPathOut.front());
+            ->pathIn.begin()->second);
     RePoStBlockCode* nextSeed =
         static_cast<RePoStBlockCode*>(lattice->getBlock(nextSeedPosition)->blockCode);
-    if (nextSeed->mainPathOut.empty()) return Direction::UNDEFINED;
+    if (nextSeed->pathIn.empty()) return Direction::UNDEFINED;
     Cell3DPosition nextNextSeedPosition;
-    nextNextSeedPosition = getSeedPositionFromMMPosition(nextSeed->mainPathOut.front());
+    nextNextSeedPosition = getSeedPositionFromMMPosition(nextSeed->pathIn.begin()->second);
     RePoStBlockCode* nextNextSeed =
         static_cast<RePoStBlockCode*>(lattice->getBlock(nextNextSeedPosition)->blockCode);
     return nextNextSeed->getPreviousOpDir();
@@ -1497,10 +1499,12 @@ void RePoStBlockCode::onBlockSelected() {
     for(auto &out: mainPathOut) cerr << out << " | ";
     cerr << endl;*/
     // if(isDestination) cerr << "destinationFor: " << destinationOut << endl;
-/*    if(operation) {
+  if(operation) {
         if(operation->isTransfer())
         cerr << "prevOpDir: " << operation->getPrevOpDirection() << endl;
+        cerr << "nextOpDir: " << getNextOpDir() << endl;
     }
+  /*
     cerr << endl;
     cerr << "aug1PathIn: " << aug1PathIn << endl;
     cerr << "aug1PathOut: ";
