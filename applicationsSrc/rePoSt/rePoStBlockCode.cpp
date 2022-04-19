@@ -233,6 +233,8 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
     else if (directionVector.pt[1] == 1) direction = Direction::BACK;
     else if (directionVector.pt[2] == -1) direction = Direction::DOWN;
     else if (directionVector.pt[2] == 1) direction = Direction::UP;
+    else
+        VS_ASSERT(false);
 
     //set operation's coordinator position
     if (isSource) {
@@ -849,23 +851,21 @@ void RePoStBlockCode::updateState() {
 
 bool RePoStBlockCode::isInMM(Cell3DPosition& neighborPosition) {
     Cell3DPosition position = (neighborPosition - seedPosition);
+    bool inBorder{false}, inFilling{false};
     if (shapeState == FRONTBACK) {
-        bool inBorder =
-            (find(FrontBackMM.begin(), FrontBackMM.end(), position) != FrontBackMM.end());
-        bool inFill =
-            (find(FillingPositions_FrontBack_Zeven.begin(), FillingPositions_FrontBack_Zeven.end(),
-                  position) != FillingPositions_FrontBack_Zeven.end());
-        if (inBorder) return true;
+        inBorder = isIn(FrontBackMM, neighborPosition);
+        if(MMPosition.pt[2] % 2 == 0)
+            inFilling = isIn(FillingPositions_FrontBack_Zeven, neighborPosition);
+        else
+            inFilling = isIn(FillingPositions_FrontBack_Zodd, neighborPosition);
     } else if (shapeState == BACKFRONT) {
-        bool inBorder =
-            (find(BackFrontMM.begin(), BackFrontMM.end(), position) != BackFrontMM.end());
-        bool inFill =
-            (find(FillingPositions_BackFront_Zeven.begin(), FillingPositions_BackFront_Zeven.end(),
-                  position) != FillingPositions_BackFront_Zeven.end());
-        if (inBorder) return true;
-    } else {
+        inBorder = isIn(BackFrontMM, neighborPosition);
+        if(MMPosition.pt[2] % 2 == 0)
+            inFilling = isIn(FillingPositions_BackFront_Zeven, neighborPosition);
+        else
+            inFilling = isIn(FillingPositions_BackFront_Zodd, neighborPosition);
     }
-    return false;
+    return (inBorder or inFilling);
 }
 
 Cell3DPosition RePoStBlockCode::nearestPositionTo(Cell3DPosition& targetPosition,
@@ -1052,7 +1052,7 @@ void RePoStBlockCode::onMotionEnd() {
         }
         if (movingState == IN_POSITION) {
             console << "mvt_it in pos: " << mvt_it << "\n";
-            if (mvt_it >= (operation->localRules->size() - 1)) {
+            if (mvt_it >= (operation->localRules->size() - 1) and operation->isBuild()) {
 
                 cerr << "Operation ended: " << seedPosition << endl;
                 /*resetMM();*/
@@ -1107,6 +1107,11 @@ void RePoStBlockCode::onMotionEnd() {
 */
                     seed->mainPathState = BFS;
                     seed->mainPathsOld.push_back(seed->MMPosition);
+                    if(not seed->pathOut.empty()) {
+                        seed->pathOut.begin()->second.clear();
+                        seed->pathOut.erase(seed->pathOut.begin());
+                    }
+
 
                     for (auto p: seed->getAdjacentMMSeeds()) {
                         RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
@@ -1223,6 +1228,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                 setGreenLight(false);
             }
             if(not operation) return;
+
             operation->handleAddNeighborEvent(this, pos);
         
 
@@ -1778,46 +1784,71 @@ void RePoStBlockCode::resetMM() {
 
     seed->console << "reset\n\n\n";
     //if(not seed->isDestination) {
-        seed->module->setColor(CYAN);
+    seed->module->setColor(CYAN);
 
 
-        Cell3DPosition destination = seed->pathIn.begin()->first;
-        if(not seed->pathOut.empty()) {
-            if( not seed->pathOut.begin()->second.empty()) {
-                if (not lattice->cellHasBlock(getSeedPositionFromMMPosition(seed->pathOut.begin()->second[0]))) {
-                    if (auto it = std::find(childrenPositions.begin(), childrenPositions.end(),
-                                            seed->pathOut.begin()->second[0]);
-                            it != childrenPositions.end()) {
-                        childrenPositions.erase(it);
-                    }
-                    if (childrenPositions.empty() and seed->isPotentialSource()) {
-                        seed->isSource = true;
-                        seed->setMMColor(RED);
-                    }
+    Cell3DPosition destination = seed->pathIn.begin()->first;
+    if (not seed->pathOut.empty()) {
+        if (not seed->pathOut.begin()->second.empty()) {
+            if (not lattice->cellHasBlock(getSeedPositionFromMMPosition(seed->pathOut.begin()->second[0]))) {
+                if (auto it = std::find(childrenPositions.begin(), childrenPositions.end(),
+                                        seed->pathOut.begin()->second[0]);
+                        it != childrenPositions.end()) {
+                    childrenPositions.erase(it);
+                }
+                if (childrenPositions.empty() and seed->isPotentialSource()) {
+                    seed->isSource = true;
+                    seed->setMMColor(RED);
                 }
             }
-
-            seed->pathOut.begin()->second.clear();
-            seed->pathOut.erase(seed->pathOut.begin());
-        }
-        if(not seed->pathIn.empty()) {
-            seed->pathIn.erase(seed->pathIn.begin());
         }
 
-        seed->mainPathState = NONE;
-        seed->isDestination = false;
-        auto *coordinator = dynamic_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(seed->coordinatorPosition)->blockCode);
-        coordinator->transferCount = 0;
-        coordinator->mvt_it = 0;
-        coordinator->isCoordinator = false;
-        coordinator->console << "reset\n\n\n";
-        seed->console << "reset\n\n\n";
-        for(auto &p: seed->getAdjacentMMSeeds()) {
-            auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
+        seed->pathOut.begin()->second.clear();
+        seed->pathOut.erase(seed->pathOut.begin());
+    }
+    if (not seed->pathIn.empty()) {
+        seed->pathIn.erase(seed->pathIn.begin());
+    }
+
+    seed->mainPathState = NONE;
+    seed->isDestination = false;
+    auto *coordinator = dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()->getBlockByPosition(
+            seed->coordinatorPosition)->blockCode);
+    coordinator->transferCount = 0;
+    coordinator->mvt_it = 0;
+    coordinator->isCoordinator = false;
+    coordinator->console << "reset\n\n\n";
+    seed->console << "reset\n\n\n";
+    seed->mainPathsOld.clear();
+    if (seed->isPotentialDestination()) {
+        seed->isDestination = true;
+
+        cerr << seed->MMPosition << ": is destination for " << seed->destinationOut << endl;
+/*
+                if(module->blockId == 25) VS_ASSERT(false);
+*/
+        seed->mainPathState = BFS;
+        seed->mainPathsOld.push_back(seed->MMPosition);
+
+        for (auto p: seed->getAdjacentMMSeeds()) {
+            RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                     p)->blockCode);
-                seed->sendHandleableMessage(new AvailableAsyncMessage(seed->MMPosition, toSeed->MMPosition, destination),
-                                            seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200);
+            seed->nbWaitedAnswersDestination[MMPosition]++;
+            /*     pathOut[MMPosition].push_back(toSeed->MMPosition);*/
+            seed->console << toSeed->MMPosition << "\n";
+            seed->sendHandleableMessage(
+                    new FindSrcMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition),
+                    seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200);
+
         }
+        return;
+    }
+    for (auto &p: seed->getAdjacentMMSeeds()) {
+        auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
+                p)->blockCode);
+        seed->sendHandleableMessage(new AvailableAsyncMessage(seed->MMPosition, toSeed->MMPosition, destination),
+                                    seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200);
+    }
     //}
 
 

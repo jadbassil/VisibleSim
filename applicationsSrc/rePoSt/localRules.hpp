@@ -3121,8 +3121,8 @@ static vector<LocalMovement> LocalRules_FB_Build_Up = {
     {LocalMovement(Cell3DPosition(2, -1, 4), Cell3DPosition(1, -2, 5), MOVING)},
     {LocalMovement(Cell3DPosition(1, -2, 5), Cell3DPosition(0, -2, 5), MOVING)},
     {LocalMovement(Cell3DPosition(0, -2, 5), Cell3DPosition(0, -1, 6), MOVING)},
-    {LocalMovement(Cell3DPosition(0, -1, 6), Cell3DPosition(-1, -1, 7), MOVING)},
-    {LocalMovement(Cell3DPosition(-1, -1, 7), Cell3DPosition(0, -1, 8), IN_POSITION)},
+    {LocalMovement(Cell3DPosition(0, -1, 6), Cell3DPosition(0, -2, 7), MOVING)},
+    {LocalMovement(Cell3DPosition(0, -2, 7), Cell3DPosition(0, -1, 8), IN_POSITION)},
 
     {LocalMovement(Cell3DPosition(1, -1, 1), Cell3DPosition(2, 0, 2), MOVING)}, //53
     {LocalMovement(Cell3DPosition(2, 0, 2), Cell3DPosition(1, -1, 3), MOVING)},

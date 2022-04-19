@@ -101,10 +101,14 @@ void FindSrcMessage::handle(BaseSimulator::BlockCode *bc) {
     Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(toMMPosition);
 
     if (rbc.module->position != toSeedPosition) {
-        if(not rbc.interfaceTo(fromMMPosition, toMMPosition)->isConnected()) {
-            return;
-            getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(getScheduler()->now()+100, MessagePtr(this->clone()),
-                                                                              destinationInterface));
+        P2PNetworkInterface* itf = rbc.interfaceTo(fromMMPosition, toMMPosition);
+        if(not itf->isConnected()) {
+            Cell3DPosition toPos;
+            rbc.module->getNeighborPos(itf->globalId, toPos);
+            if(rbc.isInMM(toPos))
+                getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(getScheduler()->now()+1000, MessagePtr(this->clone()),
+                                                                                  destinationInterface));
+
         } else {
             rbc.sendHandleableMessage(dynamic_cast<HandleableMessage *>(this->clone()),
                                       rbc.interfaceTo(fromMMPosition, toMMPosition), 100, 200);
@@ -122,24 +126,9 @@ void FindSrcMessage::handle(BaseSimulator::BlockCode *bc) {
 
     if(not rbc.waitingMessages.empty()) {
         VS_ASSERT(false);
-        rbc.waitingMessages.push(new NetworkInterfaceEnqueueOutgoingEvent(0, MessagePtr(this->clone()),
-                                                                          destinationInterface));
-        /*while (not rbc.waitingMessages.empty()) {
-            NetworkInterfaceEnqueueOutgoingEvent *ev = rbc.waitingMessages.front();
-            ev->date = getScheduler()->now();
-            getScheduler()->schedule(ev);
-            rbc.waitingMessages.pop();
-        }*/
-        return;
     }
 
-    /*if (rbc.isDestination) {
-        rbc.sendHandleableMessage(new FoundSrcMessage(rbc.MMPosition, fromMMPosition, destination, false, false),
-                                  rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
-        return;
-    }*/
-
-    if ((rbc.mainPathState == NONE /*or rbc.mainPathState == Streamline*/) and
+    if (rbc.mainPathState == NONE  and
         std::find(rbc.mainPathsOld.begin(), rbc.mainPathsOld.end(), destination) == rbc.mainPathsOld.end()) {
         rbc.mainPathsOld.push_back(destination);
 
@@ -164,10 +153,7 @@ void FindSrcMessage::handle(BaseSimulator::BlockCode *bc) {
                                               rbc.interfaceTo(rbc.MMPosition, toSeed->MMPosition), 100, 200);
             }
         }
-
     }
-
-
 }
 
 void FoundSrcMessage::handle(BaseSimulator::BlockCode *bc) {
@@ -236,13 +222,13 @@ void ConfirmSrcMessage::handle(BaseSimulator::BlockCode *bc) {
                 }
                 //VS_ASSERT(false);
             }*/
-            for(auto &p: rbc.getAdjacentMMSeeds()) {
+           /* for(auto &p: rbc.getAdjacentMMSeeds()) {
                 auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                         p)->blockCode);
                 rbc.sendHandleableMessage(new AvailableAsyncMessage(rbc.MMPosition, toSeed->MMPosition, destination),
                                           rbc.interfaceTo(rbc.MMPosition, toSeed->MMPosition), 100, 200);
-            }
-        } else {
+            }*/
+        } else { //Source
             rbc.setOperation(rbc.MMPosition, rbc.pathIn[destination]);
             rbc.isSource = false;
             auto *coord = dynamic_cast<RePoStBlockCode *>(
@@ -252,27 +238,16 @@ void ConfirmSrcMessage::handle(BaseSimulator::BlockCode *bc) {
             Cell3DPosition targetModule =
                     rbc.seedPosition +
                     (*coord->operation->localRules)[0].currentPosition;
-            coord->console
-                    << "targetModule: " << coord->nearestPositionTo(targetModule)
-                    << "\n";
 
             VS_ASSERT(coord->operation);
+            // start transporting
             coord->sendHandleableMessage(
                     new CoordinateMessage(coord->operation, targetModule,
                                           coord->module->position, coord->mvt_it),
                     coord->module->getInterface(coord->nearestPositionTo(targetModule)),
                     100, 200);
         }
-
     }
-
- /*   rbc.sendHandleableMessage(new AvailableAsyncMessage(rbc.MMPosition, rbc.pathIn[destination], destination),
-                             rbc.interfaceTo(rbc.MMPosition, rbc.pathIn[destination]), 100, 200);
-    for (auto out : rbc.pathOut[destination]) {
-        rbc.sendHandleableMessage(new AvailableAsyncMessage(rbc.MMPosition, out, destination),
-                                  rbc.interfaceTo(rbc.MMPosition, out), 100, 200);
-    }*/
-
 }
 
 void CutMessage::handle(BaseSimulator::BlockCode *bc) {
@@ -327,10 +302,13 @@ void AvailableAsyncMessage::handle(BaseSimulator::BlockCode *bc) {
 
     Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(toMMPosition);
     if (rbc.module->position != toSeedPosition) {
-        if(not rbc.interfaceTo(fromMMPosition, toMMPosition)->isConnected()) {
-            return;
-            getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(getScheduler()->now()+1000, MessagePtr(this->clone()),
-                                                                              destinationInterface));
+        P2PNetworkInterface* itf = rbc.interfaceTo(fromMMPosition, toMMPosition);
+        if(not itf->isConnected()) {
+            Cell3DPosition toPos;
+            rbc.module->getNeighborPos(itf->globalId, toPos);
+            if(rbc.isInMM(toPos))
+                getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(getScheduler()->now()+1000, MessagePtr(this->clone()),
+                                                                                  destinationInterface));
         } else {
             rbc.sendHandleableMessage(dynamic_cast<HandleableMessage *>(this->clone()),
                                       rbc.interfaceTo(fromMMPosition, toMMPosition), 100, 200);
