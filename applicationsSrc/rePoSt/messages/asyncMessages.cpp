@@ -136,6 +136,7 @@ void FindSrcMessage::handle(BaseSimulator::BlockCode *bc) {
                                   rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
 
         if(rbc.isSource and rbc.mainPathState == NONE) {
+            rbc.console << "Source found\n";
             rbc.mainPathState = ConfPath;
             rbc.pathIn[destination] = fromMMPosition;
             rbc.sendHandleableMessage(

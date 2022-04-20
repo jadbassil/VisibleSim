@@ -666,12 +666,13 @@ Direction RePoStBlockCode::getNextOpDir() {
             ->pathIn.begin()->second);
     RePoStBlockCode* nextSeed =
         static_cast<RePoStBlockCode*>(lattice->getBlock(nextSeedPosition)->blockCode);
-    if (nextSeed->pathIn.empty()) return Direction::UNDEFINED;
-    Cell3DPosition nextNextSeedPosition;
+    /*if (nextSeed->pathIn.empty()) return Direction::UNDEFINED;*/
+    RePoStBlockCode* nextCoord = static_cast<RePoStBlockCode*>(lattice->getBlock(nextSeed->coordinatorPosition)->blockCode);
+    /*Cell3DPosition nextNextSeedPosition;
     nextNextSeedPosition = getSeedPositionFromMMPosition(nextSeed->pathIn.begin()->second);
     RePoStBlockCode* nextNextSeed =
-        static_cast<RePoStBlockCode*>(lattice->getBlock(nextNextSeedPosition)->blockCode);
-    return nextNextSeed->getPreviousOpDir();
+        static_cast<RePoStBlockCode*>(lattice->getBlock(nextNextSeedPosition)->blockCode);*/
+    return nextCoord->operation->getDirection();
 }
 
 vector<Catoms3DBlock *> RePoStBlockCode::findNextProbingPoints(const Cell3DPosition &targetPos,
@@ -1097,6 +1098,16 @@ void RePoStBlockCode::onMotionEnd() {
             if(opDone) {
                 auto *seed = dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()->getBlockByPosition(
                         seedPosition)->blockCode);
+                seed->mainPathState = NONE;
+                seed->mainPathsOld.clear();
+                seed->pathIn.clear();
+                if(not seed->pathOut.empty()) {
+                    for(auto kv: seed->pathOut) {
+                        kv.second.clear();
+                    }
+                }
+                seed->pathOut.clear();
+
                 if(seed->isPotentialDestination()) {
                     seed->isDestination = true;
                 }
@@ -1108,6 +1119,7 @@ void RePoStBlockCode::onMotionEnd() {
                     seed->mainPathState = BFS;
                     seed->mainPathsOld.push_back(seed->MMPosition);
                     if(not seed->pathOut.empty()) {
+                        seed->console << "Pathout clear1\n";
                         seed->pathOut.begin()->second.clear();
                         seed->pathOut.erase(seed->pathOut.begin());
                     }
@@ -1324,7 +1336,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
 
             switch(itev->mode) {
                 case IT_MODE_FINDING_PIVOT: {
-                    if (!rotating or module->getState() == BuildingBlock::State::MOVING) return;
+                    if (!rotating or module->getState() == BuildingBlock::State::MOVING or not operation) return;
                     // VS_ASSERT(++notFindingPivotCount < 10);
                     VS_ASSERT(operation->localRules.get());
                     probeGreenLight();  // the GC starts the algorithm
@@ -1506,9 +1518,11 @@ void RePoStBlockCode::onBlockSelected() {
     cerr << endl;*/
     // if(isDestination) cerr << "destinationFor: " << destinationOut << endl;
   if(operation) {
-        if(operation->isTransfer())
-        cerr << "prevOpDir: " << operation->getPrevOpDirection() << endl;
-        cerr << "nextOpDir: " << getNextOpDir() << endl;
+        if(operation->isTransfer()) {
+            cerr << "prevOpDir: " << operation->getPrevOpDirection() << endl;
+            cerr << "nextOpDir: " << static_cast<Transfer_Operation*>(operation)->getNextOpDir() << endl;
+        }
+
     }
   /*
     cerr << endl;
@@ -1788,24 +1802,40 @@ void RePoStBlockCode::resetMM() {
 
 
     Cell3DPosition destination = seed->pathIn.begin()->first;
-    if (not seed->pathOut.empty()) {
+    for (auto &pos: seed->childrenPositions) {
+        if (not lattice->cellHasBlock(seed->getSeedPositionFromMMPosition(pos))) {
+            if (auto it = std::find(seed->childrenPositions.begin(), seed->childrenPositions.end(), pos); it !=
+                                                                                                          seed->childrenPositions.end()) {
+                seed->childrenPositions.erase(it);
+            }
+        }
+    }
+    if (seed->childrenPositions.empty() and seed->isPotentialSource()) {
+        seed->console << "is Source\n";
+        seed->isSource = true;
+        seed->setMMColor(RED);
+    }
+    /*if (not seed->pathOut.empty()) {
+
         if (not seed->pathOut.begin()->second.empty()) {
+
             if (not lattice->cellHasBlock(getSeedPositionFromMMPosition(seed->pathOut.begin()->second[0]))) {
-                if (auto it = std::find(childrenPositions.begin(), childrenPositions.end(),
+                if (auto it = std::find(seed->childrenPositions.begin(), seed->childrenPositions.end(),
                                         seed->pathOut.begin()->second[0]);
-                        it != childrenPositions.end()) {
-                    childrenPositions.erase(it);
+                        it != seed->childrenPositions.end()) {
+                    seed->childrenPositions.erase(it);
                 }
-                if (childrenPositions.empty() and seed->isPotentialSource()) {
+                if (seed->childrenPositions.empty() and seed->isPotentialSource()) {
+                    seed->console << "is Source\n";
                     seed->isSource = true;
                     seed->setMMColor(RED);
                 }
             }
         }
-
+        seed->console << "pathout clear\n";
         seed->pathOut.begin()->second.clear();
         seed->pathOut.erase(seed->pathOut.begin());
-    }
+    }*/
     if (not seed->pathIn.empty()) {
         seed->pathIn.erase(seed->pathIn.begin());
     }
