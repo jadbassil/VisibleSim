@@ -1288,8 +1288,12 @@ bool Transfer_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
             if(rbc->getPreviousOpDir() == Direction::RIGHT) {
                 if (not comingFromBack and rbc->mvt_it >= 39) return true;
             } else if(rbc->getPreviousOpDir() == Direction::LEFT){
-                if (not comingFromBack and rbc->mvt_it >= 43 and rbc->getNextOpDir() == Direction::BACK) return true;
-                if (not comingFromBack and rbc->mvt_it >= 34) return true;
+                if(rbc->getNextOpDir() == Direction::BACK and not Zeven) {
+                    if (not comingFromBack and rbc->mvt_it >= 43) return true;
+                } else {
+                    if (not comingFromBack and rbc->mvt_it >= 34) return true;
+                }
+
             } else {
                 if (not comingFromBack and rbc->mvt_it >= 26) return true;
             }
@@ -1371,7 +1375,9 @@ void
 Transfer_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Catoms3D::Catoms3DBlock *> &latchingPoints,
                                         const Cell3DPosition &targetPos) const {
     RePoStBlockCode &rbc = *dynamic_cast<RePoStBlockCode *>(bc);
+
     Operation::updateProbingPoints(bc, latchingPoints, targetPos);
+
     switch (direction) {
         case Direction::FRONT: {
             if (mmShape == FRONTBACK) {
@@ -1425,17 +1431,24 @@ Transfer_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Cat
                 }
                 if ((*localRules)[rbc.mvt_it].nextPosition == Cell3DPosition(0, 2, 2)) {
                     //Avoid blocking when FB transfering back then going LEFT
-                    latchingPoints.push_back(static_cast<Catoms3DBlock *>(
-                                                     rbc.lattice->getBlock(
-                                                             rbc.seedPosition + Cell3DPosition(1, 3, 0))));
+                    if (rbc.lattice->getBlock(
+                            rbc.seedPosition + Cell3DPosition(1, 3, 0))) {
+                        latchingPoints.push_back(static_cast<Catoms3DBlock *>(
+                                                         rbc.lattice->getBlock(
+                                                                 rbc.seedPosition + Cell3DPosition(1, 3, 0))));
+                    }
+
                     latchingPoints.push_back(static_cast<Catoms3DBlock *>(
                                                      rbc.lattice->getBlock(
                                                              rbc.seedPosition + Cell3DPosition(0, 3, 0))));
                     latchingPoints.push_back(static_cast<Catoms3DBlock *>(
                                                      rbc.lattice->getBlock(
                                                              rbc.seedPosition + Cell3DPosition(-1, 3, 1))));
+                    if(not latchingPoints.empty())
+                        if(latchingPoints[0] == NULL) VS_ASSERT(false);
                 }
             }
+
 
             if (mmShape == BACKFRONT and
                 getPrevOpDirection() != Direction::BACK and
@@ -1592,8 +1605,7 @@ Transfer_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Cat
                                                      rbc.lattice->getBlock(rbc.module->position + Cell3DPosition(0, -1, -3))));
                 }
             }
-        }
-            break;
+        } break;
 
         case Direction::UP: {
             if(not Zeven and mmShape == FRONTBACK) {

@@ -166,7 +166,6 @@ void FoundSrcMessage::handle(BaseSimulator::BlockCode *bc) {
                                   rbc.interfaceTo(fromMMPosition, toMMPosition), 100, 200);
         return;
     }
-
     if(rbc.mainPathState == BFS and isIn(rbc.pathOut[destination], fromMMPosition)) {
         for(auto &p: rbc.pathOut[destination]) {
             if(p != fromMMPosition) {

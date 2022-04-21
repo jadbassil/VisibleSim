@@ -309,6 +309,7 @@ public:
     bool setGreenLight(bool onoff);
 
     void resetMM();
+    bool MMBuildCompleted();
 
     /**
      * This function is called on startup of the blockCode, it can be used to perform initial

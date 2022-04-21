@@ -357,10 +357,10 @@ void FTRMessage::handle(BaseSimulator::BlockCode *bc) {
         (senderPos == rbc.module->position.offsetY(1) or senderPos == rbc.module->position.offsetY(-1))) {
         return;
     }
-    if (rbc.isCoordinator and rbc.getPreviousOpDir() == Direction::BACK and
+ /*   if (rbc.isCoordinator and rbc.getPreviousOpDir() == Direction::BACK and
         rbc.operation->getDirection() == Direction::DOWN and not rbc.operation->isBuild()) {
         return;
-    }
+    }*/
 
 
     if (not rbc.greenLightIsOn) {
