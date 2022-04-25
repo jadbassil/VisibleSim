@@ -972,7 +972,7 @@ P2PNetworkInterface* RePoStBlockCode::interfaceTo(Cell3DPosition& fromMM, Cell3D
     Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(toMM);
     if (not lattice->cellHasBlock(toSeedPosition)) {
         cerr << toSeedPosition << "\n";
-        VS_ASSERT_MSG(false, "not connected");
+        return nullptr;
     }
     if (lattice->cellsAreAdjacent(module->position, toSeedPosition))
         return module->getInterface(toSeedPosition);

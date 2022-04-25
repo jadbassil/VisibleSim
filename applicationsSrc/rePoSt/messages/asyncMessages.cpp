@@ -303,6 +303,9 @@ void AvailableAsyncMessage::handle(BaseSimulator::BlockCode *bc) {
     Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(toMMPosition);
     if (rbc.module->position != toSeedPosition) {
         P2PNetworkInterface* itf = rbc.interfaceTo(fromMMPosition, toMMPosition);
+        if(not itf) {
+            return;
+        }
         if(not itf->isConnected()) {
             Cell3DPosition toPos;
             rbc.module->getNeighborPos(itf->globalId, toPos);
