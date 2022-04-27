@@ -630,9 +630,9 @@ Catoms3DBlock* RePoStBlockCode::findTargetLightAmongNeighbors(
 Direction RePoStBlockCode::getPreviousOpDir() {
     if(not lattice->cellHasBlock(seedPosition)) return Direction::UNDEFINED;
     auto *seed = static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode);
-    if(seed->isSource or seed->pathOut.empty() or seed->pathOut.begin()->second.empty())
+    if(seed->isSource)
         return Direction::UNDEFINED;
-    if( seed->pathOut.begin()->second[0] == Cell3DPosition(-1,-1,-1)){
+    if( seed->pathOut.second.empty()){
         return Direction::UNDEFINED;
     }
     //if(not operation) return Direction::UNDEFINED;
@@ -640,7 +640,7 @@ Direction RePoStBlockCode::getPreviousOpDir() {
 //    if(not operation->isTransfer()) VS_ASSERT(false);
     
 
-    Cell3DPosition prevDirVector = MMPosition - seed->pathOut.begin()->second[0] ;
+    Cell3DPosition prevDirVector = MMPosition - seed->pathOut.second[0] ;
     if (prevDirVector.pt[0] == -1) return Direction::LEFT;
     if (prevDirVector.pt[0] == 1) return  Direction::RIGHT;
     if (prevDirVector.pt[1] == -1)return Direction::FRONT;
@@ -654,13 +654,13 @@ Direction RePoStBlockCode::getNextOpDir() {
     if (not lattice->cellHasBlock(seedPosition)) return Direction::UNDEFINED;
     auto *seed = static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode);
     if ((static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode))
-            ->pathIn.empty())
+            ->pathIn.second == Cell3DPosition(-1,-1,-1))
         return Direction::UNDEFINED;
 
     Cell3DPosition nextSeedPosition;
     nextSeedPosition = getSeedPositionFromMMPosition(
         static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode)
-            ->pathIn.begin()->second);
+            ->pathIn.second);
     RePoStBlockCode* nextSeed =
         static_cast<RePoStBlockCode*>(lattice->getBlock(nextSeedPosition)->blockCode);
     /*if (nextSeed->pathIn.empty()) return Direction::UNDEFINED;*/
@@ -971,7 +971,7 @@ P2PNetworkInterface* RePoStBlockCode::interfaceTo(Cell3DPosition& fromMM, Cell3D
                                                   P2PNetworkInterface* except) {
     Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(toMM);
     if (not lattice->cellHasBlock(toSeedPosition)) {
-        cerr << toSeedPosition << "\n";
+        cerr << "test: " <<toSeedPosition << "\n";
         return nullptr;
     }
     if (lattice->cellsAreAdjacent(module->position, toSeedPosition))
@@ -1097,13 +1097,13 @@ void RePoStBlockCode::onMotionEnd() {
                         seedPosition)->blockCode);
                 seed->mainPathState = NONE;
                 seed->mainPathsOld.clear();
-                seed->pathIn.clear();
-                if(not seed->pathOut.empty()) {
+                /*seed->pathIn.clear();*/
+                /*if(not seed->pathOut.empty()) {
                     for(auto kv: seed->pathOut) {
                         kv.second.clear();
                     }
-                }
-                seed->pathOut.clear();
+                }*/
+                /*seed->pathOut.clear();*/
 
                 if(seed->isPotentialDestination()) {
                     seed->isDestination = true;
@@ -1115,11 +1115,11 @@ void RePoStBlockCode::onMotionEnd() {
 */
                     seed->mainPathState = BFS;
                     seed->mainPathsOld.push_back(seed->MMPosition);
-                    if(not seed->pathOut.empty()) {
+                    /*if(not seed->pathOut.empty()) {
                         seed->console << "Pathout clear1\n";
                         seed->pathOut.begin()->second.clear();
                         seed->pathOut.erase(seed->pathOut.begin());
-                    }
+                    }*/
 
 
                     for (auto p: seed->getAdjacentMMSeeds()) {
@@ -1142,10 +1142,10 @@ void RePoStBlockCode::onMotionEnd() {
     }
 }
 
-int RePoStBlockCode::sendHandleableMessage(HandleableMessage* msg, P2PNetworkInterface* dest,
+int RePoStBlockCode::sendHandleableMessage(HandleableMessage *msg, P2PNetworkInterface *dest,
                                            Time t0, Time dt) {
-    if(not dest->isConnected()) {
-  /*      VS_ASSERT(false);*/
+    if (not dest) return -1;
+    if (not dest->isConnected()) {
         scheduler->schedule(new NetworkInterfaceEnqueueOutgoingEvent(t0, msg, dest));
         return -1;
     }
@@ -1487,19 +1487,15 @@ void RePoStBlockCode::onBlockSelected() {
     for(auto &p: nbWaitedAnswersDestination) cerr << '{' << p.first << ", " << p.second << "}";
     cerr << endl;
     cerr << "PathIn: ";
-    for(auto &p: pathIn) cerr << '{' << p.first << ", " << p.second << "}";
+     cerr << '{' << pathIn.first << ", " << pathIn.second << "}";
     cerr << endl;
     cerr << "PathOut: ";
-    for(auto &dst: pathOut){
-        cerr << '{' << dst.first << ": ";
-        for(auto &p: dst.second) {
-            cerr << p << ", ";
-        }
-        cerr << '}' << endl;
+    cerr << '{' << pathOut.first << ": ";
+    for(auto &p: pathOut.second) {
+        cerr << p << ", ";
     }
-    cerr << endl;
-    cerr << "toSource: ";
-    for(auto &p: toSource) cerr << '{' << p.first << ", " << p.second << "}";
+    cerr << '}' << endl;
+
     cerr << endl;
     cerr << "mainPathsOld: ";
     for(auto &p: mainPathsOld) cerr << p << "; ";
@@ -1801,7 +1797,7 @@ void RePoStBlockCode::resetMM() {
     seed->module->setColor(CYAN);
 
 
-    Cell3DPosition destination = seed->pathIn.begin()->first;
+    Cell3DPosition destination = seed->pathIn.first;
     for (auto &pos: seed->childrenPositions) {
         if (not lattice->cellHasBlock(seed->getSeedPositionFromMMPosition(pos))) {
             if (auto it = std::find(seed->childrenPositions.begin(), seed->childrenPositions.end(), pos); it !=
@@ -1815,7 +1811,9 @@ void RePoStBlockCode::resetMM() {
         seed->isSource = true;
         seed->setMMColor(RED);
     }
+/*
     seed->pathOut.erase(seed->mainPathsOld.back());
+*/
     /*if(not seed->pathOut.empty()) {
         seed->pathOut.begin()->second.clear();
         seed->pathOut.erase(seed->pathOut.begin());
@@ -1840,9 +1838,9 @@ void RePoStBlockCode::resetMM() {
         seed->pathOut.begin()->second.clear();
         seed->pathOut.erase(seed->pathOut.begin());
     }*/
-    if (not seed->pathIn.empty()) {
+/*    if (not seed->pathIn.empty()) {
         seed->pathIn.erase(seed->pathIn.begin());
-    }
+    }*/
     seed->mainPathState = NONE;
     seed->isDestination = false;
     auto *coordinator = dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()->getBlockByPosition(

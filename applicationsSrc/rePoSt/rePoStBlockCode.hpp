@@ -95,8 +95,8 @@ public:
 
     queue<NetworkInterfaceEnqueueOutgoingEvent*> waitingMessages;
     map<Cell3DPosition, int> nbWaitedAnswersDestination;
-    map<Cell3DPosition, Cell3DPosition> pathIn;
-    map<Cell3DPosition, vector<Cell3DPosition>> pathOut;
+    pair<Cell3DPosition, Cell3DPosition> pathIn;
+    pair<Cell3DPosition, vector<Cell3DPosition>> pathOut;
     map<Cell3DPosition, Cell3DPosition> toSource;
 /* ----------------------- COORDINATION TREE VARIABLES ---------------------- */
     Cell3DPosition parentPosition = Cell3DPosition(-1,-1,-1);

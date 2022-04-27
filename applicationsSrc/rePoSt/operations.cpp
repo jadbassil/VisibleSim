@@ -1447,6 +1447,16 @@ Transfer_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Cat
                     if(not latchingPoints.empty())
                         if(latchingPoints[0] == NULL) VS_ASSERT(false);
                 }
+                if(prevOpDirection == Direction::DOWN and isZeven()) {
+                    if(rbc.relativePos() == Cell3DPosition(1,-1,1)) {
+                        latchingPoints.clear();
+                        if(rbc.mvt_it > 4) {
+                            latchingPoints.push_back(static_cast<Catoms3DBlock *>(
+                                                             rbc.lattice->getBlock(
+                                                                     rbc.seedPosition + Cell3DPosition(1, 2, 2))));
+                        }
+                    }
+                }
             }
 
 

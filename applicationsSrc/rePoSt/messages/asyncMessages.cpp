@@ -138,14 +138,14 @@ void FindSrcMessage::handle(BaseSimulator::BlockCode *bc) {
         if(rbc.isSource and rbc.mainPathState == NONE) {
             rbc.console << "Source found\n";
             rbc.mainPathState = ConfPath;
-            rbc.pathIn[destination] = fromMMPosition;
+            rbc.pathIn = make_pair(destination, fromMMPosition);
             rbc.sendHandleableMessage(
                     new FoundSrcMessage(rbc.MMPosition, fromMMPosition, destination, true, true),
                     rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
         } else {
             rbc.mainPathState = BFS;
-            rbc.pathIn[destination] = fromMMPosition;
-            rbc.pathOut[destination].clear();
+            rbc.pathIn = make_pair(destination, fromMMPosition);
+            rbc.pathOut.second.clear();
             for(auto &p: rbc.getAdjacentMMSeeds()) {
                 auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                         p)->blockCode);
@@ -166,25 +166,26 @@ void FoundSrcMessage::handle(BaseSimulator::BlockCode *bc) {
                                   rbc.interfaceTo(fromMMPosition, toMMPosition), 100, 200);
         return;
     }
-    if(rbc.mainPathState == BFS and isIn(rbc.pathOut[destination], fromMMPosition)) {
-        for(auto &p: rbc.pathOut[destination]) {
+    if(rbc.mainPathState == BFS and isIn(rbc.pathOut.second, fromMMPosition)) {
+        for(auto &p: rbc.pathOut.second) {
             if(p != fromMMPosition) {
                 rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, p, destination),
                                           rbc.interfaceTo(rbc.MMPosition, p), 100, 200);
             }
         }
-        rbc.pathOut[destination].clear();
-        rbc.pathOut[destination].push_back(fromMMPosition);
+        rbc.pathOut.second.clear();
+        rbc.pathOut.first = destination;
+        rbc.pathOut.second.push_back(fromMMPosition);
         if(rbc.MMPosition == destination) {
             rbc.mainPathState = Streamline;
-            rbc.setOperation(rbc.pathOut[destination][0], rbc.destinationOut);
+            rbc.setOperation(rbc.pathOut.second[0], rbc.destinationOut);
             rbc.sendHandleableMessage(new ConfirmSrcMessage(rbc.MMPosition, fromMMPosition, destination),
                                       rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
         } else {
             rbc.mainPathState = ConfPath;
             rbc.sendHandleableMessage(
-                    new FoundSrcMessage(rbc.MMPosition, rbc.pathIn[destination], destination, true, true),
-                    rbc.interfaceTo(rbc.MMPosition, rbc.pathIn[destination]), 100, 200);
+                    new FoundSrcMessage(rbc.MMPosition, rbc.pathIn.second, destination, true, true),
+                    rbc.interfaceTo(rbc.MMPosition, rbc.pathIn.second), 100, 200);
         }
     }
 
@@ -199,14 +200,14 @@ void ConfirmSrcMessage::handle(BaseSimulator::BlockCode *bc) {
                                   rbc.interfaceTo(fromMMPosition, toMMPosition), 100, 200);
         return;
     }
-    if(rbc.mainPathState == ConfPath and fromMMPosition == rbc.pathIn[destination]) {
+    if(rbc.mainPathState == ConfPath and fromMMPosition == rbc.pathIn.second) {
         rbc.mainPathState = Streamline;
         rbc.setMMColor(Colors[(destination.pt[0] + destination.pt[1] + destination.pt[2]) % 9]);
 
         if(not rbc.isSource) {
-            rbc.setOperation( rbc.pathOut[destination][0], rbc.pathIn[destination]);
-            rbc.sendHandleableMessage(new ConfirmSrcMessage(rbc.MMPosition, rbc.pathOut[destination][0], destination),
-                                      rbc.interfaceTo(rbc.MMPosition, rbc.pathOut[destination][0]), 100, 200);
+            rbc.setOperation( rbc.pathOut.second[0], rbc.pathIn.second);
+            rbc.sendHandleableMessage(new ConfirmSrcMessage(rbc.MMPosition, rbc.pathOut.second[0], destination),
+                                      rbc.interfaceTo(rbc.MMPosition, rbc.pathOut.second[0]), 100, 200);
             //if next in streamrline is source remove if from disconnection tree and check if current MM is a source
 
             /*auto *out = dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()->getBlockByPosition(
@@ -229,7 +230,7 @@ void ConfirmSrcMessage::handle(BaseSimulator::BlockCode *bc) {
                                           rbc.interfaceTo(rbc.MMPosition, toSeed->MMPosition), 100, 200);
             }*/
         } else { //Source
-            rbc.setOperation(rbc.MMPosition, rbc.pathIn[destination]);
+            rbc.setOperation(rbc.MMPosition, rbc.pathIn.second);
             rbc.isSource = false;
             auto *coord = dynamic_cast<RePoStBlockCode *>(
                     BaseSimulator::getWorld()
@@ -260,15 +261,14 @@ void CutMessage::handle(BaseSimulator::BlockCode *bc) {
         return;
     }
 
-    if(rbc.mainPathState != NONE and fromMMPosition == rbc.pathIn[destination]) {
-        for (auto out : rbc.pathOut[destination]) {
+    if(rbc.mainPathState != NONE and fromMMPosition == rbc.pathIn.second) {
+        for (auto out : rbc.pathOut.second) {
             rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, out, destination),
                                       rbc.interfaceTo(rbc.MMPosition, out), 100, 200);
         }
         rbc.mainPathState = NONE;
-        rbc.pathIn.erase(destination);
-        rbc.pathOut[destination].clear();
-        rbc.pathOut.erase(destination);
+        rbc.pathOut.second.clear();
+
     }
     for(auto &p: rbc.getAdjacentMMSeeds()) {
         auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
@@ -290,7 +290,8 @@ void ConfirmEdgeAsyncMessage::handle(BaseSimulator::BlockCode *bc) {
     }
 
     if(rbc.mainPathState == BFS) {
-        rbc.pathOut[destination].push_back(fromMMPosition);
+        rbc.pathOut.first = destination;
+        rbc.pathOut.second.push_back(fromMMPosition);
     } else {
         rbc.sendHandleableMessage(new CutMessage(rbc.MMPosition, fromMMPosition, destination),
                                   rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
