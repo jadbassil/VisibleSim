@@ -138,7 +138,6 @@ void RePoStBlockCode::startup() {
         for (auto p: getAdjacentMMSeeds()) {
             RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                     p)->blockCode);
-            nbWaitedAnswersDestination[MMPosition]++;
             sendHandleableMessage(new FindSrcMessage(MMPosition, toSeed->MMPosition, MMPosition),
                                   interfaceTo(MMPosition, toSeed->MMPosition), 500, 200);
         }
@@ -971,7 +970,7 @@ P2PNetworkInterface* RePoStBlockCode::interfaceTo(Cell3DPosition& fromMM, Cell3D
                                                   P2PNetworkInterface* except) {
     Cell3DPosition toSeedPosition = getSeedPositionFromMMPosition(toMM);
     if (not lattice->cellHasBlock(toSeedPosition)) {
-        cerr << "test: " <<toSeedPosition << "\n";
+        console << module->blockId << " test: " <<toSeedPosition << " " << toMM << "\n";
         return nullptr;
     }
     if (lattice->cellsAreAdjacent(module->position, toSeedPosition))
@@ -1097,6 +1096,9 @@ void RePoStBlockCode::onMotionEnd() {
                         seedPosition)->blockCode);
                 seed->mainPathState = NONE;
                 seed->mainPathsOld.clear();
+                seed->nbWaitedAnswersTermination.clear();
+                seed->terminated = true;
+                seed->checkingTermination = false;
                 /*seed->pathIn.clear();*/
                 /*if(not seed->pathOut.empty()) {
                     for(auto kv: seed->pathOut) {
@@ -1127,8 +1129,7 @@ void RePoStBlockCode::onMotionEnd() {
                         RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                                 p)->blockCode);
                         if(toSeed->MMBuildCompleted()) {
-                            seed->nbWaitedAnswersDestination[MMPosition]++;
-                            /*     pathOut[MMPosition].push_back(toSeed->MMPosition);*/
+
                             seed->sendHandleableMessage(
                                     new FindSrcMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition),
                                     seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200);
@@ -1336,6 +1337,39 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                 std::static_pointer_cast<InterruptionEvent>(pev);
 
             switch(itev->mode) {
+
+                case IT_MODE_MUST_FILL: {
+                    console  << "Check termination1" << " " << checkingTermination << " " << rotating  << "\n";
+                    if(!checkingTermination and !rotating and isPotentialSource() and movingState == IN_POSITION) {
+                        console  << "Check termination" << "\n";
+                        checkingTermination = true;
+                        nbWaitedAnswersTermination[MMPosition] = 0;
+                        terminated = true;
+                       /* for(auto p: getAdjacentMMSeeds()) {
+                            auto *toSeed = dynamic_cast<RePoStBlockCode *>(lattice->getBlock(p)->blockCode);
+                            if (!toSeed->MMBuildCompleted()) {
+                                terminated = false;
+                                checkingTermination = false;
+                                getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + 10000000, module,
+                                                                               IT_MODE_MUST_FILL));
+                                return;
+                            }
+                        }*/
+                        toSource[MMPosition] = MMPosition;
+                        for(auto p: getAdjacentMMSeeds()) {
+                            auto* toSeed = dynamic_cast<RePoStBlockCode*>(lattice->getBlock(p)->blockCode);
+                            /*if(!toSeed->MMBuildCompleted()) {
+                                terminated = false;
+                                break;
+                            }*/
+                            int a = sendHandleableMessage(new GoTermAsyncMessage(MMPosition, toSeed->MMPosition, MMPosition),
+                                                          interfaceTo(MMPosition, toSeed->MMPosition), 100, 200);
+                            if(a != -1) nbWaitedAnswersTermination[MMPosition]++;
+                        }
+                    }
+
+                } break;
+
                 case IT_MODE_FINDING_PIVOT: {
                     if (!rotating or module->getState() == BuildingBlock::State::MOVING or not operation) return;
                     // VS_ASSERT(++notFindingPivotCount < 10);
@@ -1483,8 +1517,8 @@ void RePoStBlockCode::onBlockSelected() {
     cerr << endl;
     cerr << "nbSrcCrossed: " << nbSrcCrossed << endl;
     cerr << "lockedSrc: " << lockedSrc << endl;
-    cerr << "nbWaitedAnswersDestination: ";
-    for(auto &p: nbWaitedAnswersDestination) cerr << '{' << p.first << ", " << p.second << "}";
+    cerr << "nbWaitedAnswersTermination: ";
+    for(auto &p: nbWaitedAnswersTermination) cerr << '{' << p.first << ", " << p.second << "}";
     cerr << endl;
     cerr << "PathIn: ";
      cerr << '{' << pathIn.first << ", " << pathIn.second << "}";
@@ -1842,6 +1876,7 @@ void RePoStBlockCode::resetMM() {
         seed->pathIn.erase(seed->pathIn.begin());
     }*/
     seed->mainPathState = NONE;
+    seed->setMMColor(GREY);
     seed->isDestination = false;
     auto *coordinator = dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()->getBlockByPosition(
             seed->coordinatorPosition)->blockCode);
@@ -1861,8 +1896,6 @@ void RePoStBlockCode::resetMM() {
             RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                     p)->blockCode);
             if(toSeed->MMBuildCompleted()) {
-                seed->nbWaitedAnswersDestination[MMPosition]++;
-                /*     pathOut[MMPosition].push_back(toSeed->MMPosition);*/
                 seed->console << toSeed->MMPosition << "\n";
                 seed->sendHandleableMessage(
                         new FindSrcMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition),

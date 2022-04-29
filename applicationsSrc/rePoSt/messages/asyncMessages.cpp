@@ -135,15 +135,21 @@ void FindSrcMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.sendHandleableMessage(new ConfirmEdgeAsyncMessage(rbc.MMPosition, fromMMPosition, destination),
                                   rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
 
+        if(rbc.isPotentialSource()) {
+            rbc.nbWaitedAnswers++;
+        }
+
         if(rbc.isSource and rbc.mainPathState == NONE) {
             rbc.console << "Source found\n";
             rbc.mainPathState = ConfPath;
+            rbc.setMMColor(YELLOW);
             rbc.pathIn = make_pair(destination, fromMMPosition);
             rbc.sendHandleableMessage(
                     new FoundSrcMessage(rbc.MMPosition, fromMMPosition, destination, true, true),
                     rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
         } else {
             rbc.mainPathState = BFS;
+            rbc.setMMColor(CYAN);
             rbc.pathIn = make_pair(destination, fromMMPosition);
             rbc.pathOut.second.clear();
             for(auto &p: rbc.getAdjacentMMSeeds()) {
@@ -178,11 +184,13 @@ void FoundSrcMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.pathOut.second.push_back(fromMMPosition);
         if(rbc.MMPosition == destination) {
             rbc.mainPathState = Streamline;
+            rbc.setMMColor(MAGENTA);
             rbc.setOperation(rbc.pathOut.second[0], rbc.destinationOut);
             rbc.sendHandleableMessage(new ConfirmSrcMessage(rbc.MMPosition, fromMMPosition, destination),
                                       rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
         } else {
             rbc.mainPathState = ConfPath;
+            rbc.setMMColor(YELLOW);
             rbc.sendHandleableMessage(
                     new FoundSrcMessage(rbc.MMPosition, rbc.pathIn.second, destination, true, true),
                     rbc.interfaceTo(rbc.MMPosition, rbc.pathIn.second), 100, 200);
@@ -202,7 +210,8 @@ void ConfirmSrcMessage::handle(BaseSimulator::BlockCode *bc) {
     }
     if(rbc.mainPathState == ConfPath and fromMMPosition == rbc.pathIn.second) {
         rbc.mainPathState = Streamline;
-        rbc.setMMColor(Colors[(destination.pt[0] + destination.pt[1] + destination.pt[2]) % 9]);
+        rbc.setMMColor(MAGENTA);
+        //rbc.setMMColor(Colors[(destination.pt[0] + destination.pt[1] + destination.pt[2]) % 9]);
 
         if(not rbc.isSource) {
             rbc.setOperation( rbc.pathOut.second[0], rbc.pathIn.second);
@@ -267,6 +276,7 @@ void CutMessage::handle(BaseSimulator::BlockCode *bc) {
                                       rbc.interfaceTo(rbc.MMPosition, out), 100, 200);
         }
         rbc.mainPathState = NONE;
+        rbc.setMMColor(GREY);
         rbc.pathOut.second.clear();
 
     }
@@ -275,6 +285,12 @@ void CutMessage::handle(BaseSimulator::BlockCode *bc) {
                 p)->blockCode);
         rbc.sendHandleableMessage(new AvailableAsyncMessage(rbc.MMPosition, toSeed->MMPosition, destination),
                                   rbc.interfaceTo(rbc.MMPosition, toSeed->MMPosition), 100, 200);
+    }
+
+    if(rbc.isPotentialSource()) {
+        rbc.console << "schedule term\n";
+        getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + 20000000, rbc.module,
+                                                            IT_MODE_MUST_FILL));
     }
 
 }
@@ -325,5 +341,116 @@ void AvailableAsyncMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.sendHandleableMessage(
                 new FindSrcMessage(rbc.MMPosition, fromMMPosition, rbc.mainPathsOld.back()),
                 rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
+    }
+}
+
+void GoTermAsyncMessage::handle(BaseSimulator::BlockCode *bc) {
+    RePoStBlockCode &rbc = *dynamic_cast<RePoStBlockCode *>(bc);
+
+    Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(toMMPosition);
+    if (rbc.module->position != toSeedPosition) {
+        rbc.sendHandleableMessage(dynamic_cast<HandleableMessage *>(this->clone()),
+                                  rbc.interfaceTo(fromMMPosition, toMMPosition), 100, 200);
+        return;
+    }
+
+    /*  if(rbc.checkingTermination) {
+        rbc.sendHandleableMessage(
+                new BackTermAsyncMessage(rbc.MMPosition, fromMMPosition, source, true),
+                rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
+        return;
+    }*/
+
+    if (rbc.toSource.find(source) == rbc.toSource.end()) {
+        rbc.toSource[source] = fromMMPosition;
+        rbc.nbWaitedAnswersTermination[source] = 0;
+        bool term = rbc.mainPathState == NONE and !rbc.isDestination;
+        for (auto &p: rbc.getAdjacentMMSeeds()) {
+            auto *toSeed = dynamic_cast<RePoStBlockCode *>(rbc.lattice->getBlock(p)->blockCode);
+            if (toSeed->MMPosition != fromMMPosition) {
+                if(!toSeed->MMBuildCompleted()) {
+                   term = false;
+                }
+            }
+        }
+        if(! rbc.terminated  or ! term) {
+            rbc.console << "!terminated\n";
+            rbc.sendHandleableMessage(
+                    new BackTermAsyncMessage(rbc.MMPosition, fromMMPosition, source, false),
+                    rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
+            rbc.toSource.erase(source);
+            rbc.nbWaitedAnswersTermination.erase(source);
+            if(rbc.nbWaitedAnswersTermination.empty()) rbc.terminated = true;
+            return;
+        }
+        for (auto &p: rbc.getAdjacentMMSeeds()) {
+            auto* toSeed = dynamic_cast<RePoStBlockCode*>(rbc.lattice->getBlock(p)->blockCode);
+            if(toSeed->MMPosition != fromMMPosition) {
+         /*       if(!toSeed->MMBuildCompleted()) {
+*//*
+                    rbc.terminated = false;
+*//*
+                    continue;
+                }*/
+                if(rbc.sendHandleableMessage(new GoTermAsyncMessage(rbc.MMPosition, toSeed->MMPosition, source),
+                                             rbc.interfaceTo(rbc.MMPosition, toSeed->MMPosition), 100, 200) != -1) {
+                    rbc.nbWaitedAnswersTermination[source]++;
+                }
+            }
+
+        }
+        if (rbc.nbWaitedAnswersTermination[source] == 0) {
+            rbc.sendHandleableMessage(
+                    new BackTermAsyncMessage(rbc.MMPosition, rbc.toSource[source], source, rbc.terminated),
+                    rbc.interfaceTo(rbc.MMPosition, rbc.toSource[source]), 100, 200);
+            rbc.toSource.erase(source);
+            rbc.nbWaitedAnswersTermination.erase(source);
+            if(rbc.nbWaitedAnswersTermination.empty()) rbc.terminated = true;
+
+        }
+    } else {
+        rbc.sendHandleableMessage(
+                new BackTermAsyncMessage(rbc.MMPosition, fromMMPosition, source, true),
+                rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
+    }
+}
+
+void BackTermAsyncMessage::handle(BaseSimulator::BlockCode *bc) {
+    RePoStBlockCode &rbc = *dynamic_cast<RePoStBlockCode *>(bc);
+
+    Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(toMMPosition);
+    if (rbc.module->position != toSeedPosition) {
+        rbc.sendHandleableMessage(dynamic_cast<HandleableMessage *>(this->clone()),
+                                  rbc.interfaceTo(fromMMPosition, toMMPosition), 100, 200);
+        return;
+    }
+
+    rbc.nbWaitedAnswersTermination[source]--;
+    rbc.console << "terminated1: " << rbc.terminated << "\n";
+    rbc.terminated = rbc.terminated and idle;
+    rbc.console << "terminated2: " << rbc.terminated << "\n";
+    rbc.console << source << ": " << rbc.nbWaitedAnswersTermination[source] <<"\n";
+    VS_ASSERT(rbc.nbWaitedAnswersTermination[source] >= 0);
+    if (rbc.nbWaitedAnswersTermination[source] == 0) {
+        rbc.terminated = rbc.terminated and (rbc.mainPathState == NONE and !rbc.isDestination and rbc.MMBuildCompleted());
+        if (rbc.toSource.find(source) != rbc.toSource.end()) {
+            if(rbc.toSource[source] != rbc.MMPosition) {
+                rbc.sendHandleableMessage(
+                        new BackTermAsyncMessage(rbc.MMPosition, rbc.toSource[source], source, rbc.terminated),
+                        rbc.interfaceTo(rbc.MMPosition, rbc.toSource[source]), 100, 200);
+                rbc.toSource.erase(source);
+                rbc.nbWaitedAnswersTermination.erase(source);
+                if(rbc.nbWaitedAnswersTermination.empty()) rbc.terminated = true;
+            }else {
+                rbc.checkingTermination = false;
+                rbc.console << "terminated: " << rbc.terminated << "\n";
+                VS_ASSERT(!rbc.terminated);
+                if(!rbc.terminated) {
+                    getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + 20000000, rbc.module,
+                                                                   IT_MODE_MUST_FILL));
+                }
+            }
+        }
+
     }
 }

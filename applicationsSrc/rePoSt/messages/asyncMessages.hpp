@@ -198,4 +198,54 @@ public:
                destination.to_string() + "}";
     }
 };
+
+class GoTermAsyncMessage : public HandleableMessage {
+private:
+    Cell3DPosition fromMMPosition;
+    Cell3DPosition toMMPosition;
+    Cell3DPosition source;
+
+public:
+    GoTermAsyncMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
+                       const Cell3DPosition &_source)
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), source(_source) {};
+
+    ~GoTermAsyncMessage() override = default;
+
+    void handle(BaseSimulator::BlockCode *) override;
+
+    [[nodiscard]] Message *clone() const override { return new GoTermAsyncMessage(*this); }
+
+    [[nodiscard]] string getName() const override {
+        return "GoTermAsyncMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
+               source.to_string() + "}";
+    }
+};
+
+class BackTermAsyncMessage : public HandleableMessage {
+private:
+    Cell3DPosition fromMMPosition;
+    Cell3DPosition toMMPosition;
+    Cell3DPosition source;
+    bool idle;
+
+public:
+    BackTermAsyncMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
+                       const Cell3DPosition &_source, bool _idle)
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), source(_source), idle(_idle) {};
+
+    ~BackTermAsyncMessage() override = default;
+
+    void handle(BaseSimulator::BlockCode *) override;
+
+    [[nodiscard]] Message *clone() const override { return new BackTermAsyncMessage(*this); }
+
+    [[nodiscard]] string getName() const override {
+        return "BackTermAsyncMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
+               source.to_string() + ", " + to_string(idle)  + "}";
+    }
+};
+
+
+
 #endif //VISIBLESIM_ASYNCMESSAGES_HPP

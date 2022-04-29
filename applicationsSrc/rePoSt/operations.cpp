@@ -1459,7 +1459,6 @@ Transfer_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Cat
                 }
             }
 
-
             if (mmShape == BACKFRONT and
                 getPrevOpDirection() != Direction::BACK and
                 (rbc.relativePos() == Cell3DPosition(1, 1, 2) or

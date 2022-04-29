@@ -17,7 +17,7 @@ static const int IT_MODE_TERMINATION = 2003;
 static const int IT_MODE_STARTWAVE = 2004;
 static const int IT_MODE_NBMOVEMENTS = 2009;
 static const int IT_MODE_WAIT_MOVINGMODULES = 2011;
-
+static const int IT_MODE_MUST_FILL = 2012;
 
 inline const vector<Cell3DPosition> FrontBackMM = {Cell3DPosition(0, 0, 0),   Cell3DPosition(1, 0, 0),
                                              Cell3DPosition(1, 0, 1),   Cell3DPosition(2, 1, 2),
@@ -94,10 +94,12 @@ public:
     bool chosenSrc{false};
 
     queue<NetworkInterfaceEnqueueOutgoingEvent*> waitingMessages;
-    map<Cell3DPosition, int> nbWaitedAnswersDestination;
+    map<Cell3DPosition, int> nbWaitedAnswersTermination;
     pair<Cell3DPosition, Cell3DPosition> pathIn;
     pair<Cell3DPosition, vector<Cell3DPosition>> pathOut;
     map<Cell3DPosition, Cell3DPosition> toSource;
+    bool terminated{true};
+    bool checkingTermination{false};
 /* ----------------------- COORDINATION TREE VARIABLES ---------------------- */
     Cell3DPosition parentPosition = Cell3DPosition(-1,-1,-1);
     vector<Cell3DPosition> childrenPositions;
