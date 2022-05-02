@@ -279,18 +279,18 @@ void CutMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.setMMColor(GREY);
         rbc.pathOut.second.clear();
 
+        if(rbc.isSource) {
+            rbc.console << "schedule term\n";
+            getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + 60000000, rbc.module,
+                                                           IT_MODE_MUST_FILL));
+        }
+
     }
     for(auto &p: rbc.getAdjacentMMSeeds()) {
         auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                 p)->blockCode);
         rbc.sendHandleableMessage(new AvailableAsyncMessage(rbc.MMPosition, toSeed->MMPosition, destination),
                                   rbc.interfaceTo(rbc.MMPosition, toSeed->MMPosition), 100, 200);
-    }
-
-    if(rbc.isPotentialSource()) {
-        rbc.console << "schedule term\n";
-        getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + 20000000, rbc.module,
-                                                            IT_MODE_MUST_FILL));
     }
 
 }
@@ -446,7 +446,7 @@ void BackTermAsyncMessage::handle(BaseSimulator::BlockCode *bc) {
                 rbc.console << "terminated: " << rbc.terminated << "\n";
                 VS_ASSERT(!rbc.terminated);
                 if(!rbc.terminated) {
-                    getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + 20000000, rbc.module,
+                    getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + 60000000, rbc.module,
                                                                    IT_MODE_MUST_FILL));
                 }
             }
