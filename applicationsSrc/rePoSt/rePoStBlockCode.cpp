@@ -850,17 +850,18 @@ bool RePoStBlockCode::isInMM(Cell3DPosition& neighborPosition) {
     Cell3DPosition position = (neighborPosition - seedPosition);
     bool inBorder{false}, inFilling{false};
     if (shapeState == FRONTBACK) {
-        inBorder = isIn(FrontBackMM, neighborPosition);
+        inBorder = isIn(FrontBackMM, position);
         if(MMPosition.pt[2] % 2 == 0)
-            inFilling = isIn(FillingPositions_FrontBack_Zeven, neighborPosition);
+            inFilling = isIn(FillingPositions_FrontBack_Zeven, position);
         else
-            inFilling = isIn(FillingPositions_FrontBack_Zodd, neighborPosition);
+            inFilling = isIn(FillingPositions_FrontBack_Zodd, position);
     } else if (shapeState == BACKFRONT) {
-        inBorder = isIn(BackFrontMM, neighborPosition);
+        inBorder = isIn(BackFrontMM, position);
+        console << "In Border" << inBorder  << "\n";
         if(MMPosition.pt[2] % 2 == 0)
-            inFilling = isIn(FillingPositions_BackFront_Zeven, neighborPosition);
+            inFilling = isIn(FillingPositions_BackFront_Zeven, position);
         else
-            inFilling = isIn(FillingPositions_BackFront_Zodd, neighborPosition);
+            inFilling = isIn(FillingPositions_BackFront_Zodd, position);
     }
     return (inBorder or inFilling);
 }
@@ -1134,6 +1135,20 @@ void RePoStBlockCode::onMotionEnd() {
                                     new FindSrcMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition),
                                     seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200);
                         }
+                    }
+                } else {
+                    //Check termination
+                    seed->nbWaitedAnswersTermination[seed->MMPosition] = 0;
+                    for (auto p: seed->getAdjacentMMSeeds()) {
+                        auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
+                                p)->blockCode);
+                        seed->toSource[seed->MMPosition] = seed->MMPosition;
+                        if(seed->sendHandleableMessage(
+                                new GoTermAsyncMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition),
+                                seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200) != -1) {
+                            seed->nbWaitedAnswersTermination[seed->MMPosition]++;
+                        }
+
                     }
                 }
             }
