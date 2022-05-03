@@ -203,12 +203,12 @@ class GoTermAsyncMessage : public HandleableMessage {
 private:
     Cell3DPosition fromMMPosition;
     Cell3DPosition toMMPosition;
-    Cell3DPosition source;
+    Cell3DPosition destination;
 
 public:
     GoTermAsyncMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
                        const Cell3DPosition &_source)
-            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), source(_source) {};
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_source) {};
 
     ~GoTermAsyncMessage() override = default;
 
@@ -218,7 +218,7 @@ public:
 
     [[nodiscard]] string getName() const override {
         return "GoTermAsyncMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
-               source.to_string() + "}";
+               destination.to_string() + "}";
     }
 };
 
@@ -226,13 +226,13 @@ class BackTermAsyncMessage : public HandleableMessage {
 private:
     Cell3DPosition fromMMPosition;
     Cell3DPosition toMMPosition;
-    Cell3DPosition source;
+    Cell3DPosition destination;
     bool idle;
 
 public:
     BackTermAsyncMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
                        const Cell3DPosition &_source, bool _idle)
-            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), source(_source), idle(_idle) {};
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_source), idle(_idle) {};
 
     ~BackTermAsyncMessage() override = default;
 
@@ -242,10 +242,53 @@ public:
 
     [[nodiscard]] string getName() const override {
         return "BackTermAsyncMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
-               source.to_string() + ", " + to_string(idle)  + "}";
+               destination.to_string() + ", " + to_string(idle) + "}";
     }
 };
 
+class NotifyTermMessage : public HandleableMessage {
+private:
+    Cell3DPosition fromMMPosition;
+    Cell3DPosition toMMPosition;
+
+public:
+    NotifyTermMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition)
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition) {};
+
+    ~NotifyTermMessage() override = default;
+
+    void handle(BaseSimulator::BlockCode *) override;
+
+    [[nodiscard]] Message *clone() const override { return new NotifyTermMessage(*this); }
+
+    [[nodiscard]] string getName() const override {
+        return "NotifyTermMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + "}";
+    }
+};
+
+class FindDstMessage : public HandleableMessage {
+private:
+    Cell3DPosition fromMMPosition;
+    Cell3DPosition toMMPosition;
+    Cell3DPosition source;
+    int nbDstToCross;
+
+public:
+    FindDstMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
+                   const Cell3DPosition &_source, int _nbDstToCross)
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), source(_source), nbDstToCross(_nbDstToCross) {};
+
+    ~FindDstMessage() override = default;
+
+    void handle(BaseSimulator::BlockCode *) override;
+
+    [[nodiscard]] Message *clone() const override { return new FindDstMessage(*this); }
+
+    [[nodiscard]] string getName() const override {
+        return "FindDstMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
+               source.to_string() + ", " + to_string(nbDstToCross) + "}";
+    }
+};
 
 
 #endif //VISIBLESIM_ASYNCMESSAGES_HPP

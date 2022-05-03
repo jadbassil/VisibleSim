@@ -1099,7 +1099,6 @@ void RePoStBlockCode::onMotionEnd() {
                 seed->mainPathsOld.clear();
                 seed->nbWaitedAnswersTermination.clear();
                 seed->terminated = true;
-                seed->checkingTermination = false;
                 /*seed->pathIn.clear();*/
                 /*if(not seed->pathOut.empty()) {
                     for(auto kv: seed->pathOut) {
@@ -1142,7 +1141,7 @@ void RePoStBlockCode::onMotionEnd() {
                     for (auto p: seed->getAdjacentMMSeeds()) {
                         auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                                 p)->blockCode);
-                        seed->toSource[seed->MMPosition] = seed->MMPosition;
+                        seed->toDestination[seed->MMPosition] = seed->MMPosition;
                         if(seed->sendHandleableMessage(
                                 new GoTermAsyncMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition),
                                 seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200) != -1) {
@@ -1352,38 +1351,6 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                 std::static_pointer_cast<InterruptionEvent>(pev);
 
             switch(itev->mode) {
-
-                case IT_MODE_MUST_FILL: {
-                    console  << "Check termination1" << " " << checkingTermination << " " << rotating  << "\n";
-                    if(!checkingTermination and !rotating and isPotentialSource() and movingState == IN_POSITION) {
-                        console  << "Check termination" << "\n";
-                        checkingTermination = true;
-                        nbWaitedAnswersTermination[MMPosition] = 0;
-                        terminated = true;
-                       /* for(auto p: getAdjacentMMSeeds()) {
-                            auto *toSeed = dynamic_cast<RePoStBlockCode *>(lattice->getBlock(p)->blockCode);
-                            if (!toSeed->MMBuildCompleted()) {
-                                terminated = false;
-                                checkingTermination = false;
-                                getScheduler()->schedule(new InterruptionEvent(getScheduler()->now() + 10000000, module,
-                                                                               IT_MODE_MUST_FILL));
-                                return;
-                            }
-                        }*/
-                        toSource[MMPosition] = MMPosition;
-                        for(auto p: getAdjacentMMSeeds()) {
-                            auto* toSeed = dynamic_cast<RePoStBlockCode*>(lattice->getBlock(p)->blockCode);
-                            /*if(!toSeed->MMBuildCompleted()) {
-                                terminated = false;
-                                break;
-                            }*/
-                            int a = sendHandleableMessage(new GoTermAsyncMessage(MMPosition, toSeed->MMPosition, MMPosition),
-                                                          interfaceTo(MMPosition, toSeed->MMPosition), 100, 200);
-                            if(a != -1) nbWaitedAnswersTermination[MMPosition]++;
-                        }
-                    }
-
-                } break;
 
                 case IT_MODE_FINDING_PIVOT: {
                     if (!rotating or module->getState() == BuildingBlock::State::MOVING or not operation) return;

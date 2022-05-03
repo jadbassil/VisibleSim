@@ -97,10 +97,10 @@ public:
     map<Cell3DPosition, int> nbWaitedAnswersTermination;
     pair<Cell3DPosition, Cell3DPosition> pathIn;
     pair<Cell3DPosition, vector<Cell3DPosition>> pathOut;
-    map<Cell3DPosition, Cell3DPosition> toSource;
+    map<Cell3DPosition, Cell3DPosition> toDestination;
     bool terminated{true};
-    bool checkingTermination{false};
-/* ----------------------- COORDINATION TREE VARIABLES ---------------------- */
+    bool globallyTerminated{false};
+    /* ----------------------- COORDINATION TREE VARIABLES ---------------------- */
     Cell3DPosition parentPosition = Cell3DPosition(-1,-1,-1);
     vector<Cell3DPosition> childrenPositions;
     Cell3DPosition parentPositionDst = Cell3DPosition(-1,-1,-1);
