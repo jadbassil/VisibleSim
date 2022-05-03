@@ -1,7 +1,6 @@
 //
 // Created by jbassil on 29/03/2022.
 #include "asyncMessages.hpp"
-#include "rePoStBlockCode.hpp"
 #include "transportMessages.hpp"
 //
 
@@ -127,14 +126,19 @@ void FindSrcMessage::handle(BaseSimulator::BlockCode *bc) {
         VS_ASSERT(false);
     }
 
+    if(rbc.fillingState == FULL) return;
+
     if (rbc.mainPathState == NONE  and
         std::find(rbc.mainPathsOld.begin(), rbc.mainPathsOld.end(), destination) == rbc.mainPathsOld.end()) {
         rbc.mainPathsOld.push_back(destination);
 
         rbc.sendHandleableMessage(new ConfirmEdgeAsyncMessage(rbc.MMPosition, fromMMPosition, destination),
                                   rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
-
-        if(rbc.isSource) {
+        rbc.pathDirection = pathDirection;
+        if(nbCrossed > 0 and not rbc.isPotentialSource()) {
+            nbCrossed = nbCrossed - 1;
+        }
+        if(rbc.pathDirection == DST_SRC and rbc.isSource) {
             rbc.console << "Source found\n";
             rbc.mainPathState = ConfPath;
             rbc.setMMColor(YELLOW);
@@ -142,6 +146,16 @@ void FindSrcMessage::handle(BaseSimulator::BlockCode *bc) {
             rbc.sendHandleableMessage(
                     new FoundSrcMessage(rbc.MMPosition, fromMMPosition, destination, true, true),
                     rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
+        } else if(rbc.pathDirection == SRC_DST and not rbc.isPotentialSource() and nbCrossed == 0){
+                rbc.console << "Filling Destination found\n";
+                rbc.mainPathState = Streamline;
+                rbc.setMMColor(YELLOW);
+                rbc.isDestination = true;
+                rbc.destinationOut = rbc.MMPosition;
+                rbc.pathIn = make_pair(destination, fromMMPosition);
+                rbc.sendHandleableMessage(
+                        new FoundSrcMessage(rbc.MMPosition, fromMMPosition, destination, true, true),
+                        rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
         } else {
             rbc.mainPathState = BFS;
             rbc.setMMColor(CYAN);
@@ -151,8 +165,10 @@ void FindSrcMessage::handle(BaseSimulator::BlockCode *bc) {
                 auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                         p)->blockCode);
                 if (toSeed->MMPosition != fromMMPosition)
-                    rbc.sendHandleableMessage(new FindSrcMessage(rbc.MMPosition, toSeed->MMPosition, destination),
-                                              rbc.interfaceTo(rbc.MMPosition, toSeed->MMPosition), 100, 200);
+                    rbc.sendHandleableMessage(
+                            new FindSrcMessage(rbc.MMPosition, toSeed->MMPosition, destination, rbc.pathDirection,
+                                               nbCrossed),
+                            rbc.interfaceTo(rbc.MMPosition, toSeed->MMPosition), 100, 200);
             }
         }
     }
@@ -177,15 +193,43 @@ void FoundSrcMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.pathOut.second.clear();
         rbc.pathOut.first = destination;
         rbc.pathOut.second.push_back(fromMMPosition);
-        if(rbc.MMPosition == destination) {
+        if(rbc.pathDirection == DST_SRC and rbc.MMPosition == destination) {
             rbc.mainPathState = Streamline;
             rbc.setMMColor(MAGENTA);
             rbc.setOperation(rbc.pathOut.second[0], rbc.destinationOut);
             rbc.sendHandleableMessage(new ConfirmSrcMessage(rbc.MMPosition, fromMMPosition, destination),
                                       rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
+        } else if(rbc.pathDirection == SRC_DST and rbc.MMPosition == destination) {
+            rbc.mainPathState = Streamline;
+            rbc.setMMColor(MAGENTA);
+            rbc.setOperation(rbc.pathIn.second, rbc.pathOut.second[0]);
+
+            rbc.isSource = false;
+            auto *coord = dynamic_cast<RePoStBlockCode *>(
+                    BaseSimulator::getWorld()
+                            ->getBlockByPosition(rbc.coordinatorPosition)
+                            ->blockCode);
+            Cell3DPosition targetModule =
+                    rbc.seedPosition +
+                    (*coord->operation->localRules)[0].currentPosition;
+
+            VS_ASSERT(coord->operation);
+            // start transporting
+            coord->sendHandleableMessage(
+                    new CoordinateMessage(coord->operation, targetModule,
+                                          coord->module->position, coord->mvt_it),
+                    coord->module->getInterface(coord->nearestPositionTo(targetModule)),
+                    100, 200);
         } else {
-            rbc.mainPathState = ConfPath;
-            rbc.setMMColor(YELLOW);
+            if(rbc.pathDirection == SRC_DST) {
+                rbc.mainPathState = Streamline;
+                rbc.setOperation(rbc.pathIn.second, rbc.pathOut.second[0]);
+
+            } else if(rbc.pathDirection == DST_SRC) {
+                rbc.mainPathState = ConfPath;
+                rbc.setMMColor(YELLOW);
+            }
+
             rbc.sendHandleableMessage(
                     new FoundSrcMessage(rbc.MMPosition, rbc.pathIn.second, destination, true, true),
                     rbc.interfaceTo(rbc.MMPosition, rbc.pathIn.second), 100, 200);
@@ -206,30 +250,47 @@ void ConfirmSrcMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.mainPathState = Streamline;
         rbc.setMMColor(MAGENTA);
         //rbc.setMMColor(Colors[(destination.pt[0] + destination.pt[1] + destination.pt[2]) % 9]);
+        switch (rbc.pathDirection) {
+            case DST_SRC: {
+                if(not rbc.isSource) {
+                    rbc.setOperation( rbc.pathOut.second[0], rbc.pathIn.second);
+                    rbc.sendHandleableMessage(new ConfirmSrcMessage(rbc.MMPosition, rbc.pathOut.second[0], destination),
+                                              rbc.interfaceTo(rbc.MMPosition, rbc.pathOut.second[0]), 100, 200);
+                } else { //Source
+                    rbc.setOperation(rbc.MMPosition, rbc.pathIn.second);
+                    rbc.isSource = false;
+                    auto *coord = dynamic_cast<RePoStBlockCode *>(
+                            BaseSimulator::getWorld()
+                                    ->getBlockByPosition(rbc.coordinatorPosition)
+                                    ->blockCode);
+                    Cell3DPosition targetModule =
+                            rbc.seedPosition +
+                            (*coord->operation->localRules)[0].currentPosition;
 
-        if(not rbc.isSource) {
-            rbc.setOperation( rbc.pathOut.second[0], rbc.pathIn.second);
-            rbc.sendHandleableMessage(new ConfirmSrcMessage(rbc.MMPosition, rbc.pathOut.second[0], destination),
-                                      rbc.interfaceTo(rbc.MMPosition, rbc.pathOut.second[0]), 100, 200);
-        } else { //Source
-            rbc.setOperation(rbc.MMPosition, rbc.pathIn.second);
-            rbc.isSource = false;
-            auto *coord = dynamic_cast<RePoStBlockCode *>(
-                    BaseSimulator::getWorld()
-                            ->getBlockByPosition(rbc.coordinatorPosition)
-                            ->blockCode);
-            Cell3DPosition targetModule =
-                    rbc.seedPosition +
-                    (*coord->operation->localRules)[0].currentPosition;
+                    VS_ASSERT(coord->operation);
+                    // start transporting
+                    coord->sendHandleableMessage(
+                            new CoordinateMessage(coord->operation, targetModule,
+                                                  coord->module->position, coord->mvt_it),
+                            coord->module->getInterface(coord->nearestPositionTo(targetModule)),
+                            100, 200);
+                }
+            } break;
 
-            VS_ASSERT(coord->operation);
-            // start transporting
-            coord->sendHandleableMessage(
-                    new CoordinateMessage(coord->operation, targetModule,
-                                          coord->module->position, coord->mvt_it),
-                    coord->module->getInterface(coord->nearestPositionTo(targetModule)),
-                    100, 200);
+            case SRC_DST: {
+                if(not rbc.isDestination) {
+                    rbc.sendHandleableMessage(new ConfirmSrcMessage(rbc.MMPosition, rbc.pathOut.second[0], destination),
+                                              rbc.interfaceTo(rbc.MMPosition, rbc.pathOut.second[0]), 100, 200);
+                } else {
+                    rbc.setMMColor(GREEN);
+                    VS_ASSERT(false);
+                }
+            } break;
+
+            default:
+                VS_ASSERT(false);
         }
+
     }
 }
 
@@ -251,6 +312,7 @@ void CutMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.mainPathState = NONE;
         rbc.setMMColor(GREY);
         rbc.pathOut.second.clear();
+        rbc.pathDirection = NO_DIRECTION;
     }
     for(auto &p: rbc.getAdjacentMMSeeds()) {
         auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
@@ -285,27 +347,27 @@ void AvailableAsyncMessage::handle(BaseSimulator::BlockCode *bc) {
 
     Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(toMMPosition);
     if (rbc.module->position != toSeedPosition) {
-        P2PNetworkInterface* itf = rbc.interfaceTo(fromMMPosition, toMMPosition);
-        if(not itf) {
+        P2PNetworkInterface *itf = rbc.interfaceTo(fromMMPosition, toMMPosition);
+        if (not itf) {
             return;
         }
-        if(not itf->isConnected()) {
+        if (not itf->isConnected()) {
             Cell3DPosition toPos;
             rbc.module->getNeighborPos(itf->globalId, toPos);
-            if(rbc.isInMM(toPos))
-                getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(getScheduler()->now()+1000, MessagePtr(this->clone()),
-                                                                                  destinationInterface));
+            if (rbc.isInMM(toPos))
+                getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(
+                        getScheduler()->now() + RePoStBlockCode::getRoundDuration(), MessagePtr(this->clone()),
+                        destinationInterface));
         } else {
             rbc.sendHandleableMessage(dynamic_cast<HandleableMessage *>(this->clone()),
                                       rbc.interfaceTo(fromMMPosition, toMMPosition), 100, 200);
         }
-
         return;
     }
 
     if(rbc.mainPathState == BFS) {
         rbc.sendHandleableMessage(
-                new FindSrcMessage(rbc.MMPosition, fromMMPosition, rbc.mainPathsOld.back()),
+                new FindSrcMessage(rbc.MMPosition, fromMMPosition, rbc.mainPathsOld.back(), rbc.pathDirection, rbc.nbSrcCrossed),
                 rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
     }
 }
@@ -471,5 +533,15 @@ void NotifyTermMessage::handle(BaseSimulator::BlockCode *bc) {
     if(rbc.isSource) {
         //Sources exist so must be filled inside sparse MM
         rbc.setMMColor(RED);
+        rbc.mainPathState = BFS;
+        rbc.mainPathsOld.push_back(rbc.MMPosition);
+        rbc.pathDirection = SRC_DST;
+        for (auto &p: rbc.getAdjacentMMSeeds()) {
+            auto *toSeed = dynamic_cast<RePoStBlockCode *>(rbc.lattice->getBlock(p)->blockCode);
+            rbc.sendHandleableMessage(
+                    new FindSrcMessage(rbc.MMPosition, toSeed->MMPosition, rbc.MMPosition, rbc.pathDirection,
+                                       rbc.nbSrcCrossed),
+                    rbc.interfaceTo(rbc.MMPosition, toSeed->MMPosition), 100, 200);
+        }
     }
 }

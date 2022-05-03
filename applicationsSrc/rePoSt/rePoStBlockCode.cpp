@@ -135,10 +135,11 @@ void RePoStBlockCode::startup() {
         cerr << MMPosition << ": is destination for " << destinationOut << endl;
         mainPathState = BFS;
         mainPathsOld.push_back(MMPosition);
+        pathDirection = DST_SRC;
         for (auto p: getAdjacentMMSeeds()) {
             RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                     p)->blockCode);
-            sendHandleableMessage(new FindSrcMessage(MMPosition, toSeed->MMPosition, MMPosition),
+            sendHandleableMessage(new FindSrcMessage(MMPosition, toSeed->MMPosition, MMPosition, pathDirection),
                                   interfaceTo(MMPosition, toSeed->MMPosition), 500, 200);
         }
     }
@@ -1090,6 +1091,7 @@ void RePoStBlockCode::onMotionEnd() {
             bool opDone = false;
             if ((operation->isBuild() or operation->isFill()) and mvt_it >= (*operation->localRules).size() - 1) {
                 opDone = true;
+
             }
             updateState();
             if(opDone) {
@@ -1099,6 +1101,8 @@ void RePoStBlockCode::onMotionEnd() {
                 seed->mainPathsOld.clear();
                 seed->nbWaitedAnswersTermination.clear();
                 seed->terminated = true;
+                seed->pathDirection = NO_DIRECTION;
+                seed->isDestination = false;
                 /*seed->pathIn.clear();*/
                 /*if(not seed->pathOut.empty()) {
                     for(auto kv: seed->pathOut) {
@@ -1117,6 +1121,7 @@ void RePoStBlockCode::onMotionEnd() {
 */
                     seed->mainPathState = BFS;
                     seed->mainPathsOld.push_back(seed->MMPosition);
+                    seed->pathDirection = DST_SRC;
                     /*if(not seed->pathOut.empty()) {
                         seed->console << "Pathout clear1\n";
                         seed->pathOut.begin()->second.clear();
@@ -1131,11 +1136,11 @@ void RePoStBlockCode::onMotionEnd() {
                         if(toSeed->MMBuildCompleted()) {
 
                             seed->sendHandleableMessage(
-                                    new FindSrcMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition),
+                                    new FindSrcMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition, seed->pathDirection),
                                     seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200);
                         }
                     }
-                } else {
+                } else if(not seed->globallyTerminated){
                     //Check termination
                     seed->nbWaitedAnswersTermination[seed->MMPosition] = 0;
                     for (auto p: seed->getAdjacentMMSeeds()) {
@@ -1517,6 +1522,7 @@ void RePoStBlockCode::onBlockSelected() {
     for(auto &p: mainPathsOld) cerr << p << "; ";
     cerr << endl;
     cerr << "PathState: " << mainPathState <<  endl;
+    cerr << "FillingState: " << fillingState << endl;
 /*    cerr << "distanceDst: " << distanceDst << endl;
     cerr << "parentPositionDst: " << parentPositionDst << endl;
     cerr << "childrenPostionsDst: ";
@@ -1859,6 +1865,7 @@ void RePoStBlockCode::resetMM() {
     }*/
     seed->mainPathState = NONE;
     seed->setMMColor(GREY);
+    seed->pathDirection = NO_DIRECTION;
     seed->isDestination = false;
     auto *coordinator = dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()->getBlockByPosition(
             seed->coordinatorPosition)->blockCode);
@@ -1868,23 +1875,36 @@ void RePoStBlockCode::resetMM() {
     coordinator->console << "reset\n";
     seed->console << "reset\n";
     seed->mainPathsOld.clear();
+    if(seed->isSource and seed->globallyTerminated) {
+        seed->setMMColor(RED);
+        seed->mainPathState = BFS;
+        seed->mainPathsOld.push_back(seed->MMPosition);
+        seed->pathDirection = SRC_DST;
+        for (auto &p: seed->getAdjacentMMSeeds()) {
+            auto *toSeed = dynamic_cast<RePoStBlockCode *>(seed->lattice->getBlock(p)->blockCode);
+            seed->sendHandleableMessage(
+                    new FindSrcMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition, seed->pathDirection,
+                                       seed->nbSrcCrossed),
+                    seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200);
+        }
+        return;
+    }
     if (seed->isPotentialDestination()) {
         seed->isDestination = true;
         cerr << seed->MMPosition << ": is destination for " << seed->destinationOut << endl;
         seed->mainPathState = BFS;
         seed->mainPathsOld.push_back(seed->MMPosition);
+        seed->pathDirection = DST_SRC;
 
         for (auto p: seed->getAdjacentMMSeeds()) {
             RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                     p)->blockCode);
-            if(toSeed->MMBuildCompleted()) {
+            if (toSeed->MMBuildCompleted()) {
                 seed->console << toSeed->MMPosition << "\n";
                 seed->sendHandleableMessage(
-                        new FindSrcMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition),
+                        new FindSrcMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition, seed->pathDirection),
                         seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200);
             }
-
-
         }
         return;
     }

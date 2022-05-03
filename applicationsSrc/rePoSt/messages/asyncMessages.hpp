@@ -7,6 +7,7 @@
 
 #include "grid/cell3DPosition.h"
 #include "comm/network.h"
+#include "rePoStBlockCode.hpp"
 
 class CrossedSrcMessage : public HandleableMessage {
 private:
@@ -59,11 +60,23 @@ private:
     Cell3DPosition fromMMPosition;
     Cell3DPosition toMMPosition;
     Cell3DPosition destination;
+    PathDirection pathDirection;
+    int nbCrossed;
 
 public:
     FindSrcMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
-                   const Cell3DPosition &_destination)
-            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_destination) {};
+                   const Cell3DPosition &_destination, PathDirection _direction)
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_destination), pathDirection(_direction) {
+        nbCrossed = -1;
+        VS_ASSERT_MSG(pathDirection == DST_SRC, "nbCrossed not provided");
+    };
+
+    FindSrcMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
+                   const Cell3DPosition &_destination, PathDirection _direction, int _nbCrossed)
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_destination),
+              pathDirection(_direction), nbCrossed(_nbCrossed) {
+
+    };
 
     ~FindSrcMessage() override = default;
 
@@ -73,7 +86,7 @@ public:
 
     [[nodiscard]] string getName() const override {
         return "FindSrcMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
-               destination.to_string() + "}";
+               destination.to_string() + ", " + to_string(pathDirection) + ", " + to_string(nbCrossed) + "}";
     }
 };
 

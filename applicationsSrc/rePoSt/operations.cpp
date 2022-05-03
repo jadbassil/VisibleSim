@@ -593,7 +593,7 @@ void Fill_Operation::updateState(BaseSimulator::BlockCode* bc) {
 
 bool Fill_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode *bc) {
     RePoStBlockCode* rbc = static_cast<RePoStBlockCode*>(bc);
-    if(rbc->mvt_it >= localRules->size() - 1) return false;
+    if(rbc->mvt_it > localRules->size() - 1) return false;
     if (direction == Direction::LEFT) {
         if (mmShape == FRONTBACK and Zeven and (rbc->mvt_it >= 51))
             return true;

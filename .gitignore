@@ -93,3 +93,5 @@ TAGS
 applicationsSrc/*/cmake-build-debug/
 applicationsSrc/*/.idea/
 .idea/*
+.vscode/*
+build/*

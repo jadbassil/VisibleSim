@@ -63,7 +63,7 @@ enum PathState {NONE, BFS, Overlap, ConfPath, Streamline};
 enum FillingState {EMPTY, FULL};
 enum ProcessState {PASSIVE, ACTIVE};
 enum RenconfigurationStep {SRCDEST, MAXFLOW, TRANSPORT, DONE};
-
+enum PathDirection{DST_SRC, SRC_DST, NO_DIRECTION};
 
 static bool showSrcAndDst = false;
 static RenconfigurationStep reconfigurationStep;
@@ -92,6 +92,7 @@ public:
     int nbWaitedAnswersSrcCrossed{0};
     bool lockedSrc{false};
     bool chosenSrc{false};
+    PathDirection pathDirection{NO_DIRECTION};
 
     queue<NetworkInterfaceEnqueueOutgoingEvent*> waitingMessages;
     map<Cell3DPosition, int> nbWaitedAnswersTermination;
