@@ -1195,6 +1195,7 @@ int RePoStBlockCode::sendHandleableMessage(HandleableMessage *msg, P2PNetworkInt
         scheduler->schedule(new NetworkInterfaceEnqueueOutgoingEvent(t0, msg, dest));
         return -1;
     }
+
     return BlockCode::sendMessage(msg, dest, t0, dt);
 }
 

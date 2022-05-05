@@ -105,7 +105,7 @@ void FindPathMessage::handle(BaseSimulator::BlockCode *bc) {
             Cell3DPosition toPos;
             rbc.module->getNeighborPos(rbc.module->getInterfaceBId(itf), toPos);
             if(rbc.isInMM(toPos))
-                getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(getScheduler()->now()+1000, MessagePtr(this->clone()),
+                getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(getScheduler()->now()+RePoStBlockCode::getRoundDuration(), MessagePtr(this->clone()),
                                                                                   destinationInterface));
 
         } else {

@@ -88,7 +88,7 @@ int BlockCode::sendMessage(HandleableMessage*msg,
 #endif
 
     VS_ASSERT(dest->getConnectedBlockId() > 0);
-
+    StatsCollector::getInstance().incMsgCount();
     scheduler->schedule(new NetworkInterfaceEnqueueOutgoingEvent(t1, msg, dest));
     return 0;
 }

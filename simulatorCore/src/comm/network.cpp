@@ -169,7 +169,7 @@ void P2PNetworkInterface::send() {
 
     BaseSimulator::getScheduler()->schedule(new NetworkInterfaceStopTransmittingEvent(BaseSimulator::getScheduler()->now()+transmissionDuration, this));
 
-    StatsCollector::getInstance().incMsgCount();
+   /* StatsCollector::getInstance().incMsgCount();*/
     StatsIndividual::incSentMessageCount(hostBlock->stats);
 }
 
