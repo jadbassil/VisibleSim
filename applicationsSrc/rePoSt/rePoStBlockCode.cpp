@@ -136,10 +136,11 @@ void RePoStBlockCode::startup() {
         mainPathState = BFS;
         mainPathsOld.push_back(MMPosition);
         pathDirection = DST_SRC;
-        for (auto p: getAdjacentMMSeeds()) {
+        pathIn = make_pair(MMPosition, MMPosition);
+        for (auto &p: getAdjacentMMSeeds()) {
             RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                     p)->blockCode);
-            sendHandleableMessage(new FindSrcMessage(MMPosition, toSeed->MMPosition, MMPosition, pathDirection),
+            sendHandleableMessage(new FindPathMessage(MMPosition, toSeed->MMPosition, MMPosition, pathDirection),
                                   interfaceTo(MMPosition, toSeed->MMPosition), 500, 200);
         }
     }
@@ -270,8 +271,8 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
         BaseSimulator::getWorld()->getBlockByPosition(coordinatorPosition)->blockCode);
     coordinator->isCoordinator = true;
 
-        bool comingFromBack = (getPreviousOpDir() == Direction::BACK  and
-             shapeState == BACKFRONT);
+    bool comingFromBack = (getPreviousOpDir() == Direction::BACK  and
+         shapeState == BACKFRONT);
     // set coordinator's operation
     if (isSource) {
         bool filled, fill;
@@ -630,17 +631,27 @@ Catoms3DBlock* RePoStBlockCode::findTargetLightAmongNeighbors(
 Direction RePoStBlockCode::getPreviousOpDir() {
     if(not lattice->cellHasBlock(seedPosition)) return Direction::UNDEFINED;
     auto *seed = static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode);
+    VS_ASSERT(seed->pathDirection != NO_DIRECTION);
+    Cell3DPosition prevDirVector;
     if(seed->isSource)
         return Direction::UNDEFINED;
-    if( seed->pathOut.second.empty()){
-        return Direction::UNDEFINED;
-    }
-    //if(not operation) return Direction::UNDEFINED;
-    
-//    if(not operation->isTransfer()) VS_ASSERT(false);
-    
+    switch (seed->pathDirection) {
+        case DST_SRC: {
+            if( seed->pathOut.second.empty()){
+                return Direction::UNDEFINED;
+            }
+            prevDirVector = MMPosition - seed->pathOut.second[0] ;
+        } break;
 
-    Cell3DPosition prevDirVector = MMPosition - seed->pathOut.second[0] ;
+        case SRC_DST: {
+            if(seed->pathIn.first == seed->pathIn.second)
+                return  Direction::UNDEFINED;
+            prevDirVector = MMPosition - seed->pathIn.second;
+        } break;
+
+        default: return Direction::UNDEFINED;
+    }
+
     if (prevDirVector.pt[0] == -1) return Direction::LEFT;
     if (prevDirVector.pt[0] == 1) return  Direction::RIGHT;
     if (prevDirVector.pt[1] == -1)return Direction::FRONT;
@@ -653,23 +664,38 @@ Direction RePoStBlockCode::getPreviousOpDir() {
 Direction RePoStBlockCode::getNextOpDir() {
     if (not lattice->cellHasBlock(seedPosition)) return Direction::UNDEFINED;
     auto *seed = static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode);
-    if ((static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode))
-            ->pathIn.second == Cell3DPosition(-1,-1,-1))
-        return Direction::UNDEFINED;
 
-    Cell3DPosition nextSeedPosition;
-    nextSeedPosition = getSeedPositionFromMMPosition(
-        static_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode)
-            ->pathIn.second);
-    RePoStBlockCode* nextSeed =
-        static_cast<RePoStBlockCode*>(lattice->getBlock(nextSeedPosition)->blockCode);
-    /*if (nextSeed->pathIn.empty()) return Direction::UNDEFINED;*/
-    RePoStBlockCode* nextCoord = static_cast<RePoStBlockCode*>(lattice->getBlock(nextSeed->coordinatorPosition)->blockCode);
-    /*Cell3DPosition nextNextSeedPosition;
-    nextNextSeedPosition = getSeedPositionFromMMPosition(nextSeed->pathIn.begin()->second);
-    RePoStBlockCode* nextNextSeed =
-        static_cast<RePoStBlockCode*>(lattice->getBlock(nextNextSeedPosition)->blockCode);*/
-    return nextCoord->operation->getDirection();
+    switch (seed->pathDirection) {
+        case DST_SRC: {
+            if (seed->pathIn.second == Cell3DPosition(-1,-1,-1))
+                return Direction::UNDEFINED;
+
+            Cell3DPosition nextSeedPosition;
+            nextSeedPosition = getSeedPositionFromMMPosition(seed->pathIn.second);
+            RePoStBlockCode* nextSeed =
+                    static_cast<RePoStBlockCode*>(lattice->getBlock(nextSeedPosition)->blockCode);
+            RePoStBlockCode* nextCoord = static_cast<RePoStBlockCode*>(lattice->getBlock(nextSeed->coordinatorPosition)->blockCode);
+            return nextCoord->operation->getDirection();
+        } break;
+
+        case SRC_DST: {
+            if(seed->isDestination) return Direction::UNDEFINED;
+            Cell3DPosition nextSeedPosition;
+            nextSeedPosition = getSeedPositionFromMMPosition(seed->pathOut.second[0]);
+            RePoStBlockCode* nextSeed =
+                    static_cast<RePoStBlockCode*>(lattice->getBlock(nextSeedPosition)->blockCode);
+            if (nextSeed->pathOut.second.empty()) return Direction::UNDEFINED;
+            Cell3DPosition nextNextSeedPosition;
+            nextNextSeedPosition = getSeedPositionFromMMPosition(nextSeed->pathOut.second[0]);
+            RePoStBlockCode* nextNextSeed =
+                    static_cast<RePoStBlockCode*>(lattice->getBlock(nextNextSeedPosition)->blockCode);
+            return nextNextSeed->getPreviousOpDir();
+        } break;
+
+        default: return Direction::UNDEFINED;
+    }
+
+
 }
 
 vector<Catoms3DBlock *> RePoStBlockCode::findNextProbingPoints(const Cell3DPosition &targetPos,
@@ -1103,6 +1129,7 @@ void RePoStBlockCode::onMotionEnd() {
                 seed->terminated = true;
                 seed->pathDirection = NO_DIRECTION;
                 seed->isDestination = false;
+                seed->console << "OpDone\n";
                 /*seed->pathIn.clear();*/
                 /*if(not seed->pathOut.empty()) {
                     for(auto kv: seed->pathOut) {
@@ -1122,21 +1149,20 @@ void RePoStBlockCode::onMotionEnd() {
                     seed->mainPathState = BFS;
                     seed->mainPathsOld.push_back(seed->MMPosition);
                     seed->pathDirection = DST_SRC;
+                    seed->pathIn = make_pair(seed->MMPosition, seed->MMPosition);
                     /*if(not seed->pathOut.empty()) {
                         seed->console << "Pathout clear1\n";
                         seed->pathOut.begin()->second.clear();
                         seed->pathOut.erase(seed->pathOut.begin());
                     }*/
 
-
                     for (auto p: seed->getAdjacentMMSeeds()) {
 
                         RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                                 p)->blockCode);
                         if(toSeed->MMBuildCompleted()) {
-
                             seed->sendHandleableMessage(
-                                    new FindSrcMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition, seed->pathDirection),
+                                    new FindPathMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition, seed->pathDirection),
                                     seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200);
                         }
                     }
@@ -1880,11 +1906,12 @@ void RePoStBlockCode::resetMM() {
         seed->mainPathState = BFS;
         seed->mainPathsOld.push_back(seed->MMPosition);
         seed->pathDirection = SRC_DST;
+        seed->pathIn = make_pair(seed->MMPosition, seed->MMPosition);
         for (auto &p: seed->getAdjacentMMSeeds()) {
             auto *toSeed = dynamic_cast<RePoStBlockCode *>(seed->lattice->getBlock(p)->blockCode);
             seed->sendHandleableMessage(
-                    new FindSrcMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition, seed->pathDirection,
-                                       seed->nbSrcCrossed),
+                    new FindPathMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition, seed->pathDirection,
+                                        seed->nbSrcCrossed),
                     seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200);
         }
         return;
@@ -1895,14 +1922,14 @@ void RePoStBlockCode::resetMM() {
         seed->mainPathState = BFS;
         seed->mainPathsOld.push_back(seed->MMPosition);
         seed->pathDirection = DST_SRC;
-
+        seed->pathIn = make_pair(seed->MMPosition, seed->MMPosition);
         for (auto p: seed->getAdjacentMMSeeds()) {
             RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                     p)->blockCode);
             if (toSeed->MMBuildCompleted()) {
                 seed->console << toSeed->MMPosition << "\n";
                 seed->sendHandleableMessage(
-                        new FindSrcMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition, seed->pathDirection),
+                        new FindPathMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition, seed->pathDirection),
                         seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200);
             }
         }

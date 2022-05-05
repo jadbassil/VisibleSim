@@ -55,88 +55,88 @@ public:
     }
 };
 
-class FindSrcMessage : public HandleableMessage {
+class FindPathMessage : public HandleableMessage {
 private:
     Cell3DPosition fromMMPosition;
     Cell3DPosition toMMPosition;
-    Cell3DPosition destination;
+    Cell3DPosition initiator;
     PathDirection pathDirection;
     int nbCrossed;
 
 public:
-    FindSrcMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
-                   const Cell3DPosition &_destination, PathDirection _direction)
-            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_destination), pathDirection(_direction) {
+    FindPathMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
+                    const Cell3DPosition &_initiator, PathDirection _direction)
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), initiator(_initiator), pathDirection(_direction) {
         nbCrossed = -1;
         VS_ASSERT_MSG(pathDirection == DST_SRC, "nbCrossed not provided");
     };
 
-    FindSrcMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
-                   const Cell3DPosition &_destination, PathDirection _direction, int _nbCrossed)
-            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_destination),
+    FindPathMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
+                    const Cell3DPosition &_initiator, PathDirection _direction, int _nbCrossed)
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), initiator(_initiator),
               pathDirection(_direction), nbCrossed(_nbCrossed) {
 
     };
 
-    ~FindSrcMessage() override = default;
+    ~FindPathMessage() override = default;
 
     void handle(BaseSimulator::BlockCode *) override;
 
-    [[nodiscard]] Message *clone() const override { return new FindSrcMessage(*this); }
+    [[nodiscard]] Message *clone() const override { return new FindPathMessage(*this); }
 
     [[nodiscard]] string getName() const override {
-        return "FindSrcMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
-               destination.to_string() + ", " + to_string(pathDirection) + ", " + to_string(nbCrossed) + "}";
+        return "FindPathMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
+               initiator.to_string() + ", " + to_string(pathDirection) + ", " + to_string(nbCrossed) + "}";
     }
 };
 
-class FoundSrcMessage : public HandleableMessage {
+class FoundPathMessage : public HandleableMessage {
 private:
     Cell3DPosition fromMMPosition;
     Cell3DPosition toMMPosition;
-    Cell3DPosition destination;
+    Cell3DPosition initiator;
     bool found;
     bool isChild;
 
 public:
-    FoundSrcMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
-                    const Cell3DPosition &_destination, bool _found, bool _isChild)
-            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_destination),
+    FoundPathMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
+                     const Cell3DPosition &_initiator, bool _found, bool _isChild)
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), initiator(_initiator),
               found(_found), isChild(_isChild) {};
 
-    ~FoundSrcMessage() override = default;
+    ~FoundPathMessage() override = default;
 
     void handle(BaseSimulator::BlockCode *) override;
 
-    [[nodiscard]] Message *clone() const override { return new FoundSrcMessage(*this); }
+    [[nodiscard]] Message *clone() const override { return new FoundPathMessage(*this); }
 
     [[nodiscard]] string getName() const override {
-        return "FoundSrcMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
-               destination.to_string() + ", " + to_string(found) + ", " + to_string(isChild) + "}";
+        return "FoundPathMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
+               initiator.to_string() + ", " + to_string(found) + ", " + to_string(isChild) + "}";
     }
 };
 
-class ConfirmSrcMessage : public HandleableMessage {
+class ConfirmPathAsyncMessage : public HandleableMessage {
 private:
     Cell3DPosition fromMMPosition;
     Cell3DPosition toMMPosition;
-    Cell3DPosition destination;
+    Cell3DPosition initiator;
 
 
 public:
-    ConfirmSrcMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
-                      const Cell3DPosition &_destination)
-            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_destination) {};
+    ConfirmPathAsyncMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
+                            const Cell3DPosition &_initiator)
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), initiator(_initiator) {};
 
-    ~ConfirmSrcMessage() override = default;
+    ~ConfirmPathAsyncMessage() override = default;
 
     void handle(BaseSimulator::BlockCode *) override;
 
-    [[nodiscard]] Message *clone() const override { return new ConfirmSrcMessage(*this); }
+    [[nodiscard]] Message *clone() const override { return new ConfirmPathAsyncMessage(*this); }
 
     [[nodiscard]] string getName() const override {
-        return "ConfirmSrcMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
-               destination.to_string() + "}";
+        return "ConfirmPathAsyncMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
+               initiator.to_string() + "}";
     }
 };
 
@@ -144,13 +144,13 @@ class CutMessage : public HandleableMessage {
 private:
     Cell3DPosition fromMMPosition;
     Cell3DPosition toMMPosition;
-    Cell3DPosition destination;
+    Cell3DPosition initiator;
 
 
 public:
     CutMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
-                      const Cell3DPosition &_destination)
-            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_destination) {};
+                      const Cell3DPosition &_initiator)
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), initiator(_initiator) {};
 
     ~CutMessage() override = default;
 
@@ -160,7 +160,7 @@ public:
 
     [[nodiscard]] string getName() const override {
         return "CutMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
-               destination.to_string() + "}";
+               initiator.to_string() + "}";
     }
 };
 
@@ -168,13 +168,13 @@ class ConfirmEdgeAsyncMessage : public HandleableMessage {
 private:
     Cell3DPosition fromMMPosition;
     Cell3DPosition toMMPosition;
-    Cell3DPosition destination;
+    Cell3DPosition initiator;
 
 
 public:
     ConfirmEdgeAsyncMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
-                          const Cell3DPosition &_destination)
-            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_destination) {};
+                          const Cell3DPosition &_initiator)
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), initiator(_initiator) {};
 
     ~ConfirmEdgeAsyncMessage() override = default;
 
@@ -184,7 +184,7 @@ public:
 
     [[nodiscard]] string getName() const override {
         return "ConfirmEdge{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
-               destination.to_string() + "}";
+               initiator.to_string() + "}";
     }
 };
 
@@ -192,13 +192,13 @@ class AvailableAsyncMessage : public HandleableMessage {
 private:
     Cell3DPosition fromMMPosition;
     Cell3DPosition toMMPosition;
-    Cell3DPosition destination;
+    Cell3DPosition initiator;
 
 
 public:
     AvailableAsyncMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
-                   const Cell3DPosition &_destination)
-            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_destination) {};
+                   const Cell3DPosition &_initiator)
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), initiator(_initiator) {};
 
     ~AvailableAsyncMessage() override = default;
 
@@ -208,7 +208,7 @@ public:
 
     [[nodiscard]] string getName() const override {
         return "AvailableMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
-               destination.to_string() + "}";
+               initiator.to_string() + "}";
     }
 };
 
@@ -216,12 +216,12 @@ class GoTermAsyncMessage : public HandleableMessage {
 private:
     Cell3DPosition fromMMPosition;
     Cell3DPosition toMMPosition;
-    Cell3DPosition destination;
+    Cell3DPosition initiator;
 
 public:
     GoTermAsyncMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
                        const Cell3DPosition &_source)
-            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), destination(_source) {};
+            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), initiator(_source) {};
 
     ~GoTermAsyncMessage() override = default;
 
@@ -231,7 +231,7 @@ public:
 
     [[nodiscard]] string getName() const override {
         return "GoTermAsyncMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
-               destination.to_string() + "}";
+               initiator.to_string() + "}";
     }
 };
 
@@ -276,30 +276,6 @@ public:
 
     [[nodiscard]] string getName() const override {
         return "NotifyTermMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + "}";
-    }
-};
-
-class FindDstMessage : public HandleableMessage {
-private:
-    Cell3DPosition fromMMPosition;
-    Cell3DPosition toMMPosition;
-    Cell3DPosition source;
-    int nbDstToCross;
-
-public:
-    FindDstMessage(const Cell3DPosition &_fromMMPosition, const Cell3DPosition &_toMMPosition,
-                   const Cell3DPosition &_source, int _nbDstToCross)
-            : fromMMPosition(_fromMMPosition), toMMPosition(_toMMPosition), source(_source), nbDstToCross(_nbDstToCross) {};
-
-    ~FindDstMessage() override = default;
-
-    void handle(BaseSimulator::BlockCode *) override;
-
-    [[nodiscard]] Message *clone() const override { return new FindDstMessage(*this); }
-
-    [[nodiscard]] string getName() const override {
-        return "FindDstMessage{" + fromMMPosition.to_string() + ", " + toMMPosition.to_string() + ", " +
-               source.to_string() + ", " + to_string(nbDstToCross) + "}";
     }
 };
 
