@@ -282,6 +282,7 @@ public:
     P2PNetworkInterface *
     interfaceTo(Cell3DPosition &fromMM, Cell3DPosition &toMM, P2PNetworkInterface *except = nullptr);
 
+    void updateNextPosition();
     void probeGreenLight();
     bool isAdjacentToPosition(const Cell3DPosition& pos) const;
     static Catoms3DBlock* customFindMotionPivot(const Catoms3DBlock* m,
@@ -291,7 +292,6 @@ public:
                                                 const Cell3DPosition& srcPos,
                                                 P2PNetworkInterface *sender=NULL) const;
     /**
-     *
      * @param targetPos The next position of the module
      * @param pivotPos
      * @return a vector containing the probing points

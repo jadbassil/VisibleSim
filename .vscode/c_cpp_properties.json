@@ -7,10 +7,11 @@
                 "${workspaceFolder}/simulatorCore/src",
                 "${workspaceFolder}/applicationsSrc/rePoSt"
             ],
-            "compilerPath": "/usr/bin/clang",
+            "compilerPath": "/usr/bin/clang-11",
             "cStandard": "c11",
-            "cppStandard": "c++14",
-            "intelliSenseMode": "linux-clang-x64"
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-clang-x64",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
         }
     ],
     "version": 4

@@ -341,85 +341,86 @@ bool RePoStBlockCode::mustFillMMPos(Cell3DPosition &outPosition) {
  /* -------------------------------------------------------------------------- */
  /*                             MOTION COORDINATION                            */
  /* -------------------------------------------------------------------------- */
-void RePoStBlockCode::probeGreenLight() {
-    VS_ASSERT(operation->localRules != NULL);
+
+ void RePoStBlockCode::updateNextPosition() {
      if (operation->getDirection() == Direction::UP and
          not(operation->isBuild() and operation->getMMShape() == BACKFRONT and operation->isZeven()) and
          not(operation->isFill() and operation->getMMShape() == FRONTBACK) and
-        (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, 0, 2)) {
-        (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(2, 0, 2);
-    }
+         (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, 0, 2)) {
+         (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(2, 0, 2);
+     }
 
-    if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(2, 0, 2) and
-            (lattice->cellHasBlock(module->position.offsetX(1)) /*or operation->getPrevOpDirection() == Direction::LEFT*/) and
-        operation->getDirection() == Direction::UP /*and operation->isTransfer()*/) {
-        (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, 0, 2);
-    }
+     if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(2, 0, 2) and
+         (lattice->cellHasBlock(module->position.offsetX(1)) /*or operation->getPrevOpDirection() == Direction::LEFT*/) and
+         operation->getDirection() == Direction::UP /*and operation->isTransfer()*/) {
+         console << "up\n";
+         (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, 0, 2);
+     }
 
-    if (operation->getDirection() == Direction::DOWN and not operation->isBuild()) {
-        if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, 1, -2)) {
-            (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(2, 1, -2);
-        }
+     if (operation->getDirection() == Direction::DOWN and not operation->isBuild()) {
+         if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, 1, -2)) {
+             (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(2, 1, -2);
+         }
 
-        if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(2, 1, -2) and
-            lattice->cellHasBlock((*operation->localRules)[mvt_it].nextPosition + seedPosition) and mvt_it == 29) {
-    /*        VS_ASSERT(false);*/
-            (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, 1, -2);
-        }
+         if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(2, 1, -2) and
+             lattice->cellHasBlock((*operation->localRules)[mvt_it].nextPosition + seedPosition) and mvt_it == 29) {
+             /*        VS_ASSERT(false);*/
+             (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, 1, -2);
+         }
 
-        if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, -1, -2)) {
-            (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(2, -1, -2);
-        }
+         if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1, -1, -2)) {
+             (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(2, -1, -2);
+         }
 
-        if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(2, -1, -2) and
-            lattice->cellHasBlock((*operation->localRules)[mvt_it].nextPosition + seedPosition)) {
-            (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, -1, -2);
-        }
-    }
+         if ((*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(2, -1, -2) and
+             lattice->cellHasBlock((*operation->localRules)[mvt_it].nextPosition + seedPosition)) {
+             (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1, -1, -2);
+         }
+     }
 
 
-    if(operation->getDirection() == Direction::RIGHT) {
-        // When pivot cannot be found when coming from Right then transferring down
-        if(operation->isZeven() and operation->getMMShape() == FRONTBACK) {
-            if( (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,0,0)) {
-                (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,1);
-            }
-            if(/*mvt_it >= 13 and*/ (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,0,1)
-                and not lattice->cellHasBlock(seedPosition + Cell3DPosition(5,0,0))) {
-                (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,0);
-            } 
-        } else if (not operation->isZeven() and operation->getMMShape() == BACKFRONT) {
-            if( (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,0,0)) {
-                (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5, -1, 1);
-            }
-            if(/*mvt_it >= 13 and*/ (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,-1,1)) {
-                if(not lattice->cellHasBlock(seedPosition + Cell3DPosition(5,0,0))) {
-                    (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,0);
-                } else if (lattice->cellHasBlock(seedPosition + Cell3DPosition(5, 0, 0))) {
-                    RePoStBlockCode* rbc = dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()->getBlockByPosition(
-                            seedPosition + Cell3DPosition(5, 0, 0))->blockCode);
-                    if (rbc) {
-                        if(rbc->rotating)
-                            (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5, 0, 0);
-                    }
-                }
-            } 
-        }
-        
-    }
+     if(operation->getDirection() == Direction::RIGHT) {
+         // When pivot cannot be found when coming from Right then transferring down
+         if(operation->isZeven() and operation->getMMShape() == FRONTBACK) {
+             if( (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,0,0)) {
+                 (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,1);
+             }
+             if(/*mvt_it >= 13 and*/ (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,0,1)
+                                     and not lattice->cellHasBlock(seedPosition + Cell3DPosition(5,0,0))) {
+                 (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,0);
+             }
+         } else if (not operation->isZeven() and operation->getMMShape() == BACKFRONT) {
+             if( (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,0,0)) {
+                 (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5, -1, 1);
+             }
+             if(/*mvt_it >= 13 and*/ (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(5,-1,1)) {
+                 if(not lattice->cellHasBlock(seedPosition + Cell3DPosition(5,0,0))) {
+                     (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5,0,0);
+                 } else if (lattice->cellHasBlock(seedPosition + Cell3DPosition(5, 0, 0))) {
+                     RePoStBlockCode* rbc = dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()->getBlockByPosition(
+                             seedPosition + Cell3DPosition(5, 0, 0))->blockCode);
+                     if (rbc) {
+                         if(rbc->rotating)
+                             (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(5, 0, 0);
+                     }
+                 }
+             }
+         }
 
-    if(operation->getDirection() == Direction::BACK) {
-        // When pivot cannot be found when coming from back then transferring down
-        if(operation->getMMShape() == BACKFRONT) {
-            if( (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1,3,0)) {
-                (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1,2,1);
-            }
-            if(mvt_it >= 7 and (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1,2,1)
+     }
+
+     if(operation->getDirection() == Direction::BACK) {
+         // When pivot cannot be found when coming from back then transferring down
+         if(operation->getMMShape() == BACKFRONT) {
+             if( (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1,3,0)) {
+                 (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1,2,1);
+             }
+             if(mvt_it >= 7 and (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1,2,1)
                 and not lattice->cellHasBlock(seedPosition + Cell3DPosition(1,3,0))) {
-                     (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1,3,0);
-                }
-        }
-    }
+                 (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1,3,0);
+             }
+         }
+     }
 
      if(operation->getDirection() == Direction::FRONT) {
          if( (*operation->localRules)[mvt_it].nextPosition == Cell3DPosition(1,-3,0)) {
@@ -430,7 +431,12 @@ void RePoStBlockCode::probeGreenLight() {
              (*operation->localRules)[mvt_it].nextPosition = Cell3DPosition(1,-3,0);
          }
      }
+ }
 
+void RePoStBlockCode::probeGreenLight() {
+    VS_ASSERT(operation->localRules != NULL);
+
+    updateNextPosition();
     if (relativePos() == Cell3DPosition(4, 0, 2) and
         module->getInterface(module->position.offsetY(1))->isConnected()) {
         // special logic to avoid blocking when coming from right then going back.
@@ -1288,7 +1294,6 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
             if(not operation) return;
 
             operation->handleAddNeighborEvent(this, pos);
-        
 
             /**Special logic when the end position of previous transfer back with FB shape operation is (0,1,1) relative to the coordinator
              Specify if the module must move to the starting position if next operation is not transfer back BF **/
@@ -1327,9 +1332,6 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                     }
                 }
             }
-
-
-
             break;
         }
 
@@ -1627,8 +1629,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("FB_Fill_Left.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(2,6,4);
+    file.open("BF_transfer_Left.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(24,26,10);
     if(!file.is_open()) return; 
 
     if(c == 'o') {

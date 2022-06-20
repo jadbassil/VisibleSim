@@ -282,11 +282,13 @@ void GLOMessage::handle(BaseSimulator::BlockCode *bc) {
 
     rbc.nbWaitedAnswers--;
     if (rbc.nbWaitedAnswers == 0) {
+        rbc.updateNextPosition();
         Cell3DPosition targetPosition =
                 (*rbc.operation->localRules)[rbc.mvt_it].nextPosition + rbc.seedPosition;
 
         if (rbc.module->canRotateToPosition(
                 targetPosition) /**and not lattice->cellIsBlocked(targetPosition)**/) {
+
             if ((rbc.relativePos() == Cell3DPosition(-1, 1, 2) /**or
                               relativePos() == Cell3DPosition(-1, -1, 2)**/) or
                 rbc.relativePos() == Cell3DPosition(1, 0, 1) or

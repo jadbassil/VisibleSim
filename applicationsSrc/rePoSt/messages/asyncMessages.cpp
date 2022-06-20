@@ -161,10 +161,16 @@ void FindPathMessage::handle(BaseSimulator::BlockCode *bc) {
             rbc.setMMColor(CYAN);
             rbc.pathIn = make_pair(initiator, fromMMPosition);
             rbc.pathOut.second.clear();
-            for(auto &p: rbc.getAdjacentMMSeeds()) {
+            for (auto &p: rbc.getAdjacentMMSeeds()) {
                 auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                         p)->blockCode);
+                if(fromMMPosition.pt[0] == rbc.MMPosition.pt[0] - 1 and toSeed->MMPosition.pt[1] == rbc.MMPosition.pt[1] - 1) continue;
+                if(fromMMPosition.pt[1] == rbc.MMPosition.pt[1] + 1 and toSeed->MMPosition.pt[0] == rbc.MMPosition.pt[0] - 1) continue;
+                if(toSeed->MMPosition.pt[1] == rbc.MMPosition.pt[1] + 1 and rbc.shapeState == FRONTBACK and rbc.module->blockId == 551) {
+                    continue;
+                }
                 if (toSeed->MMPosition != fromMMPosition)
+
                     rbc.sendHandleableMessage(
                             new FindPathMessage(rbc.MMPosition, toSeed->MMPosition, initiator, rbc.pathDirection,
                                                 nbCrossed),
@@ -257,6 +263,7 @@ void ConfirmPathAsyncMessage::handle(BaseSimulator::BlockCode *bc) {
                     rbc.sendHandleableMessage(new ConfirmPathAsyncMessage(rbc.MMPosition, rbc.pathOut.second[0], initiator),
                                               rbc.interfaceTo(rbc.MMPosition, rbc.pathOut.second[0]), 100, 200);
                 } else { //Source
+
                     rbc.setOperation(rbc.MMPosition, rbc.pathIn.second);
                     rbc.isSource = false;
                     auto *coord = dynamic_cast<RePoStBlockCode *>(
@@ -268,6 +275,7 @@ void ConfirmPathAsyncMessage::handle(BaseSimulator::BlockCode *bc) {
                             (*coord->operation->localRules)[0].currentPosition;
 
                     VS_ASSERT(coord->operation);
+                    coord->console << "Source start transporting\n";
                     // start transporting
                     coord->sendHandleableMessage(
                             new CoordinateMessage(coord->operation, targetModule,
@@ -424,7 +432,7 @@ void GoTermAsyncMessage::handle(BaseSimulator::BlockCode *bc) {
         }
         rbc.toDestination[initiator] = fromMMPosition;
         rbc.nbWaitedAnswersTermination[initiator] = 0;
-        bool term = rbc.mainPathState == NONE and !rbc.isDestination;
+        bool term = /*rbc.mainPathState == NONE and */!rbc.isDestination;
         for (auto &p: rbc.getAdjacentMMSeeds()) {
             auto *toSeed = dynamic_cast<RePoStBlockCode *>(rbc.lattice->getBlock(p)->blockCode);
             if (toSeed->MMPosition != fromMMPosition) {
@@ -484,7 +492,7 @@ void BackTermAsyncMessage::handle(BaseSimulator::BlockCode *bc) {
     rbc.console << destination << ": " << rbc.nbWaitedAnswersTermination[destination] << "\n";
     VS_ASSERT(rbc.nbWaitedAnswersTermination[destination] >= 0);
     if (rbc.nbWaitedAnswersTermination[destination] == 0) {
-        rbc.terminated = rbc.terminated and (rbc.mainPathState == NONE and !rbc.isDestination and rbc.MMBuildCompleted());
+        rbc.terminated = rbc.terminated and (/*rbc.mainPathState == NONE and*/ !rbc.isDestination and rbc.MMBuildCompleted());
         rbc.console << "terminated3: " << rbc.terminated << "\n";
         if (rbc.toDestination.find(destination) != rbc.toDestination.end()) {
             if (rbc.toDestination[destination] != rbc.MMPosition) {
