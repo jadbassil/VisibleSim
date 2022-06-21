@@ -15,11 +15,15 @@ static const int BROADCASTRECT_MSG_ID = 1005;
 
 using namespace Catoms3D;
 
-struct Rectangle {
+class Rectangle {
+public:
     Cell3DPosition base;
     int l, w;
 
-    Rectangle() {};
+    Rectangle() {
+        base = Cell3DPosition();
+        l = w = -1;
+    };
     Rectangle(Cell3DPosition _base, int _l,int _w): base(_base), l(_l), w(_w) {};
 
     bool operator<(const Rectangle& r) const {
@@ -30,17 +34,32 @@ struct Rectangle {
         return r.base == base and l == r.l and w == r.w;
     }
 
+    static bool isInRectangle(Rectangle &r, Cell3DPosition &pos)  {
+        if(pos.pt[1] < r.base.pt[1] or pos.pt[1] > r.base.pt[1] + r.l - 1) {
+            return false;
+        }
+        if (r.w >= 0) {
+            if (pos.pt[0] >= r.base.pt[0] and pos.pt[0] <= r.base.pt[0] + r.w - 1) {
+                return true;
+            }
+        } else {
+            if (pos.pt[0] <= r.base.pt[0] and pos.pt[0] >= r.base.pt[0] + r.w + 1) {
+                return true;
+            }
+        }
+        return  false;
+    }
 
 };
 
 class ShapeRecognitionBlockCode : public Catoms3DBlockCode {
 private:
-    int l;
+    int l{};
     Catoms3DBlock *module;
     queue<P2PNetworkInterface*> waiting;
     int nbWaitedCheckLR{0};
-    int leftL;
-    int rightL;
+    int leftL{};
+    int rightL{};
     Rectangle myRectangle;
     set<Rectangle> currentShape;
 public :
@@ -56,6 +75,9 @@ public :
 
     bool isBottom() const;
     bool isTop() const;
+    static void colorRectangle(Rectangle &r) ;
+
+    static int c;
 
     /**
      * @brief Handler for all events received by the host block
