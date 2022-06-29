@@ -97,9 +97,7 @@ void ShapeRecognitionBlockCode::handleSetLMessage(std::shared_ptr<Message> _msg,
             sendMessage("CheckLR<left> msg", new Message(CHECKLR_MSG_ID),
                         module->getInterface(module->position.offsetX(-1)), 100, 0);
         }
-
     }
-
 }
 
 void ShapeRecognitionBlockCode::handleCheckLRMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender) {
