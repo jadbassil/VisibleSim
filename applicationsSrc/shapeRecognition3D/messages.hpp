@@ -7,14 +7,11 @@
 
 #include "comm/network.h"
 
-enum Set_Type {Width, Height, Depth};
-
 class SetMessage : public HandleableMessage {
 private:
-    Set_Type type;
     int value;
 public:
-    SetMessage(Set_Type _type, int _value): type(_type), value(_value){};
+    SetMessage(int _value): value(_value){};
 
     ~SetMessage() override = default;
 
@@ -40,19 +37,18 @@ public:
     }
 };
 
-class NotifyMessage : public HandleableMessage {
+class NotifyDMessage : public HandleableMessage {
 private:
-    Set_Type type;
     int value;
 public:
-    NotifyMessage(Set_Type _type, int _value): type(_type), value(_value){};
+    NotifyDMessage(int _value): value(_value){};
 
-    ~NotifyMessage() override = default;
+    ~NotifyDMessage() override = default;
 
     void handle(BaseSimulator::BlockCode*) override;
-    [[nodiscard]] Message* clone() const override { return new NotifyMessage(*this); }
+    [[nodiscard]] Message* clone() const override { return new NotifyDMessage(*this); }
     [[nodiscard]] string getName() const override {
-        return "NotifyMessage{" + to_string(type) + ", " + to_string(value) + "}";
+        return "NotifyDMessage{" + to_string(type) + ", " + to_string(value) + "}";
     }
 };
 
@@ -68,6 +64,52 @@ public:
     [[nodiscard]] Message* clone() const override { return new FindWMessage(*this); }
     [[nodiscard]] string getName() const override {
         return "FindWMessage{"+ to_string(value) + "}";
+    }
+};
+
+class CheckWMessage : public HandleableMessage {
+private:
+
+public:
+    CheckWMessage() = default;
+
+    ~CheckWMessage() override = default;
+
+    void handle(BaseSimulator::BlockCode*) override;
+    [[nodiscard]] Message* clone() const override { return new CheckWMessage(*this); }
+    [[nodiscard]] string getName() const override {
+        return "CheckWMessage{}";
+    }
+};
+
+class NotifyWMessage : public HandleableMessage {
+private:
+
+    int value;
+public:
+    NotifyWMessage(int _value): value(_value){};
+
+    ~NotifyWMessage() override = default;
+
+    void handle(BaseSimulator::BlockCode*) override;
+    [[nodiscard]] Message* clone() const override { return new NotifyWMessage(*this); }
+    [[nodiscard]] string getName() const override {
+        return "NotifyWMessage{" + to_string(type) + ", " + to_string(value) + "}";
+    }
+};
+
+class FindHMessage : public HandleableMessage {
+private:
+    int value;
+public:
+    FindHMessage(int _value): value(_value){};
+
+    ~FindHMessage() override = default;
+
+    void handle(BaseSimulator::BlockCode*) override;
+    [[nodiscard]] Message* clone() const override { return new FindHMessage(*this); }
+    [[nodiscard]] string getName() const override {
+        return "FindHMessage{"+ to_string(value) + "}";
     }
 };
 

@@ -24,5 +24,5 @@ if __name__ == '__main__':
             content = content.replace(args['fromRobot'], args['toRobot'])
             content = content.replace(FromRobot, ToRobot)
             f.write(content)
-        
+    
 

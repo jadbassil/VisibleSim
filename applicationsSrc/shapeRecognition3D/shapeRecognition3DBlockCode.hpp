@@ -15,21 +15,24 @@ class Box {
 public:
     Cell3DPosition base;
     Cell3DPosition corner;
-    int w, h, d ;
+    bool rectangleSet;
 
     Box() {
         base = Cell3DPosition();
-        w = h = d = -1;
+        corner = Cell3DPosition();
+        rectangleSet = false;
     };
-    Box(Cell3DPosition _base, int _w, int _h, int _d): base(_base), w(_w), h(_h), d(_d) {};
-    Box(Cell3DPosition _base, Cell3DPosition _corner): base(_base), corner(_corner){};
+
+    Box(Cell3DPosition _base, Cell3DPosition _corner): base(_base), corner(_corner){
+        rectangleSet = true;
+    };
 
     bool operator<(const Box& r) const {
         return base < r.base;
     }
 
     bool operator==(const Box& r) const {
-        return r.base == base and d == r.d and w == r.w and h == r.h;
+        return r.base == base and r.corner == corner;
     }
 
 
@@ -54,10 +57,12 @@ public :
     int w{-1}; //width
     int h{-1}; //height
     int d{-1}; //depth
-    int rightD{-1}, leftD{-1};
-    int rightH{-1}, leftH{-1};
+    int rightD{-1}, leftD{-1}, topD{-1}, bottomD{-1};
+    int bottomW{-1}, topW{-1};
     queue<P2PNetworkInterface*> waitingCheckD;
+    queue<P2PNetworkInterface*> waitingCheckDW;
     int nbWaitingNotifyD{0};
+    int nbWaitingNotifyW{0};
     Box myBox;
     static int c;
     explicit ShapeRecognition3DBlockCode(BlinkyBlocksBlock *host);
@@ -71,17 +76,19 @@ public :
     void startup() override;
 
     void setMyBox();
-
+    void searchForHeight();
+    void searchForWidth();
     static void colorBox(Box &box);
 
     int sendHandleableMessage(HandleableMessage* msg, P2PNetworkInterface* dest);
 
     bool isFrontmost() const;
     bool isBackmost() const;
-    bool isTopmost() const;
-    bool isBottommost() const;
-    bool isLeftmost() const;
-    bool isRightmost() const;
+
+    [[maybe_unused]] bool isTopmost() const;
+    [[maybe_unused]] bool isBottommost() const;
+    [[maybe_unused]]bool isLeftmost() const;
+    [[maybe_unused]]bool isRightmost() const;
 
     /**
      * @brief Handler for all events received by the host block
