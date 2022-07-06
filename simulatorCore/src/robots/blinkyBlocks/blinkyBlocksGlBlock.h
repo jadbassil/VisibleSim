@@ -19,6 +19,7 @@ public :
     virtual ~BlinkyBlocksGlBlock() {};
 
     virtual void glDraw(ObjLoader::ObjLoader *ptrObj) override;
+    void fireSelectedTrigger() override;
 };
 }
 #endif /* BLINKYBLOCKSGLBLOCK_H_ */

@@ -89,3 +89,4 @@ TAGS
 # CMake files
 applicationsSrc/*/cmake-build-debug/
 applicationsSrc/*/.idea/
+applicationsBin/rePoSt/Captures/*

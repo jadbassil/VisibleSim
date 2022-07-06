@@ -1,5 +1,9 @@
 #include "blinkyBlocksGlBlock.h"
 
+
+#include "blinkyBlocksBlock.h"
+#include "blinkyBlocksWorld.h"
+
 namespace BlinkyBlocks {
 
 void BlinkyBlocksGlBlock::glDraw(ObjLoader::ObjLoader *ptrObj) {
@@ -20,5 +24,15 @@ void BlinkyBlocksGlBlock::glDraw(ObjLoader::ObjLoader *ptrObj) {
     ptrObj->glDraw();
     glPopMatrix();
 }
+
+void BlinkyBlocksGlBlock::fireSelectedTrigger() {
+    Lattice *lattice = World::getWorld()->lattice;
+    const Cell3DPosition& bbPos = lattice->worldToGridPosition(getPosition());
+    auto *block = dynamic_cast<BlinkyBlocksBlock*>(lattice->getBlock(bbPos));
+
+    // custom user debug procedure
+    if (block and block->blockCode) block->blockCode->onBlockSelected();
+}
+
 
 }
