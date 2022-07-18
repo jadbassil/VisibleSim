@@ -395,14 +395,14 @@ void GoTermAsyncMessage::handle(BaseSimulator::BlockCode *bc) {
                 // Initiator MM construction not completed must wait and resend the message.
                 Cell3DPosition toPos;
                 rbc.module->getNeighborPos(rbc.module->getInterfaceBId(itf), toPos);
-                if (rbc.isInMM(toPos))
+               /* if (rbc.isInMM(toPos))*/
                     getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(
                             getScheduler()->now() + RePoStBlockCode::getRoundDuration(),
                             MessagePtr(this->clone()),
                             destinationInterface));
-                else {
+              /*  else {
                     VS_ASSERT(false);
-                }
+                }*/
             } else {
                 // Receiver Mm construction not completed, hence the construction is incomplete.
                 rbc.sendHandleableMessage(

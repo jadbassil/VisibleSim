@@ -1175,6 +1175,7 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
         if(direction == Direction::LEFT and not Zeven and mmShape == BACKFRONT  and nextOpDir == Direction::DOWN) {
             if(rbc->relativePos() == Cell3DPosition(-1,0,2) and rbc->transferCount == 6) {
                 rbc->mvt_it = 9;
+                rbc->console << "probeGreenLight4\n";
                 rbc->probeGreenLight();
 
             }
@@ -1447,13 +1448,20 @@ Transfer_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Cat
                     if(not latchingPoints.empty())
                         if(latchingPoints[0] == NULL) VS_ASSERT(false);
                 }
-                if(prevOpDirection == Direction::DOWN and isZeven()) {
-                    if(rbc.relativePos() == Cell3DPosition(1,-1,1)) {
+                if (prevOpDirection == Direction::DOWN) {
+                    if (rbc.relativePos() == Cell3DPosition(1, -1, 1)) {
                         latchingPoints.clear();
-                        if(rbc.mvt_it > 4) {
+                        if (rbc.mvt_it > 4 and isZeven()) {
                             latchingPoints.push_back(static_cast<Catoms3DBlock *>(
                                                              rbc.lattice->getBlock(
                                                                      rbc.seedPosition + Cell3DPosition(1, 2, 2))));
+
+                        } else {
+                            rbc.console << "must update latching points\n";
+                           /* VS_ASSERT(false);
+                            latchingPoints.push_back(static_cast<Catoms3DBlock *>(
+                                                             rbc.lattice->getBlock(
+                                                                     rbc.seedPosition + Cell3DPosition(1, 1, 2))));*/
                         }
                     }
                 }
@@ -1728,7 +1736,7 @@ void Build_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc,
 
     if (rbc->isCoordinator and abs(pos.pt[1] - rbc->module->position.pt[1]) == 1 and
         abs(pos.pt[2] - rbc->module->position.pt[2]) == 0 and
-        rbc->mvt_it < localRules->size() and (not isComingFromBack() or direction == Direction::RIGHT)) {
+        rbc->mvt_it < localRules->size() and (not isComingFromBack() or direction == Direction::RIGHT or direction == Direction::DOWN) ) {
         rbc->transferCount++;
         getScheduler()->trace("transferCount: " + to_string(rbc->transferCount), rbc->module->blockId, Color(MAGENTA));
         Cell3DPosition targetModule =

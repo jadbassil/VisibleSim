@@ -442,8 +442,9 @@ void RePoStBlockCode::probeGreenLight() {
         // special logic to avoid blocking when coming from right then going back.
         // coordinator is not reached so modules be coordinated without being attached to the
         // coordinator
-        if ((operation->isZeven() and (mvt_it == 49 or mvt_it == 53)) 
-            or (not operation->isZeven() and mvt_it == 45)) {
+        if ((operation->isZeven() and (mvt_it == 49 or mvt_it == 53) and not operation->isDismantle())
+            or (not operation->isZeven() and mvt_it == 45 and not operation->isDismantle())
+            or (operation->isDismantle() and operation->mustSendCoordinateBack(this))) {
             sendHandleableMessage(new CoordinateBackMessage(movingSteps + 2, coordinatorPosition),
                                   interfaceTo(coordinatorPosition), 0, 200);
         }
@@ -492,8 +493,10 @@ void RePoStBlockCode::probeGreenLight() {
 
     if(relativePos() ==  Cell3DPosition(4,0,2) and
         module->getInterface(module->position.offsetY(-1))->isConnected()) {
-        
-        if ((operation->isZeven() and mvt_it == 45) or (not operation->isZeven() and mvt_it >= 46) ) {
+
+        if ((operation->isZeven() and mvt_it == 45 and not operation->isDismantle())
+            or (not operation->isZeven() and mvt_it >= 46 and not operation->isDismantle())
+            or (operation->isDismantle() and operation->mustSendCoordinateBack(this))) {
             sendHandleableMessage(new CoordinateBackMessage(movingSteps + 2, coordinatorPosition),
                                   interfaceTo(coordinatorPosition), 0, 200);
         }
@@ -906,7 +909,7 @@ Cell3DPosition RePoStBlockCode::nearestPositionTo(Cell3DPosition& targetPosition
     if (isAdjacentToPosition(targetPosition) and module->getInterface(targetPosition)) {
         return targetPosition;
     }
-    for (auto neighPos : lattice->getActiveNeighborCells(module->position)) {
+    for (const auto& neighPos : lattice->getActiveNeighborCells(module->position)) {
         RePoStBlockCode* neighBlock = static_cast<RePoStBlockCode*>(
             BaseSimulator::getWorld()->getBlockByPosition(neighPos)->blockCode);
         if (neighBlock->module->getState() == BuildingBlock::State::MOVING or
@@ -1047,6 +1050,7 @@ void RePoStBlockCode::onMotionEnd() {
     if (movingState == MOVING) {
 
         mvt_it++;
+        console << "probeGreenLight6\n";
         probeGreenLight();
     } else if (movingState == WAITING or movingState == IN_POSITION) {
         transferCount = 0;
@@ -1301,7 +1305,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                 if (((operation->isTransfer() or operation->isFill()) and
                      (operation->getDirection() == Direction::UP or operation->getDirection() == Direction::DOWN) and
                      operation->getPrevOpDirection() == Direction::BACK) or
-                    (operation->isBuild() and operation->getDirection() == Direction::RIGHT and
+                    (operation->isBuild() and (operation->getDirection() == Direction::RIGHT or operation->getDirection() == Direction::DOWN) and
                      operation->getMMShape() == BACKFRONT and
                      static_cast<Build_Operation *>(operation)->isComingFromBack())) {
                     if (posBlock->module->canMoveTo(module->position.offsetY(1)) and
@@ -1318,7 +1322,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
             }
 
             if(isCoordinator and pos == module->position + Cell3DPosition(0,0,1) and shapeState == FRONTBACK) {
-                if (operation->getDirection() != Direction::FRONT and getPreviousOpDir() == Direction::FRONT) {
+                if (operation->getDirection() != Direction::FRONT and getPreviousOpDir() == Direction::FRONT and getNextOpDir() != Direction::LEFT) {
                      posBlock->movingSteps--;
                      if (posBlock->module->canMoveTo(module->position.offsetY(-1)) and not posBlock->sendingCoordinateBack) {
                             console << "move pos FB\n";
@@ -1387,9 +1391,10 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
             switch(itev->mode) {
 
                 case IT_MODE_FINDING_PIVOT: {
-                    if (!rotating or module->getState() == BuildingBlock::State::MOVING or not operation) return;
+                    if (!rotating or module->getState() == BuildingBlock::State::MOVING or not operation or nbWaitedAnswers > 0) return;
                     // VS_ASSERT(++notFindingPivotCount < 10);
                     VS_ASSERT(operation->localRules.get());
+                    console << "probeGreenLight5\n";
                     probeGreenLight();  // the GC starts the algorithm
                     // module->setColor(MAGENTA);
                 } break;

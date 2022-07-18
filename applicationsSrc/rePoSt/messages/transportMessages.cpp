@@ -30,6 +30,7 @@ void CoordinateMessage::handle(BaseSimulator::BlockCode *bc) {
                     static_cast<Transfer_Operation *>(rbc.operation)->handleBridgeMovements(&rbc);
         }
         if (bridgeStop) return;
+        rbc.console << "probeGreenLight1\n";
         rbc.probeGreenLight();
     } else {
         if (rbc.interfaceTo(position, sender)->isConnected()) {
@@ -68,9 +69,12 @@ void CoordinateBackMessage::handle(BaseSimulator::BlockCode *bc) {
             rbc.resetMM();
             return;
         }
+
+
         if ((*rbc.operation->localRules)[rbc.mvt_it].currentPosition + rbc.seedPosition ==
             rbc.module->position) {
             // The coordinator must start its motions (In Dismantle operations)
+            rbc.console << "probeGreenLight2\n";
             rbc.probeGreenLight();
             return;
         }
@@ -111,6 +115,13 @@ void CoordinateBackMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.sendHandleableMessage(
                 new CoordinateMessage(rbc.operation, targetModule, rbc.module->position, rbc.mvt_it),
                 rbc.interfaceTo(targetModule), 100, 200);
+
+        if(rbc.operation->isTransfer() and rbc.operation->getDirection() == Direction::FRONT and rbc.mvt_it >= rbc.operation->localRules->size() - 1) {
+            rbc.isCoordinator = false;
+            rbc.console << "Movement Done\n";
+            rbc.resetMM();
+            return;
+        }
     } else {  // Forward the message to the coordinator
         P2PNetworkInterface *sender = this->destinationInterface;
         rbc.sendHandleableMessage(
@@ -274,13 +285,14 @@ void GLOMessage::handle(BaseSimulator::BlockCode *bc) {
         return;
     }
     if (rbc.module->position != srcPos) {
-        rbc.sendHandleableMessage(static_cast<PLSMessage *>(this->clone()),
+        rbc.sendHandleableMessage(static_cast<GLOMessage *>(this->clone()),
                                   rbc.interfaceTo(srcPos), 100, 200);
         return;
     }
 
 
     rbc.nbWaitedAnswers--;
+    rbc.console << "nbWaitedAnswers: " << rbc.nbWaitedAnswers << "\n";
     if (rbc.nbWaitedAnswers == 0) {
         rbc.updateNextPosition();
         Cell3DPosition targetPosition =
@@ -319,6 +331,7 @@ void GLOMessage::handle(BaseSimulator::BlockCode *bc) {
         } else {
             // retry rotating to next position
             //            VS_ASSERT_MSG(false, "Can not rotate to next position");
+            rbc.console << "probeGreenLight3\n";
             rbc.probeGreenLight();
         }
     }
