@@ -1634,8 +1634,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("BF_transfer_Left.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(24,26,10);
+    file.open("BF_DismantleAndFill_Right_Zeven.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(6,6,4);
     if(!file.is_open()) return; 
 
     if(c == 'o') {

@@ -202,15 +202,22 @@ Dismantle_Operation::Dismantle_Operation (Direction _direction, MMShape _mmShape
 
         case Direction::RIGHT: {
             if (mmShape == BACKFRONT) {
-                Zeven ? localRules.reset(&LocalRules_BF_Dismantle_Right_Zeven) :
-                localRules.reset(&LocalRules_BF_Dismantle_Right_Zodd);
+                if(filled) {
+                    VS_ASSERT_MSG(false, "Not implemented");
+                } else if(fill) {
+                    Zeven ? localRules.reset(&LocalRules_BF_DismantleAndFill_Right_Zeven) :
+                    VS_ASSERT_MSG(false, "Not implemented");
+                } else {
+                    Zeven ? localRules.reset(&LocalRules_BF_Dismantle_Right_Zeven) :
+                    localRules.reset(&LocalRules_BF_Dismantle_Right_Zodd);
+                }
             } else { //FRONTBACK
                 if(filled) {
                     VS_ASSERT_MSG(false, "Not implemented");
                 } else {
                     if(fill) {
                         Zeven ? localRules.reset(&LocalRules_FB_DismantleAndFill_Right_Zeven) :
-                        VS_ASSERT_MSG(false, "Not implemented");
+                        localRules.reset(&LocalRules_FB_DismantleAndFill_Right_Zodd);
                     } else {
                         Zeven ? localRules.reset(&LocalRules_FB_Dismantle_Right_Zeven) :
                         localRules.reset(&LocalRules_FB_Dismantle_Right_Zodd);

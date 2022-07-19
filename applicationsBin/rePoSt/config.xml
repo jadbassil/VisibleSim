@@ -8,7 +8,36 @@
 		<block position="10,6,4"/>
 	</blockList>
 
-	<MMBlockList>
+
+	  <MMBlockList>
+		  <block position="0,0,0" />
+		  <block position="1,0,0" />
+		  <block position="0,1,0" />
+		  <block position="1,1,0" />
+		  <block position="0,0,1" />
+		  <block position="1,0,1" />
+		  <block position="0,1,1" />
+		  <block position="1,1,1" />
+		  <block position="2,0,0" />
+		  <block position="-1,0,0" />
+	  </MMBlockList>
+
+	  <MMTargetList>
+		  <block position="0,0,0" />
+		  <block position="1,0,0" />
+		  <block position="0,1,0" />
+		  <block position="1,1,0" />
+		  <block position="0,0,1" />
+		  <block position="1,0,1" />
+		  <block position="0,1,1" />
+		  <block position="1,1,1" />
+		  <block position="2,0,1" />
+<!--
+		  <block position="-1,1,1" />
+-->
+	  </MMTargetList>
+
+<!--	<MMBlockList>
 		<block position="0,0,0" />
 		<block position="1,0,0" />
 		<block position="1,0,1" />
@@ -24,7 +53,7 @@
 		<block position="2,0,1" />
 		<block position="2,1,1" />
 		<block position="0,0,1" />
-	</MMTargetList>
+	</MMTargetList>-->
 	
 
 </world>
