@@ -1365,7 +1365,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
 
             }
             if (isCoordinator and (mvt_it > operation->localRules->size() - 1 or
-                                   (transferCount == 10 and operation->isTransfer() and
+                                   (transferCount == 10 and (operation->isTransfer() or operation->isBuild()) and
                                            (operation->getDirection() == Direction::UP or operation->getDirection() == Direction::DOWN)))) {
                 console << "test\n";
                 resetMM();

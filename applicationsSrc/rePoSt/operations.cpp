@@ -1052,7 +1052,7 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                                                   rbc->module->position, rbc->mvt_it),
                             rbc->module->getInterface(targetModule), 100, 200);
 
-                        if(rbc->transferCount < 10 and getPrevOpDirection() == Direction::LEFT) {
+                        if(rbc->transferCount < 9 and getPrevOpDirection() == Direction::LEFT) {
                             setMvtItToNextModule(bc);
                         } else if(rbc->transferCount < 8){
                             setMvtItToNextModule(bc);
@@ -1881,6 +1881,7 @@ bool Build_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
         case Direction::RIGHT: {
             if (rbc->mvt_it >= 54 /*and rbc->mvt_it == localRules->size() - 1*/) return true; //FB & BF
         } break;
+
 
         default: return false;
     }
