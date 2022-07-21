@@ -1052,7 +1052,7 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                                                   rbc->module->position, rbc->mvt_it),
                             rbc->module->getInterface(targetModule), 100, 200);
 
-                        if(rbc->transferCount < 9 and getPrevOpDirection() == Direction::LEFT) {
+                        if(rbc->transferCount < 10 and getPrevOpDirection() == Direction::LEFT) {
                             setMvtItToNextModule(bc);
                         } else if(rbc->transferCount < 8){
                             setMvtItToNextModule(bc);
@@ -1506,13 +1506,21 @@ Transfer_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Cat
                 latchingPoints.push_back(
                         static_cast<Catoms3DBlock*>(rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(-3,0,3))));
             }
-            if (mmShape == FRONTBACK and isZeven() and getNextOpDir() ==
-                                                       Direction::DOWN) {
-                if (rbc.relativePos() == Cell3DPosition(1, -1, 1)) {
-                    latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
-                                                     rbc.lattice->getBlock(
-                                                             rbc.seedPosition + Cell3DPosition(-1, -1, 1))));
+            if (mmShape == FRONTBACK and isZeven()) {
+                if(getNextOpDir() == Direction::DOWN) {
+                    if (rbc.relativePos() == Cell3DPosition(1, -1, 1)) {
+                        latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
+                                                         rbc.lattice->getBlock(
+                                                                 rbc.seedPosition + Cell3DPosition(-1, -1, 1))));
+                    }
+                } else if (getNextOpDir() == Direction::UP) {
+                    if (rbc.relativePos() == Cell3DPosition(-1, 1, 2)) {
+                        latchingPoints.push_back(dynamic_cast<Catoms3D::Catoms3DBlock *>(
+                                                         rbc.lattice->getBlock(
+                                                                 rbc.seedPosition + Cell3DPosition(-3, -1, 3))));
+                    }
                 }
+
             }
             if (rbc.relativePos() == Cell3DPosition(1, -1, 1) and getPrevOpDirection() == Direction::DOWN) {
                 latchingPoints.clear();

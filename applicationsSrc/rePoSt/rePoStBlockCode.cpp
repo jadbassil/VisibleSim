@@ -1021,6 +1021,8 @@ P2PNetworkInterface* RePoStBlockCode::interfaceTo(Cell3DPosition& fromMM, Cell3D
     if (directionVector.pt[1] == 1) direction = Direction::BACK;
     if (directionVector.pt[2] == -1) direction = Direction::DOWN;
     if (directionVector.pt[2] == 1) direction = Direction::UP;
+    if(not lattice->cellHasBlock(fromSeedPosition)) return nullptr;
+
     RePoStBlockCode* fromSeed = static_cast<RePoStBlockCode*>(
         BaseSimulator::getWorld()->getBlockByPosition(fromSeedPosition)->blockCode);
     vector<Cell3DPosition> routingVector =

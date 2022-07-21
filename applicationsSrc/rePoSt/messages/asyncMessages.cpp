@@ -164,11 +164,6 @@ void FindPathMessage::handle(BaseSimulator::BlockCode *bc) {
             for (auto &p: rbc.getAdjacentMMSeeds()) {
                 auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
                         p)->blockCode);
-                if(fromMMPosition.pt[0] == rbc.MMPosition.pt[0] - 1 and toSeed->MMPosition.pt[1] == rbc.MMPosition.pt[1] - 1) continue;
-                if(fromMMPosition.pt[1] == rbc.MMPosition.pt[1] + 1 and toSeed->MMPosition.pt[0] == rbc.MMPosition.pt[0] - 1) continue;
-                if(toSeed->MMPosition.pt[1] == rbc.MMPosition.pt[1] + 1 and rbc.shapeState == FRONTBACK and rbc.module->blockId == 551) {
-                    continue;
-                }
                 if (toSeed->MMPosition != fromMMPosition)
 
                     rbc.sendHandleableMessage(
