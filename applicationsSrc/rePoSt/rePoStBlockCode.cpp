@@ -1133,6 +1133,7 @@ void RePoStBlockCode::onMotionEnd() {
             }
             updateState();
             if(opDone) {
+                RePoStBlockCode::NbOfStreamlines--;
                 auto *seed = dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()->getBlockByPosition(
                         seedPosition)->blockCode);
                 seed->mainPathState = NONE;

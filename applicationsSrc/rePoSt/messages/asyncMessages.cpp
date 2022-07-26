@@ -149,6 +149,7 @@ void FindPathMessage::handle(BaseSimulator::BlockCode *bc) {
         } else if(rbc.pathDirection == SRC_DST and not rbc.isPotentialSource() and nbCrossed == 0){
                 rbc.console << "Filling Destination found\n";
                 rbc.mainPathState = Streamline;
+                RePoStBlockCode::NbOfStreamlines++;
                 rbc.setMMColor(YELLOW);
                 rbc.isDestination = true;
                 rbc.destinationOut = rbc.MMPosition;
@@ -196,12 +197,14 @@ void FoundPathMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.pathOut.second.push_back(fromMMPosition);
         if(rbc.pathDirection == DST_SRC and rbc.MMPosition == initiator) {
             rbc.mainPathState = Streamline;
+            RePoStBlockCode::NbOfStreamlines++;
             rbc.setMMColor(MAGENTA);
             rbc.setOperation(rbc.pathOut.second[0], rbc.destinationOut);
             rbc.sendHandleableMessage(new ConfirmPathAsyncMessage(rbc.MMPosition, fromMMPosition, initiator),
                                       rbc.interfaceTo(rbc.MMPosition, fromMMPosition), 100, 200);
         } else if(rbc.pathDirection == SRC_DST and rbc.MMPosition == initiator) {
             rbc.mainPathState = Streamline;
+            RePoStBlockCode::NbOfStreamlines++;
             rbc.setMMColor(MAGENTA);
             rbc.setOperation(rbc.pathIn.second, rbc.pathOut.second[0]);
 
