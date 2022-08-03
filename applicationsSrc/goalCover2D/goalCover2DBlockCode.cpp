@@ -26,7 +26,7 @@ void GoalCover2DBlockCode::startup() {
         module->setColor(GREEN);
         setAreaBase(module->position);
         buildTree();
-        myArea.clear();
+        //myArea.clear();
         partition(areaRoot, borderSize);
         cleanTree();
         updateTree();
@@ -332,6 +332,12 @@ void GoalCover2DBlockCode::onBlockSelected() {
     cerr << "myArea: \n\t";
     for (auto &c: myArea) {
         cerr << c << ", ";
+    }
+    cerr << endl;
+    cerr << "entryPoints: \n\t";
+    for (auto &c: myArea) {
+        if(cellOnBorder(c))
+            cerr << '(' << c.pt[0] << ", " << c.pt[1] << ')'    << ", ";
     }
     cerr << endl;
     cerr << "myArea size: " << myArea.size() << endl;
