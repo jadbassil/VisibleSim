@@ -7,7 +7,7 @@
 #include <set>
 #include <map>
 #include <queue>
-
+#include "./goalCover.hpp"
 using namespace Catoms3D;
 
 static const int IT_MODE_FINDING_PIVOT = 2000;
@@ -70,10 +70,10 @@ static RenconfigurationStep reconfigurationStep;
 static int NbOfDestinationsReached = 0;
 
 static int timeStep = 0;
-
+class GoalCover;
 class RePoStBlockCode : public Catoms3DBlockCode {
 private:
-    
+    GoalCover *goalCover;
 public:
     static Catoms3DBlock *GC;
     static int NbOfStreamlines;
@@ -241,7 +241,7 @@ public:
      */
     vector<Cell3DPosition> getAdjacentMMPositions();
 
-
+    static vector<Cell3DPosition> getMMNeighborhood(Cell3DPosition pos);
     /**
      * @brief Update the state of a module once it becomes int its new position
      * 

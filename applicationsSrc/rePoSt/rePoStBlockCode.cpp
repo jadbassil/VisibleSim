@@ -103,12 +103,17 @@ void RePoStBlockCode::startup() {
             nbWaitedAnswers++;
         }
     }*/
-
-    if(isPotentialDestination()) {
+    goalCover = new GoalCover(*this);
+    if(goalCover->cellOnBorder(MMPosition)) {
         isDestination = true;
+
+        goalCover->buildGraph();
+
+
         setMMColor(GREEN);
     }
     if(isPotentialSource()) {
+
         isSource = true;
         module->setColor(RED);
     }
@@ -117,7 +122,7 @@ void RePoStBlockCode::startup() {
         setMMColor(GREY);
     }
 
-    if(not isSource and module->position == seedPosition) {
+   /* if(not isSource and module->position == seedPosition) {
         nbSrcCrossed = 0;
         for (auto p: getAdjacentMMSeeds()) {
             RePoStBlockCode *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
@@ -143,7 +148,7 @@ void RePoStBlockCode::startup() {
             sendHandleableMessage(new FindPathMessage(MMPosition, toSeed->MMPosition, MMPosition, pathDirection),
                                   interfaceTo(MMPosition, toSeed->MMPosition), 500, 200);
         }
-    }
+    }*/
 }
 
 void RePoStBlockCode::reinitialize() {
@@ -865,6 +870,17 @@ vector<Cell3DPosition> RePoStBlockCode::getAdjacentMMPositions() {
     return adjacentPos;
 }
 
+vector<Cell3DPosition> RePoStBlockCode::getMMNeighborhood(Cell3DPosition pos) {
+    vector<Cell3DPosition> adjacentPos;
+    const vector<Cell3DPosition> relativePositions = {
+            Cell3DPosition(1, 0, 0),  Cell3DPosition(-1, 0, 0), Cell3DPosition(0, 1, 0),
+            Cell3DPosition(0, -1, 0), Cell3DPosition(0, 0, 1),  Cell3DPosition(0, 0, -1)};
+    for(auto rp: relativePositions) {
+        adjacentPos.push_back(pos + rp);
+    }
+    return adjacentPos;
+}
+
 
 void RePoStBlockCode::updateState() {
     console << "Update State!!\n";
@@ -1560,7 +1576,10 @@ void RePoStBlockCode::onBlockSelected() {
     cerr << endl;
     cerr << "PathState: " << mainPathState <<  endl;
     cerr << "FillingState: " << fillingState << endl;
-/*    cerr << "distanceDst: " << distanceDst << endl;
+    goalCover->printGraph();
+    cerr << "max flow: " << goalCover->maxFlow() << endl;
+    goalCover->printGraph();
+/*  cerr << "distanceDst: " << distanceDst << endl;
     cerr << "parentPositionDst: " << parentPositionDst << endl;
     cerr << "childrenPostionsDst: ";
     for(auto &c: childrenPositionsDst) cerr << c << "; ";
