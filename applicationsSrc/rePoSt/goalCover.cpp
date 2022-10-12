@@ -36,9 +36,9 @@ void GoalCover::buildGraph() {
             if(cellOnBorder(cur)) {
                 nbOfBorderPositions++;
             }
-            for ( auto &adjPos: RePoStBlockCode::getMMNeighborhood(cur)) {
+            for (auto &adjPos: RePoStBlockCode::getMMNeighborhood(cur)) {
                 if ((not rbc->lattice->cellHasBlock(rbc->getSeedPositionFromMMPosition(
-                        adjPos)) and rbc->inTargetShape(adjPos)) or cellOnBorder(adjPos) ) {
+                        adjPos)) and rbc->inTargetShape(adjPos)) or cellOnBorder(adjPos)) {
                     graph[cur][adjPos] = 0;
                     Q.push(adjPos);
                 }
@@ -65,6 +65,8 @@ void GoalCover::buildGraph() {
             graph[node.first][sink] = 1;
         }
     }
+    maxFlow();
+    reduceGraph();
 }
 
 void GoalCover::printGraph() {
@@ -111,11 +113,11 @@ int GoalCover::maxFlow() {
     int max = 0;
     while(bfs(rGraph, source, sink, parent)) {
         int pathFlow = INT32_MAX;
-        for(v = sink; v != source; v = parent[v]) {
+        for (v = sink; v != source; v = parent[v]) {
             u = parent[v];
             pathFlow = min(pathFlow, rGraph[u][v]);
         }
-        for(v = sink; v != source; v = parent[v]) {
+        for (v = sink; v != source; v = parent[v]) {
             u = parent[v];
             rGraph[u][v] -= pathFlow;
             rGraph[v][u] += pathFlow;
@@ -126,12 +128,29 @@ int GoalCover::maxFlow() {
     for(auto node: graph) {
         for(auto edge: node.second) {
             graph[node.first][edge.first] -= rGraph[node.first][edge.first];
-            if(graph[node.first][edge.first] <= 0 or edge.first == sink) {
+            if (graph[node.first][edge.first] <= 0 or edge.first == sink) {
                 graph[node.first].erase(edge.first);
             }
         }
     }
     return max;
+}
+
+void GoalCover::reduceGraph() {
+    map<Cell3DPosition, Cell3DPosition> parent;
+    cerr << "reduce: " <<  bfs(graph, rbc->MMPosition, Cell3DPosition(0,0,0), parent);
+    for(auto it=graph.begin(); it!=graph.end(); ) {
+        if(it->first == rbc->MMPosition) {
+            ++it;
+            continue;
+        }
+        if(not bfs(graph, rbc->MMPosition, it->first, parent)) {
+            rbc->console << "erase: " << it->first << "\n";
+            graph.erase(it++);
+        } else {
+            ++it;
+        }
+    }
 }
 
 

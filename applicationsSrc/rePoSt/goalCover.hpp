@@ -12,6 +12,7 @@ class RePoStBlockCode;
 class GoalCover {
 private:
     RePoStBlockCode *rbc;
+    int entryFlow;
     map<Cell3DPosition, map<Cell3DPosition, int>> graph;
     const Cell3DPosition source = Cell3DPosition(-10,-10,-10);
     const Cell3DPosition sink = Cell3DPosition(-20,-20,-20);
@@ -26,7 +27,15 @@ public:
     bool cellOnBorder(Cell3DPosition &cell);
     void buildGraph();
     void printGraph();
+    /**
+     * An implementation of Edmond-Karp algorithm
+     * @return the maxFlow value
+     */
     int maxFlow();
+    /**
+     * Remove unreachable branches starting from rbc
+     */
+    void reduceGraph();
 
 };
 

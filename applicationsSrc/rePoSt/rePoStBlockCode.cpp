@@ -106,10 +106,7 @@ void RePoStBlockCode::startup() {
     goalCover = new GoalCover(*this);
     if(goalCover->cellOnBorder(MMPosition)) {
         isDestination = true;
-
         goalCover->buildGraph();
-
-
         setMMColor(GREEN);
     }
     if(isPotentialSource()) {
@@ -1576,8 +1573,6 @@ void RePoStBlockCode::onBlockSelected() {
     cerr << endl;
     cerr << "PathState: " << mainPathState <<  endl;
     cerr << "FillingState: " << fillingState << endl;
-    goalCover->printGraph();
-    cerr << "max flow: " << goalCover->maxFlow() << endl;
     goalCover->printGraph();
 /*  cerr << "distanceDst: " << distanceDst << endl;
     cerr << "parentPositionDst: " << parentPositionDst << endl;
