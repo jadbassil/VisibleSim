@@ -66,6 +66,7 @@ void GoalCover::buildGraph() {
         }
     }
     maxFlow();
+    entryFlow = graph[source][rbc->MMPosition];
     reduceGraph();
 }
 
@@ -138,7 +139,7 @@ int GoalCover::maxFlow() {
 
 void GoalCover::reduceGraph() {
     map<Cell3DPosition, Cell3DPosition> parent;
-    cerr << "reduce: " <<  bfs(graph, rbc->MMPosition, Cell3DPosition(0,0,0), parent);
+    //cerr << "reduce: " <<  bfs(graph, rbc->MMPosition, Cell3DPosition(0,0,0), parent);
     for(auto it=graph.begin(); it!=graph.end(); ) {
         if(it->first == rbc->MMPosition) {
             ++it;

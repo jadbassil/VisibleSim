@@ -334,6 +334,11 @@ Dismantle_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Ca
                                                  rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(-2, 0, 1))));
             }
 
+            if(targetPos - rbc.seedPosition == Cell3DPosition(-2, -1, 2) and mmShape == BACKFRONT) {
+                latchingPoints.push_back(static_cast<Catoms3DBlock *>(
+                                                 rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(-3, 0, 1))));
+            }
+
 
         } break;
 
@@ -925,6 +930,9 @@ void Transfer_Operation::handleAddNeighborEvent(BaseSimulator::BlockCode* bc, co
                 pos == rbc->module->position.offsetY(1)) {
                 VS_ASSERT(rbc->mvt_it == 0);
                 rbc->transferCount++;
+                stringstream sstream;
+                sstream << "TransferCount: " + to_string(rbc->transferCount) << "\n";
+                getScheduler()->trace(sstream.str(), rbc->module->blockId, Color(MAGENTA));
 
                 if (rbc->transferCount == 8 and mustHandleBridgeOnAdd(pos)) {
                     // skip to avoid unsupported motion

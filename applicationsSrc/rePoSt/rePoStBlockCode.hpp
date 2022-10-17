@@ -7,7 +7,8 @@
 #include <set>
 #include <map>
 #include <queue>
-#include "./goalCover.hpp"
+/*#include "./goalCover.hpp"*/
+#include "./MaxFlow.hpp"
 using namespace Catoms3D;
 
 static const int IT_MODE_FINDING_PIVOT = 2000;
@@ -70,11 +71,16 @@ static RenconfigurationStep reconfigurationStep;
 static int NbOfDestinationsReached = 0;
 
 static int timeStep = 0;
-class GoalCover;
+class MaxFlow;
 class RePoStBlockCode : public Catoms3DBlockCode {
 private:
-    GoalCover *goalCover;
+
 public:
+    /*GoalCover *goalCover;*/
+    MaxFlow *maxFlow;
+    queue<Cell3DPosition> awaitingMM;
+    Cell3DPosition addedPos;
+    bool MMgreenLightOn{true};
     static Catoms3DBlock *GC;
     static int NbOfStreamlines;
     static int NbofModulesInMvt;
