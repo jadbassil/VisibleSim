@@ -3,13 +3,22 @@
 #include "rePoStBlockCode.hpp"
 
 void CoordinateMessage::handle(BaseSimulator::BlockCode *bc) {
-    RePoStBlockCode &rbc = *static_cast<RePoStBlockCode *>(bc);
+    RePoStBlockCode &rbc = *dynamic_cast<RePoStBlockCode *>(bc);
     P2PNetworkInterface *sender = this->destinationInterface;
     // console << "Received Coordinate Msg from: " << sender->getConnectedBlockId()
     // << " " << coordinateData->coordinatorPosition   << " " << coordinateData->position<< "\n";
+    if (not rbc.lattice->cellHasBlock(position)) {
+        getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(
+                getScheduler()->now() + RePoStBlockCode::getRoundDuration(), MessagePtr(this->clone()),
+                destinationInterface));
+        return;
+    }
     if (rbc.isAdjacentToPosition(position)) {
         if (not rbc.module->getInterface(position)->isConnected()) {
             VS_ASSERT(false);
+/*            getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(
+                    getScheduler()->now() + RePoStBlockCode::getRoundDuration(), MessagePtr(this->clone()),
+                    destinationInterface));*/
             return;
         }
     }
@@ -24,10 +33,10 @@ void CoordinateMessage::handle(BaseSimulator::BlockCode *bc) {
         rbc.movingSteps = 0;
         if (rbc.operation->isTransfer() or
             (rbc.operation->isDismantle() and
-             static_cast<Dismantle_Operation *>(rbc.operation)->filled)) {
+             dynamic_cast<Dismantle_Operation *>(rbc.operation)->filled)) {
             // Special logic to avoid unsupported motions of bridging modules
             bridgeStop =
-                    static_cast<Transfer_Operation *>(rbc.operation)->handleBridgeMovements(&rbc);
+                    dynamic_cast<Transfer_Operation *>(rbc.operation)->handleBridgeMovements(&rbc);
         }
         if (bridgeStop) return;
         rbc.console << "probeGreenLight1\n";
@@ -233,7 +242,8 @@ void PLSMessage::handle(BaseSimulator::BlockCode *bc) {
         }
 
         if(rbc.isCoordinator and rbc.getPreviousOpDir() == Direction::UP and
-           rbc.module->getInterface(rbc.module->position.offsetY(-1))->isConnected()) {
+                (rbc.module->getInterface(rbc.module->position.offsetY(-1))->isConnected()
+           or  rbc.module->getInterface(rbc.module->position.offsetY(1))->isConnected())) {
             //VS_ASSERT(false);
             getScheduler()->trace("light turned orange5\n", rbc.module->blockId, ORANGE);
             if (not rbc.awaitingSources.empty()) rbc.setGreenLight(true);
@@ -253,6 +263,16 @@ void PLSMessage::handle(BaseSimulator::BlockCode *bc) {
         if (rbc.isCoordinator and rbc.getPreviousOpDir() == Direction::LEFT and
             srcPos == rbc.seedPosition + Cell3DPosition(3, -1, 2)
             and rbc.module->getInterface(rbc.module->position.offsetY(-1))->isConnected()) {
+            getScheduler()->trace("light turned orange8\n", rbc.module->blockId, ORANGE);
+            if (not rbc.awaitingSources.empty()) rbc.setGreenLight(true);
+            rbc.awaitingSources.insert(srcPos);
+            //rbc.module->setColor(DARKORANGE);
+            return;
+        }
+
+        if (rbc.isCoordinator and rbc.getPreviousOpDir() == Direction::RIGHT and
+            srcPos == rbc.seedPosition + Cell3DPosition(0, 0, 2)
+            and rbc.module->getInterface(rbc.module->position.offsetY(1))->isConnected()) {
             getScheduler()->trace("light turned orange8\n", rbc.module->blockId, ORANGE);
             if (not rbc.awaitingSources.empty()) rbc.setGreenLight(true);
             rbc.awaitingSources.insert(srcPos);

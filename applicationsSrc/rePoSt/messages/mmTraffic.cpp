@@ -11,11 +11,26 @@ void MMPLSMessage::handle(BaseSimulator::BlockCode *bc) {
 
     Cell3DPosition toSeedPosition = rbc.getSeedPositionFromMMPosition(toMMPosition);
     if (rbc.module->position != toSeedPosition) {
-        rbc.sendHandleableMessage(dynamic_cast<HandleableMessage *>(this->clone()),
-                                  rbc.interfaceTo(fromMMPosition, toMMPosition), 100, 200);
+        P2PNetworkInterface *itf = rbc.interfaceTo(fromMMPosition, toMMPosition);
+        if (not itf->isConnected()) {
+            Cell3DPosition toPos;
+            rbc.module->getNeighborPos(rbc.module->getInterfaceBId(itf), toPos);
+            if (rbc.isInMM(toPos))
+                getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(
+                        getScheduler()->now() + RePoStBlockCode::getRoundDuration(), MessagePtr(this->clone()),
+                        destinationInterface));
+
+        } else {
+            rbc.sendHandleableMessage(dynamic_cast<HandleableMessage *>(this->clone()),
+                                      rbc.interfaceTo(fromMMPosition, toMMPosition), 100, 200);
+        }
         return;
     }
     if(rbc.MMgreenLightOn) {
+        if(rbc.lattice->cellHasBlock(rbc.coordinatorPosition)) {
+            auto *coordinator = dynamic_cast<RePoStBlockCode*>(rbc.lattice->getBlock(rbc.coordinatorPosition)->blockCode);
+        }
+
         rbc.pathIn = make_pair(rbc.MMPosition, fromMMPosition);
         rbc.pathOut.second.clear();
         rbc.pathOut.first = rbc.MMPosition;
@@ -53,6 +68,7 @@ void MMGLOMessage::handle(BaseSimulator::BlockCode *bc) {
     }
     auto* coordinator =
             dynamic_cast<RePoStBlockCode*>(rbc.lattice->getBlock(rbc.coordinatorPosition)->blockCode);
+    rbc.console << "coordinator: " << rbc.coordinatorPosition << "\n";
     if(coordinator->operation->isDismantle()) {
         Cell3DPosition targetModule =
                 rbc.seedPosition +
@@ -66,6 +82,7 @@ void MMGLOMessage::handle(BaseSimulator::BlockCode *bc) {
                 coordinator->module->getInterface(coordinator->nearestPositionTo(targetModule)),
                 100, 200);
     } else {
+        coordinator->console << "handle add neighbor " << coordinator->addedPos << "\n";
         coordinator->operation->handleAddNeighborEvent(coordinator, coordinator->addedPos);
     }
 

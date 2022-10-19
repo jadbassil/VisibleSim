@@ -326,15 +326,17 @@ void RePoStBlockCode::setOperation(const Cell3DPosition& inPosition, Cell3DPosit
             coordinator->operation = new Fill_Operation(direction, shapeState, getPreviousOpDir(),
                                                         comingFromBack, MMPosition.pt[2]);
         } else {
-            coordinator->console << "BUILD\n";
-            if(not lattice->cellHasBlock(getSeedPositionFromMMPosition(outPosition))) {
+            if (not lattice->cellHasBlock(getSeedPositionFromMMPosition(outPosition)) and not
+                    lattice->cellHasBlock(getSeedPositionFromMMPosition(outPosition).offsetX(1))) {
+                coordinator->console << "BUILD\n";
                 coordinator->operation = new Build_Operation(direction, shapeState, getPreviousOpDir(),
                                                              comingFromBack, MMPosition.pt[2]);
             } else {
-                coordinator->operation = new Transfer_Operation(direction, shapeState, getPreviousOpDir(), getNextOpDir(),
+                coordinator->console << "TRANSFER\n";
+                coordinator->operation = new Transfer_Operation(direction, shapeState, getPreviousOpDir(),
+                                                                getNextOpDir(),
                                                                 comingFromBack, MMPosition.pt[2]);
             }
-
         }
 
     } else { //Transfer MM
@@ -722,13 +724,14 @@ Direction RePoStBlockCode::getNextOpDir() {
             if(seed->isDestination) return Direction::UNDEFINED;
             Cell3DPosition nextSeedPosition;
             nextSeedPosition = getSeedPositionFromMMPosition(seed->pathOut.second[0]);
-            RePoStBlockCode* nextSeed =
-                    static_cast<RePoStBlockCode*>(lattice->getBlock(nextSeedPosition)->blockCode);
+            auto* nextSeed =
+                    dynamic_cast<RePoStBlockCode*>(lattice->getBlock(nextSeedPosition)->blockCode);
             if (nextSeed->pathOut.second.empty()) return Direction::UNDEFINED;
             Cell3DPosition nextNextSeedPosition;
             nextNextSeedPosition = getSeedPositionFromMMPosition(nextSeed->pathOut.second[0]);
-            RePoStBlockCode* nextNextSeed =
-                    static_cast<RePoStBlockCode*>(lattice->getBlock(nextNextSeedPosition)->blockCode);
+            if(not lattice->cellHasBlock(nextNextSeedPosition)) return Direction::UNDEFINED;
+            auto* nextNextSeed =
+                    dynamic_cast<RePoStBlockCode*>(lattice->getBlock(nextNextSeedPosition)->blockCode);
             return nextNextSeed->getPreviousOpDir();
         } break;
 
@@ -1052,8 +1055,10 @@ P2PNetworkInterface* RePoStBlockCode::interfaceTo(Cell3DPosition& fromMM, Cell3D
         console << module->blockId << " test: " <<toSeedPosition << " " << toMM << "\n";
         return nullptr;
     }
-    if (lattice->cellsAreAdjacent(module->position, toSeedPosition))
+    if (lattice->cellsAreAdjacent(module->position, toSeedPosition)) {
+        console << "test" << toSeedPosition << "\n";
         return module->getInterface(toSeedPosition);
+    }
     Cell3DPosition fromSeedPosition = getSeedPositionFromMMPosition(fromMM);
     Direction direction;
     Cell3DPosition directionVector = toMM - fromMM;
@@ -1185,6 +1190,7 @@ void RePoStBlockCode::onMotionEnd() {
                 //seed->pathDirection = NO_DIRECTION;
                 seed->isDestination = false;
                 seed->console << "OpDone\n";
+                seed->MMgreenLightOn = true;
                 /*seed->pathIn.clear();*/
                 /*if(not seed->pathOut.empty()) {
                     for(auto kv: seed->pathOut) {
@@ -1331,34 +1337,36 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                 getOppositeDirection((std::static_pointer_cast<AddNeighborEvent>(pev))
                                     ->face);
             if(module->getNeighborBlock(face) == NULL) return;
-            addedPos = module->getNeighborBlock(face)->position;
+            Cell3DPosition pos = module->getNeighborBlock(face)->position;
             
             RePoStBlockCode *posBlock = static_cast<RePoStBlockCode*>(
-                BaseSimulator::getWorld()->getBlockByPosition(addedPos)->blockCode
+                BaseSimulator::getWorld()->getBlockByPosition(pos)->blockCode
             );
             if((not rotating and posBlock->rotating) or (!posBlock->rotating and isCoordinator) ) {
                 setGreenLight(false);
             }
             if(not operation) return;
-            console << "ADD NEIGHBOR: " << addedPos << "\n";
+            console << "ADD NEIGHBOR: " << pos << "\n";
 
-            if (isCoordinator and transferCount == 0 and operation->isTransfer() and abs(addedPos.pt[1]-module->position.pt[1]) == 1
-            and addedPos.pt[0] == module->position.pt[0]) {
+            if (isCoordinator and transferCount == 0 and operation->isTransfer() and abs(pos.pt[1]-module->position.pt[1]) == 1
+            and pos.pt[0] == module->position.pt[0] and pos.pt[2] == module->position.pt[2]) {
+                addedPos = pos;
                 auto *seed = dynamic_cast<RePoStBlockCode *>(lattice->getBlock(
                         getSeedPositionFromMMPosition(MMPosition))->blockCode);
+                VS_ASSERT(seed->interfaceTo(MMPosition, seed->pathOut.second[0])->isConnected());
                 seed->sendHandleableMessage(new MMPLSMessage(MMPosition, seed->pathOut.second[0]),
                                       seed->interfaceTo(MMPosition, seed->pathOut.second[0]), 100, 200);
                 MMgreenLightOn = false;
                 module->setColor(RED);
             } else {
-                operation->handleAddNeighborEvent(this, addedPos);
+                operation->handleAddNeighborEvent(this, pos);
             }
 
 
 
             /**Special logic when the end position of previous transfer back with FB shape operation is (0,1,1) relative to the coordinator
              Specify if the module must move to the starting position if next operation is not transfer back BF **/
-            if (isCoordinator and addedPos == module->position + Cell3DPosition(0, 1, 1)) {
+            if (isCoordinator and pos == module->position + Cell3DPosition(0, 1, 1)) {
                 if (((operation->isTransfer() or operation->isFill()) and
                      (operation->getDirection() == Direction::UP or operation->getDirection() == Direction::DOWN) and
                      operation->getPrevOpDirection() == Direction::BACK) or
@@ -1378,7 +1386,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                 }
             }
 
-            if(isCoordinator and addedPos == module->position + Cell3DPosition(0,0,1) and shapeState == FRONTBACK) {
+            if(isCoordinator and pos == module->position + Cell3DPosition(0,0,1) and shapeState == FRONTBACK) {
                 if (operation->getDirection() != Direction::FRONT and getPreviousOpDir() == Direction::FRONT and getNextOpDir() != Direction::LEFT) {
                      posBlock->movingSteps--;
                      if (posBlock->module->canMoveTo(module->position.offsetY(-1)) and not posBlock->sendingCoordinateBack) {
@@ -1615,7 +1623,8 @@ void RePoStBlockCode::onBlockSelected() {
     cerr << "PathState: " << mainPathState <<  endl;
     cerr << "FillingState: " << fillingState << endl;
     cerr << "MMGreenLightOn: " << MMgreenLightOn << endl;
-    maxFlow->printGraph();
+    //maxFlow->printLocalConnections();
+    cerr << "awaitingMM: " <<awaitingMM.size() << endl;
 /*  cerr << "distanceDst: " << distanceDst << endl;
     cerr << "parentPositionDst: " << parentPositionDst << endl;
     cerr << "childrenPostionsDst: ";
@@ -1693,8 +1702,8 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
     //     file << "Cell3DPosition" <<  block->module->position - block->seedPosition << ", ";
     //     return;
     // }
-    file.open("BF_DismantleAndFill_Right_Zeven.txt", ios::out | ios::app);
-    seedPosition = Cell3DPosition(6,6,4);
+    file.open("BF_Transfer_up_Zeven.txt", ios::out | ios::app);
+    seedPosition = Cell3DPosition(49,9,46);
     if(!file.is_open()) return; 
 
     if(c == 'o') {
