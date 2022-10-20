@@ -1,6 +1,6 @@
 <?xml version="1.0" standalone="no" ?>
 <visuals enableShadows="false" showGrid="false" windowSize="1800,1000"
-         backgroundColor="#ffffff" backgroundGradientColor="#eeeeee" /> 
+         backgroundColor="#ffffff" backgroundGradientColor="#5eb1e0" />
 <world gridSize="50,50,40" windowSize="1800,900">
 <camera target="99.7739,207.101,45.0787" directionSpherical="-1.35211,1.35211,380" angle="35.000000" near="75.000000" far="1500.000000" />
     <spotlight target="200,200,100" directionSpherical="60,30,900" angle="33.690068" />

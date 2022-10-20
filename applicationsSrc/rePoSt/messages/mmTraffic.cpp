@@ -32,18 +32,24 @@ void MMPLSMessage::handle(BaseSimulator::BlockCode *bc) {
         }
 
         rbc.pathIn = make_pair(rbc.MMPosition, fromMMPosition);
-        rbc.pathOut.second.clear();
-        rbc.pathOut.first = rbc.MMPosition;
-        rbc.pathOut.second.push_back(MaxFlow::graph[rbc.MMPosition].begin()->first);
-        MaxFlow::graph[rbc.MMPosition].begin()->second--;
-        if(MaxFlow::graph[rbc.MMPosition].begin()->second == 0) {
-            MaxFlow::graph[rbc.MMPosition].erase(MaxFlow::graph[rbc.MMPosition].begin());
-        }
-        if(rbc.isDestination and not rbc.lattice->cellHasBlock(rbc.getSeedPositionFromMMPosition(rbc.pathOut.second[0]))) {
-            rbc.destinationOut = rbc.pathOut.second[0];
+
+        if(rbc.isPotentialDestination() ) {
+        /*    rbc.destinationOut = rbc.pathOut.second[0];*/
+            MaxFlow::graph[rbc.MMPosition][rbc.destinationOut]--;
+            if( MaxFlow::graph[rbc.MMPosition][rbc.destinationOut] == 0) {
+                MaxFlow::graph[rbc.MMPosition].erase( rbc.destinationOut);
+            }
             rbc.setOperation(rbc.pathIn.second, rbc.destinationOut);
             //rbc.isDestination = false;
         } else {
+            rbc.isDestination = false;
+            rbc.pathOut.second.clear();
+            rbc.pathOut.first = rbc.MMPosition;
+            rbc.pathOut.second.push_back(MaxFlow::graph[rbc.MMPosition].begin()->first);
+            MaxFlow::graph[rbc.MMPosition].begin()->second--;
+            if(MaxFlow::graph[rbc.MMPosition].begin()->second == 0) {
+                MaxFlow::graph[rbc.MMPosition].erase(MaxFlow::graph[rbc.MMPosition].begin());
+            }
             rbc.setOperation(rbc.pathIn.second, rbc.pathOut.second[0]);
         }
 
@@ -69,6 +75,7 @@ void MMGLOMessage::handle(BaseSimulator::BlockCode *bc) {
     auto* coordinator =
             dynamic_cast<RePoStBlockCode*>(rbc.lattice->getBlock(rbc.coordinatorPosition)->blockCode);
     rbc.console << "coordinator: " << rbc.coordinatorPosition << "\n";
+    rbc.waitingMMGLO = false;
     if(coordinator->operation->isDismantle()) {
         Cell3DPosition targetModule =
                 rbc.seedPosition +

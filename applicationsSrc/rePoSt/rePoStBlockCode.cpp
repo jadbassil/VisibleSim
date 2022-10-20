@@ -131,6 +131,7 @@ void RePoStBlockCode::startup() {
             if(MaxFlow::graph[MMPosition].begin()->second == 0) {
                 MaxFlow::graph[MMPosition].erase(MaxFlow::graph[MMPosition].begin());
             }
+            waitingMMGLO =  true;
             sendHandleableMessage(new MMPLSMessage(MMPosition, pathOut.second[0]),
                                   interfaceTo(MMPosition, pathOut.second[0]), 100, 202);
         }
@@ -805,8 +806,19 @@ bool RePoStBlockCode::isPotentialDestination() {
     if (fillingState == FULL) {
         return false;
     }
+    if(not MaxFlow::graph[MMPosition].empty()) {
+        for(auto edge: MaxFlow::graph[MMPosition]) {
+            Cell3DPosition MMPos = edge.first;
+            if (not lattice->cellHasBlock(getSeedPositionFromMMPosition(MMPos)) and not
+                    lattice->cellHasBlock(getSeedPositionFromMMPosition(MMPos))) {
+                destinationOut = edge.first;
+                return true;
+            }
+        }
 
-    for (auto adjPos : getAdjacentMMPositions()) {
+    }
+
+/*    for (auto adjPos : getAdjacentMMPositions()) {
         if (inTargetShape(adjPos) and not inInitialShape(adjPos) and
             not lattice->cellHasBlock(getSeedPositionFromMMPosition(adjPos))) {
             //if(getSeedPositionFromMMPosition(adjPos) == seedPosition.offsetY(3)) continue;
@@ -819,7 +831,7 @@ bool RePoStBlockCode::isPotentialDestination() {
             if(module->position == seedPosition) destinations.push_back(destinationOut);
             return true;
         }
-    }
+    }*/
 
 /*    if (RePoStBlockCode::targetMap.size() < RePoStBlockCode::initialMap.size() and inInitialShape(MMPosition) and
         inTargetShape(MMPosition) and fillingState == EMPTY) {
@@ -1227,20 +1239,6 @@ void RePoStBlockCode::onMotionEnd() {
                                     seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200);
                         }
                     }*/
-                } else if(not seed->globallyTerminated){
-                    //Check termination
-                    seed->nbWaitedAnswersTermination[seed->MMPosition] = 0;
-                    for (auto p: seed->getAdjacentMMSeeds()) {
-                        auto *toSeed = dynamic_cast<RePoStBlockCode *>( BaseSimulator::getWorld()->getBlockByPosition(
-                                p)->blockCode);
-                        seed->toDestination[seed->MMPosition] = seed->MMPosition;
-                        if(seed->sendHandleableMessage(
-                                new GoTermAsyncMessage(seed->MMPosition, toSeed->MMPosition, seed->MMPosition),
-                                seed->interfaceTo(seed->MMPosition, toSeed->MMPosition), 100, 200) != -1) {
-                            seed->nbWaitedAnswersTermination[seed->MMPosition]++;
-                        }
-
-                    }
                 }
             }
 
@@ -1348,19 +1346,36 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
             if(not operation) return;
             console << "ADD NEIGHBOR: " << pos << "\n";
 
-            if (isCoordinator and transferCount == 0 and operation->isTransfer() and abs(pos.pt[1]-module->position.pt[1]) == 1
-            and pos.pt[0] == module->position.pt[0] and pos.pt[2] == module->position.pt[2]) {
+            if (isCoordinator and transferCount == 0 and operation->isTransfer() and
+                posBlock->movingState == IN_POSITION and
+                ((abs(pos.pt[1] - module->position.pt[1]) == 1
+                  and pos.pt[0] == module->position.pt[0] and pos.pt[2] == module->position.pt[2]) or
+                 (pos == module->position + Cell3DPosition(0, 1, 1) and shapeState == BACKFRONT and
+                  getPreviousOpDir() == Direction::BACK))) {
                 addedPos = pos;
                 auto *seed = dynamic_cast<RePoStBlockCode *>(lattice->getBlock(
                         getSeedPositionFromMMPosition(MMPosition))->blockCode);
                 VS_ASSERT(seed->interfaceTo(MMPosition, seed->pathOut.second[0])->isConnected());
+                seed->waitingMMGLO = true;
                 seed->sendHandleableMessage(new MMPLSMessage(MMPosition, seed->pathOut.second[0]),
-                                      seed->interfaceTo(MMPosition, seed->pathOut.second[0]), 100, 200);
-                MMgreenLightOn = false;
+                                            seed->interfaceTo(MMPosition, seed->pathOut.second[0]), 100, 200);
+
                 module->setColor(RED);
             } else {
-                operation->handleAddNeighborEvent(this, pos);
+
+                if (not lattice->cellHasBlock(getSeedPositionFromMMPosition(MMPosition))) {
+                    operation->handleAddNeighborEvent(this, pos);
+                } else {
+
+                    auto *seed = dynamic_cast<RePoStBlockCode *>(lattice->getBlock(
+                            getSeedPositionFromMMPosition(MMPosition))->blockCode);
+                    if (seed->waitingMMGLO) {
+                        return;
+                    }
+                    operation->handleAddNeighborEvent(this, pos);
+                }
             }
+
 
 
 
@@ -1486,6 +1501,14 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
 
                 case IT_MODE_TRANSFERBACK_REACHCOORDINATOR: {
                     getScheduler()->trace("ReachCoordinator", module->blockId, RED);
+                    auto *seed = dynamic_cast<RePoStBlockCode*>(lattice->getBlock(seedPosition)->blockCode);
+                    if(seed->waitingMMGLO) {
+                        getScheduler()->schedule(
+                                new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
+                                                      module, IT_MODE_TRANSFERBACK_REACHCOORDINATOR));
+                        return;
+                    }
+
                     if (shapeState == BACKFRONT and
                         module->canMoveTo(module->position.offsetZ(-1)) and
                         not sendingCoordinateBack) {
@@ -1984,6 +2007,7 @@ void RePoStBlockCode::resetMM() {
             seed->isSource = true;
             setMMColor(RED);
             seed->pathIn = make_pair(MMPosition, MMPosition);
+            seed->pathOut.second.clear();
             seed->pathOut.first = MMPosition;
             seed->pathOut.second.push_back(MaxFlow::graph[MMPosition].begin()->first);
             seed->setOperation(MMPosition, MaxFlow::graph[MMPosition].begin()->first);
@@ -1991,29 +2015,40 @@ void RePoStBlockCode::resetMM() {
             if(MaxFlow::graph[MMPosition].begin()->second == 0) {
                 MaxFlow::graph[MMPosition].erase(MaxFlow::graph[MMPosition].begin());
             }
+            seed->waitingMMGLO = true;
             seed->sendHandleableMessage(new MMPLSMessage(MMPosition, seed->pathOut.second[0]),
                                         seed->interfaceTo(MMPosition, seed->pathOut.second[0]), 100, 202);
         }
     }
 
     if(not seed->awaitingMM.empty()) {
+        seed->console << "handling awaiting MM\n";
         Cell3DPosition MMPLSFrom = seed->awaitingMM.front();
         seed->awaitingMM.pop();
         //seed->MMgreenLightOn = false;
         seed->pathIn = make_pair(MMPosition, MMPLSFrom);
-        seed->pathOut.second.clear();
-        seed->pathOut.first = MMPosition;
-        seed->pathOut.second.push_back(MaxFlow::graph[MMPosition].begin()->first);
 
-        MaxFlow::graph[MMPosition].begin()->second--;
-        if(MaxFlow::graph[MMPosition].begin()->second == 0) {
-            MaxFlow::graph[MMPosition].erase(MaxFlow::graph[MMPosition].begin());
-        }
-        if(seed->isDestination and not lattice->cellHasBlock(getSeedPositionFromMMPosition(seed->pathOut.second[0]))) {
-            seed->destinationOut = seed->pathOut.second[0];
+        if(seed->isPotentialDestination()) {
+    /*        seed->destinationOut = seed->pathOut.second[0]*/;
+            MaxFlow::graph[MMPosition][seed->destinationOut]--;
+            if( MaxFlow::graph[MMPosition][seed->destinationOut] == 0) {
+                MaxFlow::graph[MMPosition].erase(seed->destinationOut);
+            }
+            if( MaxFlow::graph[MMPosition][seed->destinationOut] < 0) {
+                VS_ASSERT(false);
+            }
             seed->setOperation(seed->pathIn.second, seed->destinationOut);
             //rbc.isDestination = false;
         } else {
+            seed->pathOut.second.clear();
+            seed->pathOut.first = MMPosition;
+            seed->pathOut.second.push_back(MaxFlow::graph[MMPosition].begin()->first);
+
+            MaxFlow::graph[MMPosition].begin()->second--;
+            if(MaxFlow::graph[MMPosition].begin()->second == 0) {
+                MaxFlow::graph[MMPosition].erase(MaxFlow::graph[MMPosition].begin());
+            }
+            seed->isDestination = false;
             seed->setOperation(seed->pathIn.second, seed->pathOut.second[0]);
         }
 

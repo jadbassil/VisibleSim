@@ -90,7 +90,7 @@ public:
     static vector<array<int, 4>> targetMap;
     static bool buildOpsExist;
     static int nbOfIterations;
-
+    bool waitingMMGLO{false};
     static int countMvts();
 
 /* ----------------------- ASYNC VARIABLES ---------------------- */
