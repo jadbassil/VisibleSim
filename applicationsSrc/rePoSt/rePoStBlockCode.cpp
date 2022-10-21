@@ -54,12 +54,12 @@ void RePoStBlockCode::startup() {
         Cell3DPosition targetModule;
 
         Init::initialMapBuildDone = true;
-        // ofstream file;
-        // file.open("nbMovementsPerTimeStep.txt", ios::out);
-        // file << timeStep << ',' << 0 << ',' << 0 << '\n';
-        // getScheduler()->schedule(
-        //                     new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
-        //                                           module, IT_MODE_NBMOVEMENTS));
+  /*      ofstream file;
+        file.open("nbMovementsPerTimeStep.txt", ios::out);
+        file << timeStep << ',' << 0 << ',' << 0 << '\n';
+        getScheduler()->schedule(
+                             new InterruptionEvent(getScheduler()->now() + getRoundDuration(),
+                                                   module, IT_MODE_NBMOVEMENTS));*/
         for(auto id_block: BaseSimulator::getWorld()->getMap()) {
             auto* block = dynamic_cast<RePoStBlockCode*>(id_block.second->blockCode);
             block->module->prevColor = block->module->color;
@@ -725,6 +725,7 @@ Direction RePoStBlockCode::getNextOpDir() {
             if(seed->isDestination) return Direction::UNDEFINED;
             Cell3DPosition nextSeedPosition;
             nextSeedPosition = getSeedPositionFromMMPosition(seed->pathOut.second[0]);
+            if(not lattice->cellHasBlock(nextSeedPosition)) return Direction::UNDEFINED;
             auto* nextSeed =
                     dynamic_cast<RePoStBlockCode*>(lattice->getBlock(nextSeedPosition)->blockCode);
             if (nextSeed->pathOut.second.empty()) return Direction::UNDEFINED;
@@ -810,7 +811,7 @@ bool RePoStBlockCode::isPotentialDestination() {
         for(auto edge: MaxFlow::graph[MMPosition]) {
             Cell3DPosition MMPos = edge.first;
             if (not lattice->cellHasBlock(getSeedPositionFromMMPosition(MMPos)) and not
-                    lattice->cellHasBlock(getSeedPositionFromMMPosition(MMPos))) {
+                    lattice->cellHasBlock(getSeedPositionFromMMPosition(MMPos).offsetX(1))) {
                 destinationOut = edge.first;
                 return true;
             }
@@ -1353,9 +1354,10 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
                  (pos == module->position + Cell3DPosition(0, 1, 1) and shapeState == BACKFRONT and
                   getPreviousOpDir() == Direction::BACK))) {
                 addedPos = pos;
+                console << getSeedPositionFromMMPosition(MMPosition) << "\n";
                 auto *seed = dynamic_cast<RePoStBlockCode *>(lattice->getBlock(
                         getSeedPositionFromMMPosition(MMPosition))->blockCode);
-                VS_ASSERT(seed->interfaceTo(MMPosition, seed->pathOut.second[0])->isConnected());
+                //VS_ASSERT(seed->interfaceTo(MMPosition, seed->pathOut.second[0])->isConnected());
                 seed->waitingMMGLO = true;
                 seed->sendHandleableMessage(new MMPLSMessage(MMPosition, seed->pathOut.second[0]),
                                             seed->interfaceTo(MMPosition, seed->pathOut.second[0]), 100, 200);
@@ -2031,6 +2033,7 @@ void RePoStBlockCode::resetMM() {
         if(seed->isPotentialDestination()) {
     /*        seed->destinationOut = seed->pathOut.second[0]*/;
             MaxFlow::graph[MMPosition][seed->destinationOut]--;
+            seed->console << "is destination" << MaxFlow::graph[seed->MMPosition].begin()->first << " " <<   MaxFlow::graph[seed->MMPosition].begin()->second  << "\n";
             if( MaxFlow::graph[MMPosition][seed->destinationOut] == 0) {
                 MaxFlow::graph[MMPosition].erase(seed->destinationOut);
             }
@@ -2041,12 +2044,12 @@ void RePoStBlockCode::resetMM() {
             //rbc.isDestination = false;
         } else {
             seed->pathOut.second.clear();
-            seed->pathOut.first = MMPosition;
-            seed->pathOut.second.push_back(MaxFlow::graph[MMPosition].begin()->first);
-
-            MaxFlow::graph[MMPosition].begin()->second--;
-            if(MaxFlow::graph[MMPosition].begin()->second == 0) {
-                MaxFlow::graph[MMPosition].erase(MaxFlow::graph[MMPosition].begin());
+            seed->pathOut.first = seed->MMPosition;
+            seed->pathOut.second.push_back(MaxFlow::graph[seed->MMPosition].begin()->first);
+            seed->console << MaxFlow::graph[seed->MMPosition].begin()->first << "\n";
+            MaxFlow::graph[seed->MMPosition].begin()->second--;
+            if(MaxFlow::graph[seed->MMPosition].begin()->second == 0) {
+                MaxFlow::graph[seed->MMPosition].erase(MaxFlow::graph[seed->MMPosition].begin());
             }
             seed->isDestination = false;
             seed->setOperation(seed->pathIn.second, seed->pathOut.second[0]);
