@@ -1351,7 +1351,7 @@ bool Transfer_Operation::mustSendCoordinateBack(BaseSimulator::BlockCode* bc) {
                     if (not comingFromBack and rbc->mvt_it >= 39) return true;
                 } else if(rbc->getPreviousOpDir() == Direction::LEFT){
                     if(rbc->getNextOpDir() == Direction::BACK and not Zeven) {
-                        if (not comingFromBack and rbc->mvt_it >= 43) return true;
+                        if (not comingFromBack and rbc->mvt_it >= 34) return true;
                     } else {
                         if (not comingFromBack and rbc->mvt_it >= 34) return true;
                     }
@@ -1734,7 +1734,12 @@ Transfer_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Cat
                                                          rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(1, -2, 5))));
                     }
                 }
-
+                if(rbc.relativePos() == Cell3DPosition(1,0,3)){
+                    if(rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(1, -1, 5))){
+                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                         rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(1, -2, 5))));
+                    }
+                }
             }
 
 
