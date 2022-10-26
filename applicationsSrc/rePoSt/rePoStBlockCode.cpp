@@ -54,7 +54,7 @@ void RePoStBlockCode::startup() {
         Cell3DPosition targetModule;
 
         Init::initialMapBuildDone = true;
-  /*      ofstream file;
+/*        ofstream file;
         file.open("nbMovementsPerTimeStep.txt", ios::out);
         file << timeStep << ',' << 0 << ',' << 0 << '\n';
         getScheduler()->schedule(
@@ -66,11 +66,13 @@ void RePoStBlockCode::startup() {
             block->module->exportMatrix();
             block->maxFlow = new MaxFlow(block);
             block->pathDirection = SRC_DST;
+            block->initialColor = block->module->color;
         }
+        getScheduler()->toggle_pause();
         maxFlow->buildGraph();
         Catoms3DRotation::exportMatrixCount++;
     }
-    initialColor = module->color;
+
     //module->exportMatrix();
     initialized = true;
 /*    if(isPotentialSource()) {
@@ -1252,7 +1254,7 @@ int RePoStBlockCode::sendHandleableMessage(HandleableMessage *msg, P2PNetworkInt
                                            Time t0, Time dt) {
     if (not dest) return -1;
     if (not dest->isConnected()) {
-        scheduler->schedule(new NetworkInterfaceEnqueueOutgoingEvent(t0, msg, dest));
+        scheduler->schedule(new NetworkInterfaceEnqueueOutgoingEvent(t0, MessagePtr(msg->clone()), dest));
         return -1;
     }
 
@@ -1699,13 +1701,11 @@ void RePoStBlockCode::onUserKeyPressed(unsigned char c, int x, int y) {
         // color sources in RED, destinations in GREEN in other MMs in White
         for(auto id_block: BaseSimulator::getWorld()->buildingBlocksMap) {
             RePoStBlockCode* block = static_cast<RePoStBlockCode*>(id_block.second->blockCode);
-           /* if(showSrcAndDst) {
-                switchModulesColors();
-            } else {*/
-                block->module->setColor(block->initialColor);
+            if(block->module->position == block->seedPosition) {
+                block->setMMColor(block->initialColor);
                 block->module->exportMatrix();
+            }
 
-            //}
         }
         return;
     }
@@ -1902,8 +1902,8 @@ int RePoStBlockCode::countMvts() {
 string RePoStBlockCode::onInterfaceDraw() {
     stringstream trace;
     trace << "Nb of modules " << BaseSimulator::getWorld()->getNbBlocks()  << "\n";
-    trace << "Nb of iterations: " << RePoStBlockCode::nbOfIterations << "\n";
-    trace << "Nb of streamlines: " << RePoStBlockCode::NbOfStreamlines << "\n";
+/*    trace << "Nb of iterations: " << RePoStBlockCode::nbOfIterations << "\n";
+    trace << "Nb of streamlines: " << RePoStBlockCode::NbOfStreamlines << "\n";*/
     trace << "Nb of moving modules: " << RePoStBlockCode::countMvts() ;
     return trace.str();
 }
@@ -1918,16 +1918,18 @@ bool RePoStBlockCode::modulesAreMoving() {
 }
 
 void RePoStBlockCode::setMMColor(Color c) {
-    if(shapeState == FRONTBACK) {
-        for(auto &p: FrontBackMM) {
-            if(not lattice->cellHasBlock(seedPosition + p)) continue;
-            auto *block = dynamic_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(seedPosition + p)->blockCode);
+    if (shapeState == FRONTBACK) {
+        for (auto &p: FrontBackMM) {
+            if (not lattice->cellHasBlock(seedPosition + p)) continue;
+            auto *block = dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()->getBlockByPosition(
+                    seedPosition + p)->blockCode);
             block->module->setColor(c);
         }
     } else {
-        for(auto &p: BackFrontMM) {
-            if(not lattice->cellHasBlock(seedPosition + p)) continue;
-            auto *block = dynamic_cast<RePoStBlockCode*>(BaseSimulator::getWorld()->getBlockByPosition(seedPosition + p)->blockCode);
+        for (auto &p: BackFrontMM) {
+            if (not lattice->cellHasBlock(seedPosition + p)) continue;
+            auto *block = dynamic_cast<RePoStBlockCode *>(BaseSimulator::getWorld()->getBlockByPosition(
+                    seedPosition + p)->blockCode);
             block->module->setColor(c);
         }
     }
@@ -2057,6 +2059,17 @@ void RePoStBlockCode::resetMM() {
 
         seed->MMgreenLightOn = false;
         setMMColor(RED);
+       /* P2PNetworkInterface *itf = seed->interfaceTo(MMPosition, MMPLSFrom);
+        if (not itf->isConnected()) {
+            Cell3DPosition toPos;
+            module->getNeighborPos(module->getInterfaceBId(itf), toPos);
+            if (isInMM(toPos))
+                getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(
+                        getScheduler()->now() + RePoStBlockCode::getRoundDuration(), MessagePtr(new MMGLOMessage(MMPosition, MMPLSFrom)),
+                        destinationInterface));
+
+        }*/
+
         seed->sendHandleableMessage(new MMGLOMessage(MMPosition, MMPLSFrom),
                                   seed->interfaceTo(MMPosition, MMPLSFrom), 100, 200);
     }

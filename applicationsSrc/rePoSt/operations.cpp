@@ -353,6 +353,29 @@ Dismantle_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Ca
         } break;
 
         case Direction::UP: {
+
+            if(mmShape == BACKFRONT and isZeven()) {
+                rbc.console << "?..?\n";
+                if(rbc.relativePos() == Cell3DPosition(1,-1,3)){
+
+                    //if(rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(1, -1, 5))){
+                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                         rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(1, -2, 5))));
+                    //}
+                }
+                return;
+            }
+
+            if(not isZeven() and mmShape == FRONTBACK) {
+                if(rbc.relativePos() == Cell3DPosition(1,-1,3) or rbc.relativePos()==Cell3DPosition(2,0,4)){
+                    if(rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(1, 0, 5))){
+                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                         rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(1, 1, 5))));
+                    }
+                }
+                return;
+            }
+
             if(rbc.relativePos().pt[2] <= 3) {
                 latchingPoints.clear();
                 return;
@@ -362,6 +385,8 @@ Dismantle_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Ca
                 latchingPoints.push_back(static_cast<Catoms3DBlock *>(
                                                  rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(2, 0, 6))));
             }
+
+
         }
 
         case Direction::RIGHT: {
@@ -1673,6 +1698,14 @@ Transfer_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Cat
                 latchingPoints.push_back(static_cast<Catoms3DBlock*>(
                                                  rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(5, -1, 1))));
             }
+
+            if(getPrevOpDirection() == Direction::DOWN) {
+                latchingPoints.clear();
+            }
+
+            if(getPrevOpDirection() == Direction::UP and rbc.relativePos() == Cell3DPosition(1,-1,1) or rbc.relativePos() == Cell3DPosition(1,0,1)) {
+                latchingPoints.clear();
+            }
         }
             break;
 
@@ -1742,6 +1775,14 @@ Transfer_Operation::updateProbingPoints(BaseSimulator::BlockCode *bc, vector<Cat
                 }
             }
 
+            if(not isZeven() and mmShape == FRONTBACK) {
+                if(rbc.relativePos() == Cell3DPosition(1,-1,3) or rbc.relativePos()==Cell3DPosition(2,0,4)){
+                    if(rbc.lattice->cellHasBlock(rbc.seedPosition + Cell3DPosition(1, 0, 5))){
+                        latchingPoints.push_back(static_cast<Catoms3DBlock*>(
+                                                         rbc.lattice->getBlock(rbc.seedPosition + Cell3DPosition(1, 1, 5))));
+                    }
+                }
+            }
 
         }
         default:

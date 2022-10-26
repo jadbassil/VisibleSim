@@ -77,17 +77,32 @@ void MMGLOMessage::handle(BaseSimulator::BlockCode *bc) {
     rbc.console << "coordinator: " << rbc.coordinatorPosition << "\n";
     rbc.waitingMMGLO = false;
     if(coordinator->operation->isDismantle()) {
+
         Cell3DPosition targetModule =
                 rbc.seedPosition +
                 (*coordinator->operation->localRules)[0].currentPosition;
-
+        rbc.console << "Dismantle " << targetModule << "\n";
         VS_ASSERT(coordinator->operation);
+/*
+        VS_ASSERT(coordinator->module->getInterface(coordinator->nearestPositionTo(targetModule))->isConnected());
+*/
+        P2PNetworkInterface* itf =  coordinator->module->getInterface(coordinator->nearestPositionTo(targetModule));
+        if (not itf->isConnected()) {
+            Cell3DPosition toPos;
+            rbc.module->getNeighborPos(rbc.module->getInterfaceBId(itf), toPos);
+            if (rbc.isInMM(toPos))
+                getScheduler()->schedule(new NetworkInterfaceEnqueueOutgoingEvent(
+                        getScheduler()->now() + RePoStBlockCode::getRoundDuration(), MessagePtr(this->clone()),
+                        destinationInterface));
 
-        coordinator->sendHandleableMessage(
-                new CoordinateMessage(coordinator->operation, targetModule,
-                                      coordinator->module->position, coordinator->mvt_it),
-                coordinator->module->getInterface(coordinator->nearestPositionTo(targetModule)),
-                100, 200);
+        } else {
+            coordinator->sendHandleableMessage(
+                    new CoordinateMessage(coordinator->operation, targetModule,
+                                          coordinator->module->position, coordinator->mvt_it),
+                    coordinator->module->getInterface(coordinator->nearestPositionTo(targetModule)),
+                    100, 200);
+        }
+
     } else {
         coordinator->console << "handle add neighbor " << coordinator->addedPos << "\n";
         coordinator->operation->handleAddNeighborEvent(coordinator, coordinator->addedPos);

@@ -130,7 +130,7 @@ bool MaxFlow::bfs(map<Cell3DPosition, map<Cell3DPosition, int>> &G, const Cell3D
         for(auto &edge: G[cur]) {
             if(not visited[edge.first] and edge.second > 0) {
                 if(edge.first == t) {
-                    parent[edge.first] = cur;
+                        parent[edge.first] = cur;
                     return true;
                 }
                 Q.push(edge.first);
