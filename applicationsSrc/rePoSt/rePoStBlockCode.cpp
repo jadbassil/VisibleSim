@@ -1326,6 +1326,7 @@ void RePoStBlockCode::processLocalEvent(EventPtr pev) {
             VS_ASSERT(module->pivot);
             pivotPosition = module->pivot->position;
             module->setColor(BLUE);
+            OUTPUT << "mvmt: " << round((scheduler->now()) / getRoundDuration()) << " waiting: " << countMvts() << endl;
             break;
         }
         case EVENT_ROTATION3D_END: {
@@ -1892,7 +1893,7 @@ int RePoStBlockCode::countMvts() {
         RePoStBlockCode* MMBlock =
                 static_cast<RePoStBlockCode*>(id_block.second->blockCode);
 
-        if (MMBlock->movingState == MOVING or MMBlock->movingState == WAITING) {
+        if ((MMBlock->movingState == MOVING and MMBlock->nbWaitedAnswers != 0 ) or MMBlock->movingState == WAITING) {
             nbOfModulesInMvt++;
         }
     }
