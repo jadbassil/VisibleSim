@@ -8,6 +8,7 @@
 
 
 static const int SAMPLE_MSG_ID = 1000;
+static const int IT_MODE_FINDW = 2000;
 
 using namespace BlinkyBlocks;
 
@@ -61,6 +62,7 @@ public :
     int bottomW{-1}, topW{-1};
     queue<P2PNetworkInterface*> waitingCheckD;
     queue<P2PNetworkInterface*> waitingCheckDW;
+    queue<Message*> waitingFindWMsgs;
     int nbWaitingNotifyD{0};
     int nbWaitingNotifyW{0};
     Box myBox;

@@ -48,22 +48,24 @@ public:
     void handle(BaseSimulator::BlockCode*) override;
     [[nodiscard]] Message* clone() const override { return new NotifyDMessage(*this); }
     [[nodiscard]] string getName() const override {
-        return "NotifyDMessage{" + to_string(type) + ", " + to_string(value) + "}";
+        return "NotifyDMessage{" + to_string(value) + "}";
     }
 };
 
 class FindWMessage : public HandleableMessage {
 private:
+    int direction;
     int value;
+    int senderId;
 public:
-    FindWMessage(int _value): value(_value){};
+    FindWMessage(int _direction, int _value, int _senderId): direction(_direction), value(_value), senderId(_senderId){};
 
     ~FindWMessage() override = default;
 
     void handle(BaseSimulator::BlockCode*) override;
     [[nodiscard]] Message* clone() const override { return new FindWMessage(*this); }
     [[nodiscard]] string getName() const override {
-        return "FindWMessage{"+ to_string(value) + "}";
+        return "FindWMessage{"+ to_string(direction) + + ", " + to_string(value) + + ", " + to_string(senderId) + " }";
     }
 };
 

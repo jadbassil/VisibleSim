@@ -84,6 +84,50 @@ void ShapeRecognition3DBlockCode::processLocalEvent(EventPtr pev) {
         }
             break;
 
+        case EVENT_INTERRUPTION: {
+            std::shared_ptr<InterruptionEvent> itev =
+                    std::static_pointer_cast<InterruptionEvent>(pev);
+            switch(itev->mode) {
+                case IT_MODE_FINDW: {
+                    if(not isFrontmost()) {
+                        if(module->getInterface(SCLattice::Direction::Left)->isConnected()) {
+                            auto* leftNeighbor = dynamic_cast<ShapeRecognition3DBlockCode*>(
+                                    BaseSimulator::getWorld()->getBlockByPosition(module->position.offsetX(-1))->blockCode);
+
+                            console << "leftD: " << leftNeighbor->hostBlock->blockId << "\n";
+                            leftD = leftNeighbor->d;
+                        }
+                        if(module->getInterface(SCLattice::Direction::Right)->isConnected()) {
+                            auto* rightNeighbor = dynamic_cast<ShapeRecognition3DBlockCode*>(
+                                    BaseSimulator::getWorld()->getBlockByPosition(module->position.offsetX(1))->blockCode);
+
+                            rightD = rightNeighbor->d;
+                        }
+                        console << "leftD: " << leftD << " rightD: " << rightD << "\n";
+                    }
+                    if(d == -1 or (leftD == -1 and module->getInterface(SCLattice::Direction::Left)->isConnected())
+                       or (rightD == -1 and module->getInterface(SCLattice::Direction::Right)->isConnected())) {
+                        // Reschedule another interruption in 500 us
+                        console << "Reschedule\n";
+                        getScheduler()->schedule(
+                                new InterruptionEvent(getScheduler()->now() + 500, // example delay in us
+                                                      module, IT_MODE_FINDW));
+                    } else {
+
+                        while (not waitingFindWMsgs.empty()) {
+                            std::shared_ptr<Message> msg = static_cast<shared_ptr<Message>>(waitingFindWMsgs.front());
+                            std::shared_ptr<HandleableMessage> hMsg =
+                                    (std::static_pointer_cast<HandleableMessage>(msg));
+                            hMsg->handle(this);
+                            waitingFindWMsgs.pop();
+                        }
+                    }
+
+                }
+
+            }
+        } break;
+
         case EVENT_ADD_NEIGHBOR: {
             // Do something when a neighbor is added to an interface of the module
             break;
@@ -187,25 +231,26 @@ void ShapeRecognition3DBlockCode::setMyBox() {
         corner.pt[2] = tmp;
     }
     myBox = Box(base, corner);
+    console << "Box is Set " << myBox << "\n";
     ShapeRecognition3DBlockCode::colorBox(myBox);
 }
 
 void ShapeRecognition3DBlockCode::searchForHeight() {
-    while (not waitingCheckDW.empty()) {
-        P2PNetworkInterface *waitingInt = waitingCheckDW.front();
-        waitingCheckDW.pop();
-        sendHandleableMessage(new NotifyWMessage(w), waitingInt);
-    }
-    if (module->getInterface(SCLattice::Direction::Top)->isConnected()) {
-        sendHandleableMessage(new CheckWMessage(),
-                                    module->getInterface(SCLattice::Direction::Top));
-        nbWaitingNotifyW++;
-    }
-    if (module->getInterface(SCLattice::Direction::Bottom)->isConnected()) {
-        sendHandleableMessage(new CheckWMessage(),
-                                    module->getInterface(SCLattice::Direction::Bottom));
-        nbWaitingNotifyW++;
-    }
+//    while (not waitingCheckDW.empty()) {
+//        P2PNetworkInterface *waitingInt = waitingCheckDW.front();
+//        waitingCheckDW.pop();
+//        sendHandleableMessage(new NotifyWMessage(w), waitingInt);
+//    }
+//    if (module->getInterface(SCLattice::Direction::Top)->isConnected()) {
+//        sendHandleableMessage(new CheckWMessage(),
+//                                    module->getInterface(SCLattice::Direction::Top));
+//        nbWaitingNotifyW++;
+//    }
+//    if (module->getInterface(SCLattice::Direction::Bottom)->isConnected()) {
+//        sendHandleableMessage(new CheckWMessage(),
+//                                    module->getInterface(SCLattice::Direction::Bottom));
+//        nbWaitingNotifyW++;
+//    }
     if(nbWaitingNotifyW == 0){
         //No top or bottom modules connected (No height)
         h = module->position[2];

@@ -28,12 +28,12 @@ void CheckDMessage::handle(BaseSimulator::BlockCode *bc) {
         srbc->waitingCheckD.push(sender);
         return;
     }
-    if(srbc->isFrontmost()) {
-        srbc->sendHandleableMessage(new NotifyDMessage(srbc->d), sender);
-    } else {
-        srbc->sendHandleableMessage(new NotifyDMessage(-1), sender);
-    }
-
+//    if(srbc->isFrontmost()) {
+//        srbc->sendHandleableMessage(new NotifyDMessage(srbc->d), sender);
+//    } else {
+//        srbc->sendHandleableMessage(new NotifyDMessage(-1), sender);
+//    }
+    srbc->sendHandleableMessage(new NotifyDMessage(srbc->d), sender);
 }
 
 void NotifyDMessage::handle(BaseSimulator::BlockCode *bc) {
@@ -49,20 +49,19 @@ void NotifyDMessage::handle(BaseSimulator::BlockCode *bc) {
     }
 
     if (srbc->nbWaitingNotifyD == 0) {
-        if ( srbc->d == srbc->leftD and srbc->d == srbc->rightD) {
+        if (srbc->d == srbc->leftD and srbc->d == srbc->rightD) {
             return;
         }
+         //leftD != rightD
         if (srbc->d != srbc->rightD and srbc->d != srbc->leftD) {
             srbc->w = srbc->module->position.pt[0];
             srbc->myBox.rectangleSet = true;
             srbc->searchForHeight();
-        }
-        if (srbc->d == srbc->leftD and srbc->d != srbc->rightD) {
-            srbc->sendHandleableMessage(new FindWMessage(-1),
+        } else if (srbc->d == srbc->leftD and srbc->d != srbc->rightD) {
+            srbc->sendHandleableMessage(new FindWMessage(-1, srbc->d, srbc->module->blockId),
                                         srbc->module->getInterface(SCLattice::Direction::Left));
-        }
-        if (srbc->d == srbc->rightD and srbc->d != srbc->leftD) {
-            srbc->sendHandleableMessage(new FindWMessage(-1),
+        } else if (srbc->d == srbc->rightD and srbc->d != srbc->leftD) {
+            srbc->sendHandleableMessage(new FindWMessage(-1, srbc->d, srbc->module->blockId),
                                         srbc->module->getInterface(SCLattice::Direction::Right));
         }
     }
@@ -72,49 +71,71 @@ void NotifyDMessage::handle(BaseSimulator::BlockCode *bc) {
 void FindWMessage::handle(BaseSimulator::BlockCode *bc) {
     auto *srbc = dynamic_cast<ShapeRecognition3DBlockCode *>(bc);
     P2PNetworkInterface *sender = destinationInterface;
-    if (value == -1) {
+    srbc->console << "received FindW " << value << " from " << sender->getConnectedBlockId() << "\n";
+    if (direction == -1) { //direction = GO
+        if(srbc->d == -1 or (srbc->leftD == -1 and srbc->module->getInterface(SCLattice::Direction::Left)->isConnected())
+            or (srbc->rightD == -1 and srbc->module->getInterface(SCLattice::Direction::Right)->isConnected())) {
+            srbc->console << "Reschedule\n";
+            srbc->waitingFindWMsgs.push(this->clone());
+            getScheduler()->schedule(
+                    new InterruptionEvent(getScheduler()->now() + 500, // example delay in us
+                                          srbc->module, IT_MODE_FINDW));
+            return;
+        }
         if (srbc->module->getDirection(sender) == SCLattice::Direction::Left) {
-            if (srbc->rightD == srbc->d) {
-                srbc->sendHandleableMessage(new FindWMessage(-1),
+            if (srbc->d >= value and srbc->rightD >= value) {
+                srbc->sendHandleableMessage(new FindWMessage(-1, value, senderId),
                                             srbc->module->getInterface(SCLattice::Direction::Right));
             } else {
-                srbc->sendHandleableMessage(new FindWMessage(srbc->module->position.pt[0]),
+                srbc->sendHandleableMessage(new FindWMessage(1, srbc->module->position.pt[0], senderId),
                                             srbc->module->getInterface(SCLattice::Direction::Left));
             }
         } else if (srbc->module->getDirection(sender) == SCLattice::Direction::Right) {
-            if (srbc->leftD == srbc->d) {
-                srbc->sendHandleableMessage(new FindWMessage(-1),
+            if (srbc->d >= value and srbc->leftD >= value) {
+                srbc->sendHandleableMessage(new FindWMessage(-1, value, senderId),
                                             srbc->module->getInterface(SCLattice::Direction::Left));
             } else {
-                srbc->sendHandleableMessage(new FindWMessage(srbc->module->position.pt[0]),
+                srbc->sendHandleableMessage(new FindWMessage(1, srbc->module->position.pt[0], senderId),
                                             srbc->module->getInterface(SCLattice::Direction::Right));
             }
         } else {
             VS_ASSERT_MSG(false, "Received message from invalid direction!");
         }
-    } else {
-        if (srbc->module->getDirection(sender) == SCLattice::Direction::Left) {
-            if (srbc->rightD != srbc->d) {
-                //Todo rectangle set; must search for height
-                srbc->w = value;
-                srbc->myBox.rectangleSet = true;
-                srbc->searchForHeight();
+    } else { //direction = Back
+        if (srbc->module->blockId == senderId) {
+            //Todo rectangle set; must search for height
+            srbc->w = value;
+            srbc->myBox.rectangleSet = true;
+            srbc->searchForHeight();
 
-            } else {
-                srbc->sendHandleableMessage(new FindWMessage(value),
-                                            srbc->module->getInterface(SCLattice::Direction::Right));
-            }
-        } else if (srbc->module->getDirection(sender) == SCLattice::Direction::Right) {
-            if (srbc->leftD != srbc->d) {
-                //TODO rectangle set; must search for height
-                srbc->w = value;
-                srbc->myBox.rectangleSet = true;
-                srbc->searchForHeight();
-            } else {
-                srbc->sendHandleableMessage(new FindWMessage(value),
-                                            srbc->module->getInterface(SCLattice::Direction::Left));
-            }
+        } else {
+            srbc->sendHandleableMessage(new FindWMessage(1, value, senderId),
+                                        srbc->module->getInterface(
+                                                BaseSimulator::getWorld()->lattice->getOppositeDirection(
+                                                        srbc->module->getDirection(sender))));
         }
+//        if (srbc->module->getDirection(sender) == SCLattice::Direction::Left) {
+//            if (srbc->module->blockId == senderId) {
+//                //Todo rectangle set; must search for height
+//                srbc->w = value;
+//                srbc->myBox.rectangleSet = true;
+//                srbc->searchForHeight();
+//
+//            } else {
+//                srbc->sendHandleableMessage(new FindWMessage(1, value, senderId),
+//                                            srbc->module->getInterface(SCLattice::Direction::Right));
+//            }
+//        } else if (srbc->module->getDirection(sender) == SCLattice::Direction::Right) {
+//            if (srbc->module->blockId == senderId) {
+//                //TODO rectangle set; must search for height
+//                srbc->w = value;
+//                srbc->myBox.rectangleSet = true;
+//                srbc->searchForHeight();
+//            } else {
+//                srbc->sendHandleableMessage(new FindWMessage(1, value, senderId),
+//                                            srbc->module->getInterface(SCLattice::Direction::Left));
+//            }
+//        }
     }
 }
 
