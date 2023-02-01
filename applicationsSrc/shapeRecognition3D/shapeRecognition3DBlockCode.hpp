@@ -5,12 +5,15 @@
 #include "robots/blinkyBlocks/blinkyBlocksBlockCode.h"
 #include <queue>
 #include "messages.hpp"
-
+#include <list>
 
 static const int SAMPLE_MSG_ID = 1000;
 static const int IT_MODE_FINDW = 2000;
 
 using namespace BlinkyBlocks;
+
+
+
 
 class Box {
 public:
@@ -29,15 +32,18 @@ public:
     };
 
     bool operator<(const Box& r) const {
-        return base < r.base;
+        return base < r.base and corner < r.corner;
     }
 
     bool operator==(const Box& r) const {
         return r.base == base and r.corner == corner;
     }
 
+    bool operator!=(const Box& r) const {
+        return r.base != base or r.corner != corner;
+    }
 
-    static bool isInBox(Box &box, Cell3DPosition &pos)  {
+    static bool isPositionInBox(Box &box, Cell3DPosition &pos)  {
         if(pos.pt[0] < box.base.pt[0] or pos.pt[0] > box.corner.pt[0]) return  false;
         if(pos.pt[1] < box.base.pt[1] or pos.pt[1] > box.corner.pt[1] ) return false;
         if(pos.pt[2] < box.base.pt[2] or pos.pt[2] > box.corner.pt[2]) return  false;
@@ -45,6 +51,35 @@ public:
         return  true;
     }
 
+    /**
+     * Check if boxIn is inside of box
+     * @param boxIn
+     * @param box
+     * @return bool
+     */
+    static bool isBoxInBox(Box &boxIn, Box &box)  {
+        if(boxIn.base.pt[0] < box.base.pt[0] or boxIn.corner.pt[0] > box.corner.pt[0]) return false;
+        if(boxIn.base.pt[1] < box.base.pt[1] or boxIn.corner.pt[1] > box.corner.pt[1]) return false;
+        if(boxIn.base.pt[2] < box.base.pt[2] or boxIn.corner.pt[2] > box.corner.pt[2]) return false;
+        return  true;
+    }
+
+    static pair<bool, Box> combine(Box &b1, Box &b2) {
+        if (b1 < b2) {
+            if (b1.base.pt[0] < b2.base.pt[0] and b1.corner.pt[0] < b2.corner.pt[0] and b1.corner.pt[0] > b2.base.pt[0]
+                and b1.base.pt[1] == b2.base.pt[1] and b1.base.pt[2] == b2.base.pt[2]
+                and b1.corner.pt[1] == b2.corner.pt[1] and b1.corner.pt[2] == b2.corner.pt[2]) {
+                return make_pair(true, Box(b1.base, b2.corner));
+            }
+        } else if (b2 < b1) {
+            if (b2.base.pt[0] < b1.base.pt[0] and b2.corner.pt[0] < b1.corner.pt[0] and b2.corner.pt[0] > b1.base.pt[0]
+                and b2.base.pt[1] == b1.base.pt[1] and b2.base.pt[2] == b1.base.pt[2]
+                and b2.corner.pt[1] == b1.corner.pt[1] and b2.corner.pt[2] == b1.corner.pt[2]) {
+                return make_pair(true, Box(b2.base, b1.corner));
+            }
+        }
+        return make_pair(false, Box());
+    }
 };
 
 
@@ -67,6 +102,8 @@ public :
     int nbWaitingNotifyW{0};
     Box myBox;
     static int c;
+    static list<Box> Boxes;
+
     explicit ShapeRecognition3DBlockCode(BlinkyBlocksBlock *host);
     ~ShapeRecognition3DBlockCode() override {};
 
@@ -81,6 +118,7 @@ public :
     void searchForHeight();
     void searchForWidth();
     static void colorBox(Box &box);
+    static void combineBoxes();
 
     int sendHandleableMessage(HandleableMessage* msg, P2PNetworkInterface* dest);
 

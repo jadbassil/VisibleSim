@@ -930,7 +930,7 @@ void Simulator::parseBlockList() {
 
                         if (pos.isInBox(boxOrigin,boxDest)) {
                             if (position == Cell3DPosition(1,0,0)) {
-                                cout << "isInBox: " << pos.isInBox(boxOrigin,boxDest) << endl;
+                                cout << "isPositionInBox: " << pos.isInBox(boxOrigin,boxDest) << endl;
                             }
 
                             loadBlock(element,

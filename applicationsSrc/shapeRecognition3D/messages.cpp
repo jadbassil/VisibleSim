@@ -57,10 +57,12 @@ void NotifyDMessage::handle(BaseSimulator::BlockCode *bc) {
             srbc->w = srbc->module->position.pt[0];
             srbc->myBox.rectangleSet = true;
             srbc->searchForHeight();
-        } else if (srbc->d == srbc->leftD and srbc->d != srbc->rightD) {
-            srbc->sendHandleableMessage(new FindWMessage(-1, srbc->d, srbc->module->blockId),
-                                        srbc->module->getInterface(SCLattice::Direction::Left));
-        } else if (srbc->d == srbc->rightD and srbc->d != srbc->leftD) {
+        }
+//        else if (srbc->d == srbc->leftD and srbc->d != srbc->rightD) {
+//            srbc->sendHandleableMessage(new FindWMessage(-1, srbc->d, srbc->module->blockId),
+//                                        srbc->module->getInterface(SCLattice::Direction::Left));
+//        }
+        else if (srbc->d == srbc->rightD and srbc->d != srbc->leftD) {
             srbc->sendHandleableMessage(new FindWMessage(-1, srbc->d, srbc->module->blockId),
                                         srbc->module->getInterface(SCLattice::Direction::Right));
         }
@@ -144,8 +146,9 @@ void CheckWMessage::handle(BaseSimulator::BlockCode *bc) {
     auto *srbc = dynamic_cast<ShapeRecognition3DBlockCode *>(bc);
     P2PNetworkInterface *sender = destinationInterface;
     if (srbc->d == -1 or
-        (not srbc->myBox.rectangleSet and srbc->isFrontmost() and srbc->rightD == -1 and srbc->leftD == -1)) {
+        (not srbc->myBox.rectangleSet and srbc->isFrontmost() /*and srbc->rightD == -1 and srbc->leftD == -1*/)) {
         srbc->waitingCheckDW.push(sender);
+        srbc->console << "waitingCheckDW.push\n";
         return;
     }
     if(srbc->isFrontmost()) {
@@ -173,16 +176,19 @@ void NotifyWMessage::handle(BaseSimulator::BlockCode *bc) {
             and srbc->w == srbc->topW and srbc->w == srbc->bottomW) {
             return;
         }
+        if(srbc->bottomW == -1 and srbc->topW == -1) {
+            srbc->h =  srbc->module->position[2];
+            srbc->setMyBox();
+            return;
+        }
         if (srbc->d != srbc->topD and srbc->d != srbc->bottomD
             and srbc->w != srbc->topW and srbc->w != srbc->bottomW) {
             srbc->h = srbc->module->position.pt[2];
             srbc->setMyBox();
-        }
-        if (srbc->d == srbc->bottomD and srbc->d != srbc->topD and srbc->w == srbc->bottomW) {
+        } else if (srbc->d == srbc->bottomD and srbc->d != srbc->topD and srbc->w <= srbc->bottomW) {
             srbc->sendHandleableMessage(new FindHMessage(-1),
                                         srbc->module->getInterface(SCLattice::Direction::Bottom));
-        }
-        if (srbc->d == srbc->topD and srbc->d != srbc->bottomD and srbc->w == srbc->topW) {
+        } else if (srbc->d == srbc->topD and srbc->d != srbc->bottomD and srbc->w <= srbc->topW) {
             srbc->sendHandleableMessage(new FindHMessage(-1),
                                         srbc->module->getInterface(SCLattice::Direction::Top));
         }

@@ -9,6 +9,8 @@ ostream& operator<<(ostream& stream, const  Box& box) {
 
 int ShapeRecognition3DBlockCode::c = 0;
 
+list<Box> ShapeRecognition3DBlockCode::Boxes;
+
 ShapeRecognition3DBlockCode::ShapeRecognition3DBlockCode(BlinkyBlocksBlock *host) : BlinkyBlocksBlockCode(host) {
     // @warning Do not remove block below, as a blockcode with a NULL host might be created
     //  for command line parsing
@@ -30,7 +32,6 @@ void ShapeRecognition3DBlockCode::startup() {
             searchForWidth();
         }
     }
-
 }
 
 bool ShapeRecognition3DBlockCode::isBackmost() const {
@@ -151,6 +152,11 @@ void ShapeRecognition3DBlockCode::onBlockSelected() {
     cerr << "leftD: " << leftD << "; rightD: " << rightD << "; topD: " << topD << "; bottomD: " << bottomD << endl;
     cerr <<  "topW: " << topW << "; bottomW: " << bottomW << endl;
     cerr << "Box:" << myBox << " \n";
+    cerr << "Boxes: " << endl;
+    combineBoxes();
+    for(auto box: ShapeRecognition3DBlockCode::Boxes) {
+        cout << box << endl;
+    }
 }
 
 void ShapeRecognition3DBlockCode::onAssertTriggered() {
@@ -209,7 +215,7 @@ string ShapeRecognition3DBlockCode::onInterfaceDraw() {
 
 void ShapeRecognition3DBlockCode::colorBox(Box &box) {
     for(auto &block: BaseSimulator::getWorld()->buildingBlocksMap) {
-        if(Box::isInBox(box, block.second->position)) {
+        if(Box::isPositionInBox(box, block.second->position)) {
             block.second->setColor(c);
         }
     }
@@ -233,24 +239,50 @@ void ShapeRecognition3DBlockCode::setMyBox() {
     myBox = Box(base, corner);
     console << "Box is Set " << myBox << "\n";
     ShapeRecognition3DBlockCode::colorBox(myBox);
+    if(std::find(Boxes.begin(), Boxes.end(),myBox) == Boxes.end()) {
+        auto it = Boxes.begin();
+        bool myBoxisIn = false;
+        while(it!=Boxes.end()) {
+            pair<bool, Box> combined = Box::combine(myBox,*it);
+            if(combined.first) {
+                ShapeRecognition3DBlockCode::Boxes.push_back(combined.second);
+            }
+            it++;
+        }
+        it = Boxes.begin();
+        while(it!=Boxes.end()) {
+            if(Box::isBoxInBox(*it, myBox)) {
+                it = Boxes.erase(it);
+                continue;
+            }  if (Box::isBoxInBox(myBox, *it)) {
+                myBoxisIn = true;
+            }
+            it++;
+        }
+        if(not myBoxisIn) {
+            ShapeRecognition3DBlockCode::Boxes.push_back(myBox);
+        }
+    }
+
 }
 
 void ShapeRecognition3DBlockCode::searchForHeight() {
-//    while (not waitingCheckDW.empty()) {
-//        P2PNetworkInterface *waitingInt = waitingCheckDW.front();
-//        waitingCheckDW.pop();
-//        sendHandleableMessage(new NotifyWMessage(w), waitingInt);
-//    }
-//    if (module->getInterface(SCLattice::Direction::Top)->isConnected()) {
-//        sendHandleableMessage(new CheckWMessage(),
-//                                    module->getInterface(SCLattice::Direction::Top));
-//        nbWaitingNotifyW++;
-//    }
-//    if (module->getInterface(SCLattice::Direction::Bottom)->isConnected()) {
-//        sendHandleableMessage(new CheckWMessage(),
-//                                    module->getInterface(SCLattice::Direction::Bottom));
-//        nbWaitingNotifyW++;
-//    }
+    console << "Searching for height\n";
+    while (not waitingCheckDW.empty()) {
+        P2PNetworkInterface *waitingInt = waitingCheckDW.front();
+        waitingCheckDW.pop();
+        sendHandleableMessage(new NotifyWMessage(w), waitingInt);
+    }
+    if (module->getInterface(SCLattice::Direction::Top)->isConnected()) {
+        sendHandleableMessage(new CheckWMessage(),
+                                    module->getInterface(SCLattice::Direction::Top));
+        nbWaitingNotifyW++;
+    }
+    if (module->getInterface(SCLattice::Direction::Bottom)->isConnected()) {
+        sendHandleableMessage(new CheckWMessage(),
+                                    module->getInterface(SCLattice::Direction::Bottom));
+        nbWaitingNotifyW++;
+    }
     if(nbWaitingNotifyW == 0){
         //No top or bottom modules connected (No height)
         h = module->position[2];
@@ -265,5 +297,33 @@ void ShapeRecognition3DBlockCode::searchForWidth() {
                                   module->getInterface(i));
             nbWaitingNotifyD++;
         }
+    }
+}
+
+void ShapeRecognition3DBlockCode::combineBoxes() {
+    for(auto b1: ShapeRecognition3DBlockCode::Boxes) {
+        for(auto b2: ShapeRecognition3DBlockCode::Boxes) {
+            if(b1 != b2) {
+                pair<bool, Box> combined = Box::combine(b1,b2);
+                if(combined.first) {
+                    ShapeRecognition3DBlockCode::Boxes.push_back(combined.second);
+                }
+            }
+        }
+    }
+    auto it = Boxes.begin();
+    while (it != Boxes.end()) {
+        bool erased = false;
+        for(auto b: Boxes) {
+            if(*it != b) {
+                if(Box::isBoxInBox(*it, b)) {
+                    it =  Boxes.erase(it);
+                    erased = true;
+                    break;
+                }
+            }
+        }
+        if(not erased)
+            it++;
     }
 }
