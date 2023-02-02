@@ -4,7 +4,7 @@
 #include "messages.hpp"
 #include "shapeRecognition3DBlockCode.hpp"
 
-void SetMessage::handle(BaseSimulator::BlockCode *bc) {
+void SetDMessage::handle(BaseSimulator::BlockCode *bc) {
     auto *srbc = dynamic_cast<ShapeRecognition3DBlockCode *>(bc);
 
     srbc->d = value;
@@ -14,12 +14,22 @@ void SetMessage::handle(BaseSimulator::BlockCode *bc) {
         srbc->sendHandleableMessage(new NotifyDMessage(srbc->d), waitingInt);
     }
     if (!srbc->isFrontmost()) {
-        srbc->sendHandleableMessage(new SetMessage(srbc->d),
+        srbc->sendHandleableMessage(new SetDMessage(srbc->d),
                                     srbc->module->getInterface(SCLattice::Direction::Front));
     } else {
         srbc->searchForWidth();
     }
 }
+
+void SetWMessage::handle(BaseSimulator::BlockCode *bc) {
+    auto *srbc = dynamic_cast<ShapeRecognition3DBlockCode *>(bc);
+    srbc->w = value;
+    if (!srbc->isLeftmost()) {
+        srbc->sendHandleableMessage(new SetWMessage(srbc->w),
+                                    srbc->module->getInterface(SCLattice::Direction::Left));
+    }
+}
+
 
 void CheckDMessage::handle(BaseSimulator::BlockCode *bc) {
     auto *srbc = dynamic_cast<ShapeRecognition3DBlockCode *>(bc);
@@ -53,10 +63,14 @@ void NotifyDMessage::handle(BaseSimulator::BlockCode *bc) {
             return;
         }
         //leftD != rightD
-        if (srbc->d <= srbc->rightD and srbc->d != srbc->leftD) {
+        if ((srbc->d <= srbc->rightD and srbc->d != srbc->leftD) ) {
             srbc->sendHandleableMessage(new FindWMessage(-1, srbc->d, srbc->module->blockId),
                                         srbc->module->getInterface(SCLattice::Direction::Right));
-        } else if (srbc->d != srbc->rightD and srbc->d != srbc->leftD) {
+        } else if(srbc->d <= srbc->leftD and srbc->d != srbc->rightD){
+            srbc->sendHandleableMessage(new FindWMessage(-1, srbc->d, srbc->module->blockId),
+                                        srbc->module->getInterface(SCLattice::Direction::Left));
+        }
+        else if (srbc->d != srbc->rightD and srbc->d != srbc->leftD /*and (not srbc->isTopmost() or srbc->isBottommost())*/) {
             srbc->w = srbc->module->position.pt[0];
             srbc->myBox.rectangleSet = true;
             srbc->searchForHeight();
@@ -151,11 +165,12 @@ void CheckWMessage::handle(BaseSimulator::BlockCode *bc) {
         srbc->console << "waitingCheckDW.push\n";
         return;
     }
-    if(srbc->isFrontmost()) {
-        srbc->sendHandleableMessage(new NotifyWMessage(srbc->w), sender);
-    } else {
-        srbc->sendHandleableMessage(new NotifyWMessage(-1), sender);
-    }
+    srbc->sendHandleableMessage(new NotifyWMessage(srbc->w), sender);
+//    if(srbc->isFrontmost()) {
+//        srbc->sendHandleableMessage(new NotifyWMessage(srbc->w), sender);
+//    } else {
+//        srbc->sendHandleableMessage(new NotifyWMessage(-1), sender);
+//    }
 }
 
 void NotifyWMessage::handle(BaseSimulator::BlockCode *bc) {
@@ -172,26 +187,34 @@ void NotifyWMessage::handle(BaseSimulator::BlockCode *bc) {
     }
 
     if (srbc->nbWaitingNotifyW == 0) {
-        if ( srbc->d == srbc->topD and srbc->d == srbc->bottomD
-            and srbc->w == srbc->topW and srbc->w == srbc->bottomW) {
-            return;
-        }
+//        if ( srbc->d == srbc->topD and srbc->d == srbc->bottomD
+//            and srbc->w == srbc->topW and srbc->w == srbc->bottomW) {
+//            return;
+//        }
         if(srbc->bottomW == -1 and srbc->topW == -1) {
             srbc->h =  srbc->module->position[2];
             srbc->setMyBox();
             return;
         }
-        if (srbc->d != srbc->topD and srbc->d != srbc->bottomD
-            and srbc->w != srbc->topW and srbc->w != srbc->bottomW) {
-            srbc->h = srbc->module->position.pt[2];
-            srbc->setMyBox();
-        } else if (srbc->d == srbc->bottomD and srbc->d != srbc->topD and srbc->w <= srbc->bottomW) {
-            srbc->sendHandleableMessage(new FindHMessage(-1),
-                                        srbc->module->getInterface(SCLattice::Direction::Bottom));
-        } else if (srbc->d == srbc->topD and srbc->d != srbc->bottomD and srbc->w <= srbc->topW) {
+        if(srbc->d <= srbc->topD and srbc->w <= srbc->topW) {
             srbc->sendHandleableMessage(new FindHMessage(-1),
                                         srbc->module->getInterface(SCLattice::Direction::Top));
+        } else {
+            srbc->h = srbc->module->position.pt[2];
+            srbc->setMyBox();
         }
+//        if (srbc->d <= srbc->topD and srbc->d != srbc->bottomD
+//            and srbc->w != srbc->topW and srbc->w != srbc->bottomW) {
+//            srbc->h = srbc->module->position.pt[2];
+//            srbc->setMyBox();
+//        } else if (srbc->d == srbc->bottomD and srbc->d != srbc->topD and srbc->w <= srbc->bottomW) {
+//            srbc->sendHandleableMessage(new FindHMessage(-1),
+//                                        srbc->module->getInterface(SCLattice::Direction::Bottom));
+//        }
+//        else if (srbc->d == srbc->topD and srbc->d != srbc->bottomD and srbc->w <= srbc->topW) {
+//            srbc->sendHandleableMessage(new FindHMessage(-1),
+//                                        srbc->module->getInterface(SCLattice::Direction::Top));
+//        }
     }
 }
 
@@ -201,15 +224,27 @@ void FindHMessage::handle(BaseSimulator::BlockCode *bc) {
     P2PNetworkInterface *sender = destinationInterface;
 
     if (value == -1) {
+        if (srbc->d == -1 or srbc->w == -1 or ((srbc->topD == -1 or srbc->topW == -1) and
+                                               srbc->module->getInterface(SCLattice::Direction::Top)->isConnected())
+            or ((srbc->bottomD == -1 or srbc->bottomW == -1) and
+                srbc->module->getInterface(SCLattice::Direction::Bottom)->isConnected())) {
+            srbc->console << "Reschedule\n";
+            srbc->waitingFindHMsgs.push(this->clone());
+            getScheduler()->schedule(
+                    new InterruptionEvent(getScheduler()->now() + 500, // example delay in us
+                                          srbc->module, IT_MODE_FINDH));
+            return;
+        }
         if (srbc->module->getDirection(sender) == SCLattice::Direction::Bottom) {
-            if (srbc->topD == srbc->d and srbc->topW == srbc->w) {
+            if (srbc->d >= srbc->topD and srbc->w >= srbc->topW and srbc->topD != -1 and srbc->topW != -1) {
                 srbc->sendHandleableMessage(new FindHMessage(-1),
                                             srbc->module->getInterface(SCLattice::Direction::Top));
             } else {
                 srbc->sendHandleableMessage(new FindHMessage(srbc->module->position.pt[2]),
                                             srbc->module->getInterface(SCLattice::Direction::Bottom));
             }
-        } else if (srbc->module->getDirection(sender) == SCLattice::Direction::Top) {
+        }
+        else if (srbc->module->getDirection(sender) == SCLattice::Direction::Top) {
             if (srbc->bottomD == srbc->d and srbc->bottomW == srbc->w) {
                 srbc->sendHandleableMessage(new FindHMessage(-1),
                                             srbc->module->getInterface(SCLattice::Direction::Bottom));
@@ -217,7 +252,8 @@ void FindHMessage::handle(BaseSimulator::BlockCode *bc) {
                 srbc->sendHandleableMessage(new FindHMessage(srbc->module->position.pt[2]),
                                             srbc->module->getInterface(SCLattice::Direction::Top));
             }
-        } else {
+        }
+        else {
             VS_ASSERT_MSG(false, "Received message from invalid direction!");
         }
     } else {
@@ -231,7 +267,7 @@ void FindHMessage::handle(BaseSimulator::BlockCode *bc) {
                                             srbc->module->getInterface(SCLattice::Direction::Top));
             }
         } else if (srbc->module->getDirection(sender) == SCLattice::Direction::Top) {
-            if (srbc->bottomD != srbc->d or srbc->bottomW != srbc->w) {
+            if (srbc->bottomD > srbc->d or srbc->bottomW > srbc->w or srbc->bottomD == -1 or srbc->bottomW == -1) {
                 srbc->h = value;
                 srbc->setMyBox();
             } else {

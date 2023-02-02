@@ -7,18 +7,33 @@
 
 #include "comm/network.h"
 
-class SetMessage : public HandleableMessage {
+class SetDMessage : public HandleableMessage {
 private:
     int value;
 public:
-    SetMessage(int _value): value(_value){};
+    SetDMessage(int _value): value(_value){};
 
-    ~SetMessage() override = default;
+    ~SetDMessage() override = default;
 
     void handle(BaseSimulator::BlockCode*) override;
-    [[nodiscard]] Message* clone() const override { return new SetMessage(*this); }
+    [[nodiscard]] Message* clone() const override { return new SetDMessage(*this); }
     [[nodiscard]] string getName() const override {
-        return "SetMessage{" + to_string(type) + ", " + to_string(value) + "}";
+        return "SetDMessage{" + to_string(type) + ", " + to_string(value) + "}";
+    }
+};
+
+class SetWMessage : public HandleableMessage {
+private:
+    int value;
+public:
+    SetWMessage(int _value): value(_value){};
+
+    ~SetWMessage() override = default;
+
+    void handle(BaseSimulator::BlockCode*) override;
+    [[nodiscard]] Message* clone() const override { return new SetWMessage(*this); }
+    [[nodiscard]] string getName() const override {
+        return "SetWMessage{" + to_string(value) + "}";
     }
 };
 
