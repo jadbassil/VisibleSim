@@ -323,11 +323,11 @@ void ShapeRecognition3DBlockCode::searchForHeight() {
                                     module->getInterface(SCLattice::Direction::Top));
         nbWaitingNotifyW++;
     }
-//    if (module->getInterface(SCLattice::Direction::Bottom)->isConnected()) {
-//        sendHandleableMessage(new CheckWMessage(),
-//                                    module->getInterface(SCLattice::Direction::Bottom));
-//        nbWaitingNotifyW++;
-//    }
+    if (module->getInterface(SCLattice::Direction::Bottom)->isConnected()) {
+        sendHandleableMessage(new CheckWMessage(),
+                                    module->getInterface(SCLattice::Direction::Bottom));
+        nbWaitingNotifyW++;
+    }
     if(nbWaitingNotifyW == 0){
         //No top or bottom modules connected (No height)
         h = module->position[2];

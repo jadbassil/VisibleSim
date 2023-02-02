@@ -117,16 +117,19 @@ public:
 
 class FindHMessage : public HandleableMessage {
 private:
-    int value;
+    int d;
+    int w;
+    int senderId;
+    int direction;
 public:
-    FindHMessage(int _value): value(_value){};
+    FindHMessage(int _direction, int _d, int _w, int _senderId ): direction(_direction), d(_d), w(_w), senderId(_senderId) {};
 
     ~FindHMessage() override = default;
 
     void handle(BaseSimulator::BlockCode*) override;
     [[nodiscard]] Message* clone() const override { return new FindHMessage(*this); }
     [[nodiscard]] string getName() const override {
-        return "FindHMessage{"+ to_string(value) + "}";
+        return "FindHMessage{"+ to_string(direction) + ", " + to_string(d) + ", " + to_string(w) + to_string(senderId) +  "}";
     }
 };
 

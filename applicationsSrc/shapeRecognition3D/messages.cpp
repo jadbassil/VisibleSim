@@ -191,14 +191,17 @@ void NotifyWMessage::handle(BaseSimulator::BlockCode *bc) {
 //            and srbc->w == srbc->topW and srbc->w == srbc->bottomW) {
 //            return;
 //        }
-        if(srbc->bottomW == -1 and srbc->topW == -1) {
-            srbc->h =  srbc->module->position[2];
+        if (srbc->bottomW == -1 and srbc->topW == -1) {
+            srbc->h = srbc->module->position[2];
             srbc->setMyBox();
             return;
         }
-        if(srbc->d <= srbc->topD and srbc->w <= srbc->topW) {
-            srbc->sendHandleableMessage(new FindHMessage(-1),
+        if (srbc->d <= srbc->topD and srbc->w <= srbc->topW ) {
+            srbc->sendHandleableMessage(new FindHMessage(-1, srbc->d, srbc->w, srbc->module->blockId),
                                         srbc->module->getInterface(SCLattice::Direction::Top));
+        } else if(srbc->d <= srbc->bottomD and srbc->w <= srbc->bottomW) {
+            srbc->sendHandleableMessage(new FindHMessage(-1, srbc->d, srbc->w, srbc->module->blockId),
+                                        srbc->module->getInterface(SCLattice::Direction::Bottom));
         } else {
             srbc->h = srbc->module->position.pt[2];
             srbc->setMyBox();
@@ -223,7 +226,7 @@ void FindHMessage::handle(BaseSimulator::BlockCode *bc) {
     auto *srbc = dynamic_cast<ShapeRecognition3DBlockCode *>(bc);
     P2PNetworkInterface *sender = destinationInterface;
 
-    if (value == -1) {
+    if (direction == -1) {
         if (srbc->d == -1 or srbc->w == -1 or ((srbc->topD == -1 or srbc->topW == -1) and
                                                srbc->module->getInterface(SCLattice::Direction::Top)->isConnected())
             or ((srbc->bottomD == -1 or srbc->bottomW == -1) and
@@ -236,45 +239,54 @@ void FindHMessage::handle(BaseSimulator::BlockCode *bc) {
             return;
         }
         if (srbc->module->getDirection(sender) == SCLattice::Direction::Bottom) {
-            if (srbc->d >= srbc->topD and srbc->w >= srbc->topW and srbc->topD != -1 and srbc->topW != -1) {
-                srbc->sendHandleableMessage(new FindHMessage(-1),
+            if (srbc->d >= d and srbc->topD >= d and srbc->w >= w and srbc->topW >= w) {
+                srbc->sendHandleableMessage(new FindHMessage(-1, d, w, senderId),
                                             srbc->module->getInterface(SCLattice::Direction::Top));
             } else {
-                srbc->sendHandleableMessage(new FindHMessage(srbc->module->position.pt[2]),
+                srbc->sendHandleableMessage(new FindHMessage(1, srbc->module->position.pt[2], w, senderId),
                                             srbc->module->getInterface(SCLattice::Direction::Bottom));
             }
         }
         else if (srbc->module->getDirection(sender) == SCLattice::Direction::Top) {
-            if (srbc->bottomD == srbc->d and srbc->bottomW == srbc->w) {
-                srbc->sendHandleableMessage(new FindHMessage(-1),
+            if (srbc->d >= d and srbc->bottomD >= d and srbc->w >= w and srbc->bottomW >= w) {
+                srbc->sendHandleableMessage(new FindHMessage(-1, d, w, senderId),
                                             srbc->module->getInterface(SCLattice::Direction::Bottom));
             } else {
-                srbc->sendHandleableMessage(new FindHMessage(srbc->module->position.pt[2]),
+                srbc->sendHandleableMessage(new FindHMessage(1, srbc->module->position.pt[2], w, senderId),
                                             srbc->module->getInterface(SCLattice::Direction::Top));
             }
         }
         else {
             VS_ASSERT_MSG(false, "Received message from invalid direction!");
         }
-    } else {
-
-        if (srbc->module->getDirection(sender) == SCLattice::Direction::Bottom) {
-            if (srbc->topD != srbc->d or srbc->topW != srbc->w) {
-                srbc->h = value;
-                srbc->setMyBox();
-            } else {
-                srbc->sendHandleableMessage(new FindHMessage(value),
-                                            srbc->module->getInterface(SCLattice::Direction::Top));
-            }
-        } else if (srbc->module->getDirection(sender) == SCLattice::Direction::Top) {
-            if (srbc->bottomD > srbc->d or srbc->bottomW > srbc->w or srbc->bottomD == -1 or srbc->bottomW == -1) {
-                srbc->h = value;
-                srbc->setMyBox();
-            } else {
-                srbc->sendHandleableMessage(new FindHMessage(value),
-                                            srbc->module->getInterface(SCLattice::Direction::Bottom));
-            }
+    } else { // direction = 1
+        if (srbc->module->blockId == senderId) {
+            //Todo rectangle set; must search for height
+            srbc->h = d;
+            srbc->setMyBox();
+        } else {
+            srbc->sendHandleableMessage(new FindHMessage(1, d, w, senderId),
+                                        srbc->module->getInterface(
+                                                BaseSimulator::getWorld()->lattice->getOppositeDirection(
+                                                        srbc->module->getDirection(sender))));
         }
+//        if (srbc->module->getDirection(sender) == SCLattice::Direction::Bottom) {
+//            if (srbc->topD != srbc->d or srbc->topW != srbc->w) {
+//                srbc->h = d;
+//                srbc->setMyBox();
+//            } else {
+//                srbc->sendHandleableMessage(new FindHMessage(1, d, w, senderId),
+//                                            srbc->module->getInterface(SCLattice::Direction::Top));
+//            }
+//        } else if (srbc->module->getDirection(sender) == SCLattice::Direction::Top) {
+//            if (srbc->bottomD > srbc->d or srbc->bottomW > srbc->w or srbc->bottomD == -1 or srbc->bottomW == -1) {
+//                srbc->h = d;
+//                srbc->setMyBox();
+//            } else {
+//                srbc->sendHandleableMessage(new FindHMessage(value),
+//                                            srbc->module->getInterface(SCLattice::Direction::Bottom));
+//            }
+//        }
     }
 }
 
