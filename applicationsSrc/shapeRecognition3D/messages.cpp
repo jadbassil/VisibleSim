@@ -52,8 +52,11 @@ void NotifyDMessage::handle(BaseSimulator::BlockCode *bc) {
         if (srbc->d == srbc->leftD and srbc->d == srbc->rightD) {
             return;
         }
-         //leftD != rightD
-        if (srbc->d != srbc->rightD and srbc->d != srbc->leftD) {
+        //leftD != rightD
+        if (srbc->d <= srbc->rightD and srbc->d != srbc->leftD) {
+            srbc->sendHandleableMessage(new FindWMessage(-1, srbc->d, srbc->module->blockId),
+                                        srbc->module->getInterface(SCLattice::Direction::Right));
+        } else if (srbc->d != srbc->rightD and srbc->d != srbc->leftD) {
             srbc->w = srbc->module->position.pt[0];
             srbc->myBox.rectangleSet = true;
             srbc->searchForHeight();
@@ -62,10 +65,7 @@ void NotifyDMessage::handle(BaseSimulator::BlockCode *bc) {
 //            srbc->sendHandleableMessage(new FindWMessage(-1, srbc->d, srbc->module->blockId),
 //                                        srbc->module->getInterface(SCLattice::Direction::Left));
 //        }
-        else if (srbc->d == srbc->rightD and srbc->d != srbc->leftD) {
-            srbc->sendHandleableMessage(new FindWMessage(-1, srbc->d, srbc->module->blockId),
-                                        srbc->module->getInterface(SCLattice::Direction::Right));
-        }
+
     }
 
 }
