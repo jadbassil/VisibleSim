@@ -196,6 +196,10 @@ add_executable(reconf2DDemo applicationsSrc/reconf2DDemo/reconf2DDemo.cpp applic
 target_link_libraries(reconf2DDemo Hexanodes)
 set_target_properties(reconf2DDemo PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/reconf2DDemo)
 
+add_executable(shapeDecomposition applicationsSrc/shapeDecomposition/shapeDecomposition.cpp applicationsSrc/shapeDecomposition/shapeDecompositionBlockCode.cpp applicationsSrc/shapeDecomposition/polygon.cpp)
+target_link_libraries(shapeDecomposition BlinkyBlocks)
+set_target_properties(shapeDecomposition PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/shapeDecomposition)
+
 
 # add_executable(slidingCubesExample applicationsSrc/slidingCubesExample/slidingCubesExample.cpp applicationsSrc/slidingCubesExample/slidingCubesExampleBlockCode.cpp)
 # target_link_libraries(slidingCubesExample SlidingCubes)
