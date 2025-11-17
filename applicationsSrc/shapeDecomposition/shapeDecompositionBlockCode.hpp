@@ -12,6 +12,7 @@ static const int BORDER_MSG_ID = 1000;
 static const int BRIDGE_MSG_ID = 1001;
 static const int GET_BORDER_MSG_ID = 1003;
 static const int TRACE_MSG_ID = 1002;
+static const int TRACE_BRIDGES_MSG_ID = 1004;
 
 using namespace BlinkyBlocks;
 
@@ -73,6 +74,7 @@ struct BorderMessageData {
     
 };
 
+
 struct BridgeMessageData {
     int distance;
     int initiatorId;
@@ -95,6 +97,24 @@ struct TraceMessageData {
 
     bool operator==(const TraceMessageData &other) const {
         return initiatorId == other.initiatorId && round == other.round;
+    }
+};
+
+enum class TraceBridgesMessageType { IINITIATOR_TO_FIRST_BORDER, BORDER_TRACE, FIRST_BORDER_TO_BRIDGE, BACK_TO_FIRST_BORDER, BACK_TO_INITIATOR };
+
+struct TraceBridgesMessageData {
+    int initiatorId;
+    int borderInitiatorId;
+    int toBorderId{-1};
+    TraceBridgesMessageType type;
+    TraceBridgesMessageData(int id, int bId, TraceBridgesMessageType t)
+        : initiatorId(id), borderInitiatorId(bId), type(t) {}
+    TraceBridgesMessageData(int id, int bId, TraceBridgesMessageType t, int toBId)
+        : initiatorId(id), borderInitiatorId(bId), type(t), toBorderId(toBId) {}
+    TraceBridgesMessageData() = default;
+
+    bool operator==(const TraceBridgesMessageData& other) const {
+        return initiatorId == other.initiatorId && borderInitiatorId == other.borderInitiatorId;
     }
 };
 
@@ -132,9 +152,15 @@ class ShapeDecompositionBlockCode : public BlinkyBlocksBlockCode {
     bool isInitiator{false};
 
     map<int, P2PNetworkInterface *> bridgesIn;
-    map<int, P2PNetworkInterface *> bridgeOut;
+    map<int, vector<P2PNetworkInterface *>> bridgeOut;
     map<int, int> nbWaitedBridges;
     map<int, int> bridgesDistance;
+    set<int> mustRemove;
+
+    // border tracing variables
+    map<int, P2PNetworkInterface *> traceIn;
+    map<int, P2PNetworkInterface *> traceOut;
+
 
     array<P2PNetworkInterface *, 2> bridgeEnds{nullptr, nullptr};
     vector<vector<Corner>> getBorders();
@@ -187,6 +213,7 @@ class ShapeDecompositionBlockCode : public BlinkyBlocksBlockCode {
     void handleBorderMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     void handleBridgeMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     void handleGetBorderMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+    void handleTraceBridgesMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     vector<int> RLEcompress(vector<Direction> &directions);
     pair<vector<int>, int> LZWcompress(vector<Direction> &directions);
     pair<vector<int>, int> LZWcompressCorners(vector<Corner>& corners);
@@ -201,7 +228,8 @@ class ShapeDecompositionBlockCode : public BlinkyBlocksBlockCode {
     P2PNetworkInterface *getInterfaceInDirection(SCLattice::myDirection dir);
 
     vector<Cell3DPosition> findIntersections(const vector<set<Inequality2D>> &inequalities);
-
+    
+    void initiateBorderTracing();
     /// Advanced blockcode handlers below
 
     /**

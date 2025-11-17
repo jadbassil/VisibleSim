@@ -34,6 +34,9 @@ ShapeDecompositionBlockCode::ShapeDecompositionBlockCode(BlinkyBlocksBlock *host
     addMessageEventFunc2(BRIDGE_MSG_ID,
                          std::bind(&ShapeDecompositionBlockCode::handleBridgeMessage, this,
                                    std::placeholders::_1, std::placeholders::_2));
+    addMessageEventFunc2(TRACE_BRIDGES_MSG_ID,
+                         std::bind(&ShapeDecompositionBlockCode::handleTraceBridgesMessage, this,
+                                   std::placeholders::_1, std::placeholders::_2));
 
     // Set the module pointer
     module = static_cast<BlinkyBlocksBlock *>(hostBlock);
@@ -328,19 +331,186 @@ void ShapeDecompositionBlockCode::handleBridgeMessage(std::shared_ptr<Message> _
     } else if (distance <= 0) {
         nbWaitedBridges[initiatorId]--;
         console << "Received bridge back message from " << sender->getConnectedBlockId()  << "\n";
+     
         if(selected) {
-            bridgeOut[initiatorId] = sender;
+            bridgeOut[initiatorId].push_back(sender);
+            P2PNetworkInterface *inItf = bridgesIn[initiatorId];
+            P2PNetworkInterface *outItf = sender;
+
+            // for (auto& itf : bridgesIn) {
+            //     int id = -1;
+            //     if (itf.second != nullptr and itf.first != initiatorId) {
+            //         id = itf.first;
+            //     }
+            //     console << "id: " << id << "\n";
+              
+            //     if (id != -1) {
+            //         for (auto& outItf2: bridgeOut[id]) {
+            //             if (outItf2 == outItf  && inItf == bridgesIn[id]) {
+            //                 console << "outIf2 = " << outItf2->getConnectedBlockId() << " outItf = " << outItf->getConnectedBlockId() << "\n";
+            //                 if(bridgesDistance[id] < bridgesDistance[initiatorId]) {
+            //                     mustRemove.insert(initiatorId);
+            //                     //module->setColor(ORANGE);
+            //                 } else if (bridgesDistance[initiatorId] < bridgesDistance[id]) {
+            //                     mustRemove.insert(id);
+            //                     //module->setColor(ORANGE);
+            //                 }
+            //                // module->setColor(MAGENTA);
+            //             }
+            //         }
+            //     }
+            // }
         }
         if(nbWaitedBridges[initiatorId] == 0) {
+            // check the bridgesId that have the same in and out interfaces
             if(module->blockId == initiatorId) {
                 cout << "Bridge search terminated for initiator " << initiatorId << "\n";
             } else {
                 sendMessage("Bridge back msg", new MessageOf<BridgeMessageData>(BRIDGE_MSG_ID, BridgeMessageData(-1, initiatorId, true)), bridgesIn[initiatorId], 1);
+                // if(mustRemove.find(initiatorId) != mustRemove.end()) {
+                //    bridgesIn.erase(initiatorId);
+                // }
+                // if (!mustRemove.empty()) {
+                //     for (auto it = mustRemove.begin(); it != mustRemove.end(); ) {
+                //         int id = *it;
+                //         console << module->blockId <<" Removing bridge for initiator " << id << "\n";
+                //         //if(bridgesIn.find(id) != bridgesIn.end()) bridgesIn.erase(id);
+                //         if(bridgeOut.find(id) != bridgeOut.end()) bridgeOut.erase(id);
+                //         if(bridgesDistance.find(id) != bridgesDistance.end()) bridgesDistance.erase(id);
+                //         it = mustRemove.erase(it);
+                //     }
+                // }
             }
-
         }
-    
     }
+}
+
+void ShapeDecompositionBlockCode::handleTraceBridgesMessage(std::shared_ptr<Message> _msg,
+                                                         P2PNetworkInterface *sender) {
+    MessageOf<TraceBridgesMessageData> *msg = static_cast<MessageOf<TraceBridgesMessageData> *>(_msg.get());
+    console << "Received Trace Bridges message from " << sender->getConnectedBlockId() << "\n";
+    int initiatorId = msg->getData()->initiatorId;
+    int borderInitiatorId = msg->getData()->borderInitiatorId;
+    TraceBridgesMessageType type = msg->getData()->type;
+    int toBorderInitiatorId = msg->getData()->toBorderId;
+    switch (type)
+    {
+    case TraceBridgesMessageType::BORDER_TRACE: {
+        if(borderInitiatorId == module->blockId or toBorderInitiatorId == module->blockId) {
+            module->setColor(WHITE);
+            
+            return;
+        }
+        SCLattice::myDirection nextDir = toBorderInitiatorId == -1
+                                             ? initiator_prevNext[borderInitiatorId].second
+                                             : initiator_prevNext[toBorderInitiatorId].second;
+
+        P2PNetworkInterface *nextItf = getInterfaceInDirection(nextDir);
+        if(nextItf && nextItf->isConnected()) {
+            sendMessage("Trace Bridge 4 msg", new MessageOf<TraceBridgesMessageData>(TRACE_BRIDGES_MSG_ID, TraceBridgesMessageData(initiatorId, borderInitiatorId, TraceBridgesMessageType::BORDER_TRACE, toBorderInitiatorId)),
+            nextItf, 1);
+            module->setColor(CYAN);
+            return;
+        }
+        break;
+    }
+    
+    case TraceBridgesMessageType::IINITIATOR_TO_FIRST_BORDER: {
+        if (bridgesIn[borderInitiatorId] != nullptr) {  // initiator to first border
+            traceIn[borderInitiatorId] = bridgesIn[borderInitiatorId];
+            traceOut[borderInitiatorId] = sender;
+            module->setColor(MAGENTA);
+            sendMessage(
+                "Trace Bridge 2 msg",
+                new MessageOf<TraceBridgesMessageData>(
+                    TRACE_BRIDGES_MSG_ID,
+                    TraceBridgesMessageData(initiatorId, borderInitiatorId,
+                                            TraceBridgesMessageType::IINITIATOR_TO_FIRST_BORDER)),
+                bridgesIn[borderInitiatorId], 1);
+        } else {
+            if (borderInitiatorId == module->blockId) {
+                module->setColor(BLUE);
+
+                traceOut[initiatorId] = sender;
+                // initiate Border trace
+                sendMessage("Trace Bridge 3 msg",
+                            new MessageOf<TraceBridgesMessageData>(
+                                TRACE_BRIDGES_MSG_ID,
+                                TraceBridgesMessageData(initiatorId, borderInitiatorId,
+                                                        TraceBridgesMessageType::BORDER_TRACE)),
+                            getInterfaceInDirection(initiator_prevNext[borderInitiatorId].second),
+                            1);
+                nbWaitedBridges[initiatorId] = 1;
+                // send to all bridge out interfaces
+                // if (module->blockId == 1) 
+                    for (auto bIn : bridgesIn) {
+                        if (bIn.second != nullptr) {
+                            if (bIn.second->isConnected() && bIn.first != borderInitiatorId) {
+                                cout << "Sending FIRST_BORDER_TO_BRIDGE to bridge connected to "
+                                     << bIn.second->getConnectedBlockId() << "\n";
+                                sendMessage(
+                                    "Trace Bridge 6 msg",
+                                    new MessageOf<TraceBridgesMessageData>(
+                                        TRACE_BRIDGES_MSG_ID,
+                                        TraceBridgesMessageData(
+                                            initiatorId, borderInitiatorId,
+                                            TraceBridgesMessageType::FIRST_BORDER_TO_BRIDGE, bIn.first)),
+                                    bIn.second, 1);
+                                nbWaitedBridges[initiatorId]++;
+                            }
+                        }
+                    }
+                //}
+            }
+        }
+    break;
+    }
+    case TraceBridgesMessageType::FIRST_BORDER_TO_BRIDGE: {
+        // handle FIRST_BORDER_TO_BRIDGE message
+        module->setColor(YELLOW);
+        if (bridgesIn.find(toBorderInitiatorId) != bridgesIn.end() &&
+            bridgesIn[toBorderInitiatorId] != nullptr) {
+            // send through bridge to next border initiator
+            sendMessage("Trace Bridge FIRST_BORDER_TO_BRIDGE msg",
+                        new MessageOf<TraceBridgesMessageData>(
+                            TRACE_BRIDGES_MSG_ID,
+                            TraceBridgesMessageData(initiatorId, borderInitiatorId,
+                                                    TraceBridgesMessageType::FIRST_BORDER_TO_BRIDGE,
+                                                    toBorderInitiatorId)),
+                        bridgesIn[toBorderInitiatorId], 1);
+            module->setColor(YELLOW);
+        } else {
+            if (toBorderInitiatorId == module->blockId) {
+                module->setColor(ORANGE);
+                sendMessage("Trace Bridge 7 msg",
+                            new MessageOf<TraceBridgesMessageData>(
+                                TRACE_BRIDGES_MSG_ID,
+                                TraceBridgesMessageData(initiatorId, borderInitiatorId,
+                                                        TraceBridgesMessageType::BORDER_TRACE, toBorderInitiatorId)),
+                            getInterfaceInDirection(initiator_prevNext[toBorderInitiatorId].second),
+                            1);
+            }
+        }
+        break;
+    }
+    default: {
+        break;
+    }
+    }
+}
+
+void ShapeDecompositionBlockCode::initiateBorderTracing() {
+    int nearestBordrerInitiatorId = -1;
+    int minDistance = INT_MAX;
+    for (auto &it : bridgesDistance) {
+        if (it.second < minDistance) {
+            minDistance = it.second;
+            nearestBordrerInitiatorId = it.first;
+        }
+    }
+    traceIn[nearestBordrerInitiatorId] = bridgesIn[nearestBordrerInitiatorId];
+    sendMessage("Trace Bridge 1 msg", new MessageOf<TraceBridgesMessageData>(TRACE_BRIDGES_MSG_ID, TraceBridgesMessageData(module->blockId, nearestBordrerInitiatorId, TraceBridgesMessageType::IINITIATOR_TO_FIRST_BORDER)), traceIn[nearestBordrerInitiatorId], 1);
+
 }
 
 void ShapeDecompositionBlockCode::handleGetBorderMessage(std::shared_ptr<Message> _msg,
@@ -363,6 +533,10 @@ vector<int> ShapeDecompositionBlockCode::RLEcompress(vector<Direction> &directio
     compressed.push_back(static_cast<int>(directions[directions.size() - 1]));
     return compressed;
 }
+
+
+
+
 
 // LZW compression on a vector of directions
 pair<vector<int>, int> ShapeDecompositionBlockCode::LZWcompress(vector<Direction> &directions) {
@@ -590,10 +764,42 @@ void ShapeDecompositionBlockCode::processLocalEvent(EventPtr pev) {
 
 void ShapeDecompositionBlockCode::onBlockSelected() {
     // Debug stuff:
+    // print bridgesIn and bridgesOut
+    console << "Block " << module->blockId << " selected\n";
+    initiateBorderTracing();
+
+    for (auto &b_in : bridgesIn) {
+        console << "bridgeIn for initiator " << b_in.first << ": ";
+        if (b_in.second) {
+            console << b_in.second->getConnectedBlockId() << "\n";
+        } else {
+            console << "NULL\n";
+        }
+    }
+    for (auto &b_out : bridgeOut) {
+        console << "bridgeOut for initiator " << b_out.first << ": ";
+        if (!b_out.second.empty()) {
+            for (auto &iface : b_out.second) {
+                console << iface->getConnectedBlockId() << " ";
+            }
+            console << "\n";
+        } else {
+            console << "NULL\n";
+        }
+    }
+    for(auto &bd : bridgesDistance) {
+        console << "bridge distance for initiator " << bd.first << ": " << bd.second << "\n";
+    }
+
+    for(auto &nw : nbWaitedBridges) {
+        console << "nbWaitedBridges for initiator " << nw.first << ": " << nw.second << "\n";
+    }
+
     for (auto &i_p : initiator_prevNext) {
         console << "initiator: " << i_p.first << " prev: " << i_p.second.first
                 << " next: " << i_p.second.second << "\n";
     }
+
 
     // print nextDirections and prevDirections
     cout << "nextDirections: ";
@@ -626,7 +832,7 @@ void ShapeDecompositionBlockCode::onBlockSelected() {
     cout << endl;
 
     cout << "nbCorners: " << nbCorners << endl;
-
+    cout << "-----------------------\n\n";
     // print corners
     // for (auto &corner : corners) {
     //     cout << "corner: " << corner.position << " prev: " <<
@@ -1114,7 +1320,7 @@ void ShapeDecompositionBlockCode::printResults(vector<Direction> &receivedDirect
             minPos = corner.position;
         }
     }
-     lattice->getBlock(minPos)->setColor(RED);
+    // lattice->getBlock(minPos)->setColor(RED);
 
     // Open the file in append mode if it exists, otherwise create a new file
     ofstream outFile;
