@@ -106,6 +106,10 @@ namespace BaseSimulator {
             return(scheduler);
         }
 
+        int getEventsMapSize() const {
+            return eventsMapSize;
+        }
+
         BuildingBlock* getContextModule() const {
             return contextModule;
         }

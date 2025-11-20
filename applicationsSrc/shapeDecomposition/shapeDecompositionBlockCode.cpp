@@ -17,6 +17,11 @@ vector<Corner> ShapeDecompositionBlockCode::corners;
 
 int ShapeDecompositionBlockCode::nbCorners = 0;
 
+map<Cell3DPosition, int> ShapeDecompositionBlockCode::intersectionsCount;
+vector<int> ShapeDecompositionBlockCode::recordedTimes;
+vector<int> ShapeDecompositionBlockCode::recordedNbMessages;
+int ShapeDecompositionBlockCode::nbTraces = 0;
+
 ShapeDecompositionBlockCode::ShapeDecompositionBlockCode(BlinkyBlocksBlock *host)
     : BlinkyBlocksBlockCode(host) {
     // @warning Do not remove block below, as a blockcode with a NULL host might be created
@@ -178,6 +183,7 @@ void ShapeDecompositionBlockCode::handleBorderMessage(std::shared_ptr<Message> _
             std::cout << d << " ";
         }
         cout << endl << endl;
+        latestCornersForSegment.push_back(receivedCorners.back().position);
         printResults(receivedDirections, receivedCorners);
         // Decompress the directions
         // cout << "Decompressed directions" << endl;
@@ -189,17 +195,16 @@ void ShapeDecompositionBlockCode::handleBorderMessage(std::shared_ptr<Message> _
         cout << endl << endl;
         isInitiator = true;
         module->setColor(BLUE);
-
         
-            nbWaitedBridges[module->blockId] = 0;
-            bridgesIn[module->blockId] = nullptr;
-            // initiate bridge search
-            for (auto &itf: module->getP2PNetworkInterfaces()) {
-                if(itf->isConnected()) {
-                    sendMessage("bridge msg", new MessageOf<BridgeMessageData>(BRIDGE_MSG_ID, BridgeMessageData(0, module->blockId, false)), itf, 1);
-                    nbWaitedBridges[module->blockId]++;
-                }
+        nbWaitedBridges[module->blockId] = 0;
+        bridgesIn[module->blockId] = nullptr;
+        // initiate bridge search
+        for (auto &itf: module->getP2PNetworkInterfaces()) {
+            if(itf->isConnected()) {
+                sendMessage("bridge msg", new MessageOf<BridgeMessageData>(BRIDGE_MSG_ID, BridgeMessageData(0, module->blockId, false)), itf, 1);
+                nbWaitedBridges[module->blockId]++;
             }
+        }
         
         return;
     }
@@ -260,8 +265,10 @@ void ShapeDecompositionBlockCode::handleBorderMessage(std::shared_ptr<Message> _
                         receivedCorners.erase(receivedCorners.end() - 2, receivedCorners.end());
                         console << "On line 2\n";
                     }
+                    latestCornersForSegment.push_back(receivedCorners.back().position);
                     receivedCorners.push_back(*newCorner);
                 } else {
+                    latestCornersForSegment.push_back(receivedCorners.back().position);
                     receivedCorners.push_back(*newCorner);
                 }
 
@@ -270,7 +277,6 @@ void ShapeDecompositionBlockCode::handleBorderMessage(std::shared_ptr<Message> _
             initiator_prevNext[initiatorId] =
                 make_pair(DIRECTIONS[static_cast<short>(dir)], DIRECTIONS[j]);
             prevInBorder = DIRECTIONS[static_cast<short>(dir)];
-
             nextDirections.push_back(static_cast<Direction>(j));
             if (nextDirections.size() > prevDirections.size()) {
                 nextDirections.erase(nextDirections.begin());
@@ -297,6 +303,32 @@ void ShapeDecompositionBlockCode::handleBorderMessage(std::shared_ptr<Message> _
         }
         j = (j + 1) % 4;
     }
+}
+
+bool ShapeDecompositionBlockCode::rayIntersectsSegment(const Cell3DPosition& P, const Cell3DPosition& A, const Cell3DPosition& B) {
+    // Ensure A.y <= B.y (swap if needed)
+    Cell3DPosition A1 = A, B1 = B, P1 = P;
+    if (A1.pt[1] > B1.pt[1]) std::swap(A1, B1);
+
+    // 1. Check if P is outside the vertical range of the segment
+    if (P1.pt[1] == A1.pt[1] || P1.pt[1] == B1.pt[1]) {
+        // avoid ambiguity when point lies exactly on vertex
+        P1.pt[1] = std::nextafter(P.pt[1], -INFINITY);
+    }
+
+    if (P1.pt[1] < A1.pt[1] || P1.pt[1] > B1.pt[1])
+        return false;
+
+    // 2. If segment is horizontal, it cannot be intersected by a horizontal ray
+    if (A1.pt[1] == B1.pt[1])
+        return false;
+
+    // 3. Compute x coordinate of intersection of segment with y = P.y
+    double x_intersect =
+        A1.pt[0] + (P1.pt[1] - A1.pt[1]) * (B1.pt[0] - A1.pt[0]) / (B1.pt[1] - A1.pt[1]);
+
+    // 4. The ray intersects if the intersection is to the right of P
+    return x_intersect >= P1.pt[0];
 }
 
 void ShapeDecompositionBlockCode::handleBridgeMessage(std::shared_ptr<Message> _msg,
@@ -401,14 +433,43 @@ void ShapeDecompositionBlockCode::handleTraceBridgesMessage(std::shared_ptr<Mess
             
             return;
         }
+
         SCLattice::myDirection nextDir = toBorderInitiatorId == -1
                                              ? initiator_prevNext[borderInitiatorId].second
                                              : initiator_prevNext[toBorderInitiatorId].second;
-
+        SCLattice::myDirection prevDir = toBorderInitiatorId == -1
+                                             ? initiator_prevNext[borderInitiatorId].first
+                                             : initiator_prevNext[toBorderInitiatorId].first;
         P2PNetworkInterface *nextItf = getInterfaceInDirection(nextDir);
-        if(nextItf && nextItf->isConnected()) {
-            sendMessage("Trace Bridge 4 msg", new MessageOf<TraceBridgesMessageData>(TRACE_BRIDGES_MSG_ID, TraceBridgesMessageData(initiatorId, borderInitiatorId, TraceBridgesMessageType::BORDER_TRACE, toBorderInitiatorId)),
-            nextItf, 1);
+        if (nextItf && nextItf->isConnected()) {
+            if (nextDir != prevDir) {
+                Cell3DPosition P = BaseSimulator::getWorld()->getBlockById(initiatorId)->position;
+                for (auto& corner : latestCornersForSegment) {
+                    console << "latest corner for segment: " << corner << "\n";
+
+                    bool intersects = rayIntersectsSegment(P, corner, module->position);
+                    if (intersectionsCount.find(P) == intersectionsCount.end()) {
+                        intersectionsCount[P] = 0;
+                    }
+                    if (intersects) {
+                        module->setColor(DARKGREEN);
+                        cout << "Intersection for initiator " << initiatorId << " at position " << module->position << " " << corner << "\n";
+
+                        intersectionsCount[P]++;
+                    } else if(corner.pt[1] == module->position.pt[1] && corner.pt[0] != module->position.pt[0]) {
+
+                        intersectionsCount[P] += 1;
+
+                    }
+                }
+            }
+            sendMessage("Trace Bridge 4 msg",
+                        new MessageOf<TraceBridgesMessageData>(
+                            TRACE_BRIDGES_MSG_ID,
+                            TraceBridgesMessageData(initiatorId, borderInitiatorId,
+                                                    TraceBridgesMessageType::BORDER_TRACE,
+                                                    toBorderInitiatorId)),
+                        nextItf, 1);
             module->setColor(CYAN);
             return;
         }
@@ -500,6 +561,8 @@ void ShapeDecompositionBlockCode::handleTraceBridgesMessage(std::shared_ptr<Mess
 }
 
 void ShapeDecompositionBlockCode::initiateBorderTracing() {
+    cout << "time" <<  BaseSimulator::getScheduler()->now() << "\n";
+    cout <<  "nbMessages" << BaseSimulator::getScheduler()->getNbreMessages() << "\n";
     int nearestBordrerInitiatorId = -1;
     int minDistance = INT_MAX;
     for (auto &it : bridgesDistance) {
@@ -510,7 +573,6 @@ void ShapeDecompositionBlockCode::initiateBorderTracing() {
     }
     traceIn[nearestBordrerInitiatorId] = bridgesIn[nearestBordrerInitiatorId];
     sendMessage("Trace Bridge 1 msg", new MessageOf<TraceBridgesMessageData>(TRACE_BRIDGES_MSG_ID, TraceBridgesMessageData(module->blockId, nearestBordrerInitiatorId, TraceBridgesMessageType::IINITIATOR_TO_FIRST_BORDER)), traceIn[nearestBordrerInitiatorId], 1);
-
 }
 
 void ShapeDecompositionBlockCode::handleGetBorderMessage(std::shared_ptr<Message> _msg,
@@ -746,7 +808,6 @@ void ShapeDecompositionBlockCode::processLocalEvent(EventPtr pev) {
 
     // Do not remove line below
     BlinkyBlocksBlockCode::processLocalEvent(pev);
-
     switch (pev->eventType) {
         case EVENT_ADD_NEIGHBOR: {
             // Do something when a neighbor is added to an interface of the module
@@ -758,6 +819,46 @@ void ShapeDecompositionBlockCode::processLocalEvent(EventPtr pev) {
             break;
         }
     }
+    if(BaseSimulator::getScheduler()->getEventsMapSize() == 1) {
+        cout << "No more events in the scheduler!\n";
+        // create and open a file to write the results
+        recordedTimes.push_back(BaseSimulator::getScheduler()->now());
+        recordedNbMessages.push_back(BaseSimulator::getScheduler()->getNbreMessages());
+  
+            // find a random block
+        int randomBlockId = rand() % BaseSimulator::getWorld()->getNbBlocks();
+        ShapeDecompositionBlockCode* randomBlock = static_cast<ShapeDecompositionBlockCode*>(
+            BaseSimulator::getWorld()->getBlockById(randomBlockId)->blockCode);
+        randomBlock->initiateBorderTracing();
+        
+        nbTraces++;
+        if(nbTraces == 3) {
+            // write recordedTimes and recordedNbMessages to a file in a json format
+            ofstream resultsFile;
+            resultsFile.open("shape_decomposition_results.txt", ios::out);
+            resultsFile << "{\n";
+            resultsFile << "\"recordedTimes\": [";
+            for (int i = 0; i < recordedTimes.size(); i++) {
+                resultsFile << recordedTimes[i];;
+                if (i != recordedTimes.size() - 1) {
+                    resultsFile << ", ";
+                }
+            }
+            resultsFile << "],\n";
+            resultsFile << "\"recordedNbMessages\": [";
+            for (int i = 0; i < recordedNbMessages.size(); i++) {
+                resultsFile << recordedNbMessages[i];
+                if (i != recordedNbMessages.size() - 1) {
+                    resultsFile << ", ";
+                }
+            }
+            resultsFile << "]\n";
+            resultsFile << "}\n";
+            resultsFile.close();
+            exit(0);
+        }
+    }
+
 }
 
 /// ADVANCED BLOCKCODE FUNCTIONS BELOW
@@ -765,9 +866,20 @@ void ShapeDecompositionBlockCode::processLocalEvent(EventPtr pev) {
 void ShapeDecompositionBlockCode::onBlockSelected() {
     // Debug stuff:
     // print bridgesIn and bridgesOut
+    
     console << "Block " << module->blockId << " selected\n";
+    console << "latestCornersForSegment: ";
+    for (auto &corner : latestCornersForSegment) {
+        console << corner << " ";
+    }
+    console << "\n";
+    // print intersections count
+    console << "Intersections count:\n";
+    for (auto &ic : intersectionsCount) {
+        console << "Point: " << ic.first << " Count: " << ic.second << "\n";
+    }
     initiateBorderTracing();
-
+    console << "previous corner: " << prevCorner.position << "\n";
     for (auto &b_in : bridgesIn) {
         console << "bridgeIn for initiator " << b_in.first << ": ";
         if (b_in.second) {
@@ -1315,7 +1427,7 @@ void ShapeDecompositionBlockCode::printResults(vector<Direction> &receivedDirect
     Cell3DPosition minPos = receivedCorners[0].position;
     nbCorners += receivedCorners.size();
     for(auto &corner : receivedCorners) {
-        lattice->getBlock(corner.position)->setColor(GREEN);
+        //lattice->getBlock(corner.position)->setColor(GREEN);
         if(corner.position < minPos) {
             minPos = corner.position;
         }

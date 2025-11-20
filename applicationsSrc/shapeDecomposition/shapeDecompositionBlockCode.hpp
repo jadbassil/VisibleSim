@@ -145,11 +145,15 @@ class ShapeDecompositionBlockCode : public BlinkyBlocksBlockCode {
     static array<SCLattice::myDirection, 4> DIRECTIONS;
     static array<string, 4> DIRECTIONS_NAMES;
     static vector<Corner> corners;
+    static vector<int> recordedTimes;
+    static vector<int> recordedNbMessages;
+    static int nbTraces;
     static int nbCorners;
     Corner myCorner;
     Corner prevCorner;
     Border border;
     bool isInitiator{false};
+    static map<Cell3DPosition, int> intersectionsCount;
 
     map<int, P2PNetworkInterface *> bridgesIn;
     map<int, vector<P2PNetworkInterface *>> bridgeOut;
@@ -160,6 +164,7 @@ class ShapeDecompositionBlockCode : public BlinkyBlocksBlockCode {
     // border tracing variables
     map<int, P2PNetworkInterface *> traceIn;
     map<int, P2PNetworkInterface *> traceOut;
+    vector<Cell3DPosition> latestCornersForSegment;
 
 
     array<P2PNetworkInterface *, 2> bridgeEnds{nullptr, nullptr};
@@ -211,7 +216,9 @@ class ShapeDecompositionBlockCode : public BlinkyBlocksBlockCode {
      * @param sender Connector of the module that has received the message and that is connected to
      * the sender */
     void handleBorderMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
-    void handleBridgeMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+    bool rayIntersectsSegment(const Cell3DPosition& P, const Cell3DPosition& A,
+                              const Cell3DPosition& B);
+    void handleBridgeMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface* sender);
     void handleGetBorderMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     void handleTraceBridgesMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     vector<int> RLEcompress(vector<Direction> &directions);

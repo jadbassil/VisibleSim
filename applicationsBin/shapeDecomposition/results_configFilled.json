@@ -1,0 +1,29 @@
+{
+  "borders": [
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 77,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [19, 1, 20, 2, 19, 3, 19, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 77,
+          "compressedSizeBytes": 23,
+          "nbBitsCompressed": 79,
+          "compressedData": [1, 4, 5, 6, 7, 6, 2, 10, 11, 12, 13, 13, 3, 16, 17, 18, 19, 18, 0, 22, 23, 24, 25]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[0, 0, 0], [19, 0, 0], [19, 20, 0], [0, 20, 0], [0, 0, 0]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 8,
+          "nbBitsCompressed": 22,
+          "compressedData": [0, 0, 19, 257, 20, 0, 260, 0]
+        }
+      }
+    }
+  ]
+}
