@@ -1,4 +1,4 @@
 {
-"recordedTimes": [322593, 450221, 589966],
-"recordedNbMessages": [4936, 5330, 5744]
+"recordedTimes": [515828, 839336, 1152316],
+"recordedNbMessages": [77716, 80002, 82327]
 }

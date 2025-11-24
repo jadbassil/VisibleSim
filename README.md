@@ -66,3 +66,38 @@ Configure the CMake project by selecting a kit and specifying the build director
 
 ## Windows Installation
 For the best experience, use **WSL** (Windows Subsystem for Linux https://learn.microsoft.com/en-us/windows/wsl/install) with Ubuntu. Alternatively, you can use a virtual machine running Linux.
+
+## Shape Decomposition Analysis Plots
+
+After running shape decomposition scenarios (JSON outputs named `aina26_results_*.json`), you can generate summary analysis PDFs:
+
+Script location:
+`applicationsBin/shapeDecomposition/aina26/plot_trace_times.py`
+
+Generates (if data present):
+ - `scaling.pdf` : Phase 1 time and average trace time versus cube size (cube10..cubeN)
+ - `scaling_messages.pdf` : Phase 1 message count and average per-trace message count versus cube size
+ - `config_comparison.pdf` : Four bar charts comparing `config3d`, `configFilled`, `configHoles` (Phase 1 time/messages, Avg trace time/messages)
+
+Times are converted from microseconds (as stored in JSON) to seconds in plots.
+
+### Usage
+From the directory containing the JSON results (or pass `--dir`):
+```shell
+uv run applicationsBin/shapeDecomposition/aina26/plot_trace_times.py --save
+```
+Or with a standard Python environment:
+```shell
+python3 applicationsBin/shapeDecomposition/aina26/plot_trace_times.py --save
+```
+
+Options:
+ - `--dir PATH`  Directory containing `aina26_results_*.json` (default: script directory)
+ - `--save`      Write PDFs to disk (omit to display interactively)
+
+Example (custom directory):
+```shell
+python3 applicationsBin/shapeDecomposition/aina26/plot_trace_times.py --dir applicationsBin/shapeDecomposition/aina26 --save
+```
+
+If some JSON files are missing, the corresponding sections will be skipped.

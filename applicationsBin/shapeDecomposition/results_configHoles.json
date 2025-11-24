@@ -24,7 +24,8 @@
           "compressedData": [10, 12, 11, 257, 8, 260, 8, 12, 256]
         }
       }
-    },
+    }
+    ,
     {
       "receivedDirections": {
         "directions": [1, 0, 0, 0, 0, 3, 3, 3, 3, 2, 2, 1, 2, 1, 2],
@@ -49,32 +50,8 @@
           "compressedData": [17, 5, 18, 257, 1, 14, 260, 3, 15, 3, 256]
         }
       }
-    },
-    {
-      "receivedDirections": {
-        "directions": [1, 0, 1, 0, 0, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1],
-        "RLEcompression": {
-          "originalSizeBytes": 15,
-          "compressedSizeBytes": 14,
-          "compressedDataBytes": [1, 1, 1, 0, 1, 1, 2, 0, 4, 3, 4, 2, 2, 1]
-        },
-        "LZWcompression": {
-          "originalSizeBytes": 15,
-          "compressedSizeBytes": 11,
-          "nbBitsCompressed": 22,
-          "compressedData": [1, 0, 4, 0, 3, 8, 3, 2, 11, 2, 1]
-        }
-      },
-      "receivedCorners": {
-        "corners": [[3, 4, 0], [4, 4, 0], [4, 3, 0], [5, 3, 0], [5, 1, 0], [1, 1, 0], [1, 5, 0], [3, 5, 0], [3, 4, 0]],
-        "compressedBitsetBorder": {
-          "originalSizeBytes": 18,
-          "compressedSizeBytes": 13,
-          "nbBitsCompressed": 37,
-          "compressedData": [3, 4, 257, 4, 3, 5, 260, 1, 263, 1, 261, 261, 4]
-        }
-      }
-    },
+    }
+    ,
     {
       "receivedDirections": {
         "directions": [1, 0, 0, 0, 0, 3, 3, 2, 3, 2, 3, 2, 2, 1, 1],
@@ -99,7 +76,34 @@
           "compressedData": [17, 19, 18, 257, 15, 16, 260, 261, 261, 17, 14, 265, 19, 256]
         }
       }
-    },
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 0, 1, 0, 0, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1],
+        "RLEcompression": {
+          "originalSizeBytes": 15,
+          "compressedSizeBytes": 14,
+          "compressedDataBytes": [1, 1, 1, 0, 1, 1, 2, 0, 4, 3, 4, 2, 2, 1]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 15,
+          "compressedSizeBytes": 11,
+          "nbBitsCompressed": 22,
+          "compressedData": [1, 0, 4, 0, 3, 8, 3, 2, 11, 2, 1]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[3, 4, 0], [4, 4, 0], [4, 3, 0], [5, 3, 0], [5, 1, 0], [1, 1, 0], [1, 5, 0], [3, 5, 0], [3, 4, 0]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 18,
+          "compressedSizeBytes": 13,
+          "nbBitsCompressed": 37,
+          "compressedData": [3, 4, 257, 4, 3, 5, 260, 1, 263, 1, 261, 261, 4]
+        }
+      }
+    }
+    ,
     {
       "receivedDirections": {
         "directions": [1, 0, 0, 3, 0, 3, 0, 3, 3, 2, 2, 2, 2, 1, 1],
@@ -124,7 +128,8 @@
           "compressedData": [4, 19, 5, 257, 17, 4, 260, 16, 3, 263, 15, 1, 266, 19, 256]
         }
       }
-    },
+    }
+    ,
     {
       "receivedDirections": {
         "directions": [1, 0, 0, 0, 0, 3, 0, 3, 0, 3, 3, 3, 2, 2, 1, 1, 2, 2, 2, 2, 1],
@@ -149,7 +154,8 @@
           "compressedData": [13, 11, 14, 257, 7, 12, 5, 9, 262, 7, 11, 265, 11, 256]
         }
       }
-    },
+    }
+    ,
     {
       "receivedDirections": {
         "directions": [1, 0, 0, 3, 3, 0, 0, 0, 0, 0, 3, 3, 3, 2, 2, 2, 2, 2, 1, 2, 1, 2, 1],
@@ -174,7 +180,8 @@
           "compressedData": [9, 15, 10, 257, 13, 8, 260, 8, 5, 263, 13, 7, 15, 256]
         }
       }
-    },
+    }
+    ,
     {
       "receivedDirections": {
         "directions": [1, 1, 1, 1, 1, 0, 0, 3, 3, 3, 3, 3, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 2, 2, 2, 2, 2, 2, 1, 2, 1, 2, 1, 1, 0, 0, 3, 0, 3, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1],
@@ -199,7 +206,8 @@
           "compressedData": [7, 5, 12, 257, 3, 6, 260, 4, 3, 7, 2, 265, 14, 3, 268, 15, 4, 271, 16, 6, 274, 14, 5, 277, 13, 4, 280, 8, 256]
         }
       }
-    },
+    }
+    ,
     {
       "receivedDirections": {
         "directions": [1, 0, 0, 0, 0, 0, 0, 3, 0, 3, 0, 3, 3, 2, 2, 1, 2, 1, 2, 2, 2, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 3, 3, 3, 2, 2, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
@@ -224,7 +232,8 @@
           "compressedData": [15, 12, 16, 257, 6, 15, 260, 5, 14, 263, 4, 12, 266, 6, 13, 269, 7, 14, 272, 11, 10, 261, 261, 17, 11, 279, 16, 256]
         }
       }
-    },
+    }
+    ,
     {
       "receivedDirections": {
         "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],

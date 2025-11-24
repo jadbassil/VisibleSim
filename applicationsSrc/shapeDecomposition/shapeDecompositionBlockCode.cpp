@@ -832,29 +832,45 @@ void ShapeDecompositionBlockCode::processLocalEvent(EventPtr pev) {
         randomBlock->initiateBorderTracing();
         
         nbTraces++;
-        if(nbTraces == 3) {
+        if(nbTraces == 50) {
             // write recordedTimes and recordedNbMessages to a file in a json format
-            ofstream resultsFile;
-            resultsFile.open("shape_decomposition_results.txt", ios::out);
-            resultsFile << "{\n";
-            resultsFile << "\"recordedTimes\": [";
-            for (int i = 0; i < recordedTimes.size(); i++) {
-                resultsFile << recordedTimes[i];;
-                if (i != recordedTimes.size() - 1) {
-                    resultsFile << ", ";
-                }
+            // Build a safe basename for the config file (strip directories and extension)
+            std::string cfgPath = BaseSimulator::Simulator::configFileName;
+            std::string stem;
+            {
+                // Use filesystem if available (C++17); fallback to manual parsing otherwise
+#if __cplusplus >= 201703L
+                stem = std::filesystem::path(cfgPath).stem().string();
+#else
+                size_t slashPos = cfgPath.find_last_of("/\\");
+                std::string fileOnly = (slashPos == std::string::npos) ? cfgPath : cfgPath.substr(slashPos+1);
+                size_t dotPos = fileOnly.find_last_of('.');
+                stem = (dotPos == std::string::npos) ? fileOnly : fileOnly.substr(0,dotPos);
+#endif
             }
-            resultsFile << "],\n";
-            resultsFile << "\"recordedNbMessages\": [";
-            for (int i = 0; i < recordedNbMessages.size(); i++) {
-                resultsFile << recordedNbMessages[i];
-                if (i != recordedNbMessages.size() - 1) {
-                    resultsFile << ", ";
+            std::string outputName = "aina26_results_" + stem + ".json";
+            std::ofstream resultsFile(outputName, std::ios::out);
+            if(resultsFile.is_open()) {
+                resultsFile << "{\n";
+                resultsFile << "  \"numberOfModules\": " << BaseSimulator::getWorld()->getNbBlocks() << ",\n";
+                resultsFile << "  \"recordedTimes\": [";
+                for (size_t i = 0; i < recordedTimes.size(); i++) {
+                    resultsFile << recordedTimes[i];
+                    if (i + 1 != recordedTimes.size()) resultsFile << ", ";
                 }
+                resultsFile << "],\n";
+                resultsFile << "  \"recordedNbMessages\": [";
+                for (size_t i = 0; i < recordedNbMessages.size(); i++) {
+                    resultsFile << recordedNbMessages[i];
+                    if (i + 1 != recordedNbMessages.size()) resultsFile << ", ";
+                }
+                resultsFile << "]\n";
+                resultsFile << "}\n";
+                resultsFile.close();
+                std::cout << "[JSON] Wrote trace summary to " << outputName << std::endl;
+            } else {
+                std::cerr << "[JSON] Failed to open output file: " << outputName << std::endl;
             }
-            resultsFile << "]\n";
-            resultsFile << "}\n";
-            resultsFile.close();
             exit(0);
         }
     }
@@ -866,7 +882,14 @@ void ShapeDecompositionBlockCode::processLocalEvent(EventPtr pev) {
 void ShapeDecompositionBlockCode::onBlockSelected() {
     // Debug stuff:
     // print bridgesIn and bridgesOut
-    
+    // for(int z=0; z<5; z++) {
+    //    auto b1 = static_cast<ShapeDecompositionBlockCode*>(
+    //         BaseSimulator::getWorld()->lattice->getBlock(Cell3DPosition(0,1,z))->blockCode);
+    //      auto b2 = static_cast<ShapeDecompositionBlockCode*>(
+    //         BaseSimulator::getWorld()->lattice->getBlock(Cell3DPosition(11,8,z))->blockCode);
+    //     b1->module->setColor(CYAN);
+    //     b2->module->setColor(CYAN);
+    // }
     console << "Block " << module->blockId << " selected\n";
     console << "latestCornersForSegment: ";
     for (auto &corner : latestCornersForSegment) {
@@ -1207,7 +1230,6 @@ bool ShapeDecompositionBlockCode::isOnBorder() const {
 
 void ShapeDecompositionBlockCode::onAssertTriggered() {
     console << " has triggered an assert" << "\n";
-
     // Print debugging some info if needed below
     // ...
 }
@@ -1255,7 +1277,7 @@ bool ShapeDecompositionBlockCode::parseUserCommandLineArgument(int &argc, char *
 
 string ShapeDecompositionBlockCode::onInterfaceDraw() {
     stringstream trace;
-    trace << "Searching my shape" << "\n";
+    trace << "Number of modules: " << BaseSimulator::getWorld()->getNbBlocks() << "\n";
     return trace.str();
 }
 
@@ -1417,9 +1439,17 @@ bool ShapeDecompositionBlockCode::isOnLine(Cell3DPosition &p1, Cell3DPosition &p
 void ShapeDecompositionBlockCode::printResults(vector<Direction> &receivedDirections,
                                                vector<Corner> &receivedCorners) {
     // Open the file in read mode to check if it exists
-    string configFile = getSimulator()->getCmdLine().getConfigFile();
-    configFile = configFile.substr(0, configFile.find_last_of("."));
-    string outputFileName = "results_" + configFile + ".json";
+    std::string cfgPath = getSimulator()->getCmdLine().getConfigFile();
+    std::string stem;
+#if __cplusplus >= 201703L
+    stem = std::filesystem::path(cfgPath).stem().string();
+#else
+    size_t slashPos = cfgPath.find_last_of("/\\");
+    std::string fileOnly = (slashPos == std::string::npos) ? cfgPath : cfgPath.substr(slashPos+1);
+    size_t dotPos = fileOnly.find_last_of('.');
+    stem = (dotPos == std::string::npos) ? fileOnly : fileOnly.substr(0,dotPos);
+#endif
+    std::string outputFileName = "results_" + stem + ".json";
     ifstream inFile(outputFileName);
     bool fileExists = inFile.good();
     cout << getSimulator()->getCmdLine().getConfigFile();
@@ -1437,12 +1467,27 @@ void ShapeDecompositionBlockCode::printResults(vector<Direction> &receivedDirect
     // Open the file in append mode if it exists, otherwise create a new file
     ofstream outFile;
     if (fileExists) {
-        outFile.open(outputFileName, ios::in | ios::out);
-        outFile.seekp(
-            -6, ios::end);  // Move the cursor to the position before the last closing brackets
-        outFile << ",\n";   // Close the previous border object
+        // Read entire existing content to safely append new border
+        std::ifstream in(outputFileName);
+        std::string existing((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        in.close();
+        // Locate closing sequence of the borders array
+        const std::string closing = "\n  ]\n}";
+        size_t pos = existing.rfind(closing);
+        if (pos == std::string::npos) {
+            // Fallback: treat as new file if structure unexpected
+            existing = "{\n  \"borders\": [\n";
+            fileExists = false;
+        } else {
+            existing.erase(pos); // remove closing
+        }
+        outFile.open(outputFileName, std::ios::out | std::ios::trunc);
+        outFile << existing;
+        if (existing.back() != '\n') outFile << '\n';
+        // Append comma if not first border
+        if (fileExists) outFile << "    ,\n";
     } else {
-        outFile.open(outputFileName);
+        outFile.open(outputFileName, std::ios::out);
         outFile << "{\n  \"borders\": [\n";
     }
 
@@ -1530,14 +1575,9 @@ void ShapeDecompositionBlockCode::printResults(vector<Direction> &receivedDirect
     outFile << "      }\n";  // close receivedCorners
     outFile << "    }\n";    // close borders
 
-    // Close the JSON array and object if the file was newly created
-    if (!fileExists) {
-        outFile << "  ]\n";
-        outFile << "}";
-    } else {
-        outFile << "  ]\n";
-        outFile << "}";
-    }
+    // Close the JSON array and object
+    outFile << "  ]\n";
+    outFile << "}";
 
     // Close the file
     outFile.close();
