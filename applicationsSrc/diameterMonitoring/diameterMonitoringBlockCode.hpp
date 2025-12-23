@@ -8,6 +8,7 @@ static const int BFSGO_MSG_ID = 1000;
 static const int BFSBACK_MSG_ID = 1001;
 static const int FARTHEST_MSG_ID = 1002;
 static const int NOTIFYDIAMETER_MSG_ID = 1003;
+static const int ADDEDNEIGHBOR_MSG_ID = 1004;
 
 using namespace BlinkyBlocks;
 
@@ -19,14 +20,29 @@ struct GOBFSMessageData {
     GOBFSMessageData(int d, int r) : distance(d), round(r), D(-1) {}
 };
 
+struct AddedNeighborMessageData {
+    int du, dv, D;
+    AddedNeighborMessageData(int du, int dv, int D) : du(du), dv(dv), D(D) {}
+};
+
+struct NotifyDiameterMessageData {
+    int D;
+    int du;
+    int dv;
+    NotifyDiameterMessageData(int D) : D(D), du{-1}, dv{-1} {}
+    NotifyDiameterMessageData(int D, int du, int dv) : D(D), du{du}, dv{dv} {}
+};
+
 class DiameterMonitoringBlockCode : public BlinkyBlocksBlockCode {
 private:
     int distance, du{-1}, dv{-1}, D{-1};
     int round{0};
     int maxDownDistance{0};
+    int maxDu{0}, maxDv{0};
     P2PNetworkInterface *interfaceToFarthest{nullptr};
     P2PNetworkInterface *parent{nullptr};
     int nbWaitedAnswers{0};
+    int nbAddedNeighborsReceived{0};
     BlinkyBlocksBlock *module;
 public :
     DiameterMonitoringBlockCode(BlinkyBlocksBlock *host);
@@ -61,6 +77,8 @@ public :
     void handleFarthestMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
 
     void handleNotifyDiameterMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+
+    void handleAddedNeighborMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     /// Advanced blockcode handlers below
 
     /**
