@@ -1,6 +1,7 @@
 #ifndef DiameterMonitoringBlockCode_H_
 #define DiameterMonitoringBlockCode_H_
 
+#include <climits>
 #include "robots/blinkyBlocks/blinkyBlocksWorld.h"
 #include "robots/blinkyBlocks/blinkyBlocksBlockCode.h"
 
@@ -38,7 +39,7 @@ private:
     int distance, du{-1}, dv{-1}, D{-1};
     int round{0};
     int maxDownDistance{0};
-    int maxDu{0}, maxDv{0};
+    int minDu{INT_MAX}, minDv{INT_MAX};
     P2PNetworkInterface *interfaceToFarthest{nullptr};
     P2PNetworkInterface *parent{nullptr};
     int nbWaitedAnswers{0};

@@ -61,7 +61,7 @@ void DiameterMonitoringBlockCode::handleBfsGoMessage(std::shared_ptr<Message> _m
         parent = sender;
         //module->setColor(Colors[distance % NB_COLORS]);
         if(round == 2) du = distance;
-        else if (round == 3) dv = distance;
+        else if (round == 3) {dv = distance; D=-1;}
         // Broadcast to all neighbors but ignore sender
         nbWaitedAnswers = sendMessageToAllNeighbors("BFSGO Broadcast",
                                   new MessageOf<GOBFSMessageData>(BFSGO_MSG_ID,GOBFSMessageData(distance, round)),100,200,1,sender);
@@ -143,34 +143,57 @@ void DiameterMonitoringBlockCode::handleFarthestMessage(std::shared_ptr<Message>
 }
 
 void DiameterMonitoringBlockCode::handleAddedNeighborMessage(std::shared_ptr<Message> _msg,
-                                               P2PNetworkInterface* sender) {
+                                                             P2PNetworkInterface* sender) {
     // Handle neighbor addition if needed
-    MessageOf<AddedNeighborMessageData>* msg = static_cast<MessageOf<AddedNeighborMessageData>*>(_msg.get());
+    MessageOf<AddedNeighborMessageData>* msg =
+        static_cast<MessageOf<AddedNeighborMessageData>*>(_msg.get());
     AddedNeighborMessageData data = *msg->getData();
     setColor(RED);
     nbAddedNeighborsReceived++;
-    if(data.du > maxDu) maxDu = data.du;
-    if(data.dv > maxDv) maxDv = data.dv;
-    if(nbAddedNeighborsReceived == module->getNbNeighbors()) {
-        du = maxDu + 1;
-        dv = maxDv + 1;
+    if (data.du < minDu) minDu = data.du;
+    if (data.dv < minDv) minDv = data.dv;
+    if (nbAddedNeighborsReceived == module->getNbNeighbors()) {
+        du = minDu + 1;
+        dv = minDv + 1;
         D = data.D;
-        console << " All neighbors added, computed du=" << du << ", dv=" << dv << ", D=" << D << "\n";
+        console << " All neighbors added, computed du=" << du << ", dv=" << dv << ", D=" << D
+                << "\n";
         nbAddedNeighborsReceived = 0;
-        maxDu = 0;
-        maxDv = 0;
-        if (du < D && dv < D) cerr << "STABILITY\n"; 
-        if(du > D) {
-            D = du;
-            dv = 0;
-            sendMessageToAllNeighbors("NOTIFYDIAMETER",
-                                      new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID, NotifyDiameterMessageData(D, du, -1)),100,200, 0);
-        } else if (dv > D) {
-            D = dv;
-            du = 0;
-            // TODO also update dv
-            sendMessageToAllNeighbors("NOTIFYDIAMETER",
-                                      new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID, NotifyDiameterMessageData(D, -1, dv)),100,200, 0);
+        minDu = 0;
+        minDv = 0;
+
+        if (du + dv < D) {
+            // BRIDGE RULE must recalculate the diameter
+            cerr << "BRIDGE RULE\n";
+            round = 1;
+            distance = 0;
+            nbWaitedAnswers = sendMessageToAllNeighbors(
+                "Sample Broadcast",
+                new MessageOf<GOBFSMessageData>(BFSGO_MSG_ID, GOBFSMessageData(distance, round)),
+                100, 200, 0);
+        } else if (du < D and dv < D) {
+            // STABILITY RULE
+            console << " STABILITY RULE\n";
+        } else {
+            // GROWTH RULE
+            if (du > D) {
+                D = du;
+                dv = 0;
+                sendMessageToAllNeighbors(
+                    "NOTIFYDIAMETER",
+                    new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID,
+                                                             NotifyDiameterMessageData(D, du, -1)),
+                    100, 200, 0);   
+            } else if (dv > D) {
+                D = dv;
+                du = 0;
+
+                sendMessageToAllNeighbors(
+                    "NOTIFYDIAMETER",
+                    new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID,
+                                                             NotifyDiameterMessageData(D, -1, dv)),
+                    100, 200, 0);
+            }
         }
     }
 }
@@ -185,8 +208,9 @@ void DiameterMonitoringBlockCode::handleNotifyDiameterMessage(std::shared_ptr<Me
         if(data.dv != -1) du++;
         if(data.du != -1) dv++;
         console << " received NOTIFYDIAMETER d =" << d << " from " << sender->getConnectedBlockId() << "\n";
+
         sendMessageToAllNeighbors("NOTIFYDIAMETER",
-                                  new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID, NotifyDiameterMessageData(D)),100,200, 1,sender);
+                                  new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID, data),100,200, 1,sender);
         setColor(WHITE);
         if(dv == 0) setColor(YELLOW);
     }
