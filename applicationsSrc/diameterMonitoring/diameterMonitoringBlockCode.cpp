@@ -23,6 +23,9 @@ DiameterMonitoringBlockCode::DiameterMonitoringBlockCode(BlinkyBlocksBlock *host
     addMessageEventFunc2(ADDEDNEIGHBOR_MSG_ID,
                          std::bind(&DiameterMonitoringBlockCode::handleAddedNeighborMessage, this,
                                    std::placeholders::_1, std::placeholders::_2));
+    addMessageEventFunc2(INFORMDUDV_MSG_ID,
+                         std::bind(&DiameterMonitoringBlockCode::handleInformDuDvMessage, this,
+                                   std::placeholders::_1, std::placeholders::_2));
     // Set the module pointer
     module = static_cast<BlinkyBlocksBlock*>(hostBlock);
   }
@@ -142,6 +145,14 @@ void DiameterMonitoringBlockCode::handleFarthestMessage(std::shared_ptr<Message>
     }
 }
 
+void DiameterMonitoringBlockCode::handleInformDuDvMessage(std::shared_ptr<Message> _msg,
+                                                   P2PNetworkInterface* sender) {
+    MessageOf<InformDuDvMessageData>* msg =
+        static_cast<MessageOf<InformDuDvMessageData>*>(_msg.get());
+    InformDuDvMessageData data = *msg->getData();
+    faceDuDvMap[module->getFaceForNeighborID(sender->getConnectedBlockId())] = make_pair(data.du, data.dv);
+}
+
 void DiameterMonitoringBlockCode::handleAddedNeighborMessage(std::shared_ptr<Message> _msg,
                                                              P2PNetworkInterface* sender) {
     // Handle neighbor addition if needed
@@ -207,10 +218,13 @@ void DiameterMonitoringBlockCode::handleNotifyDiameterMessage(std::shared_ptr<Me
         D = d;
         if(data.dv != -1) du++;
         if(data.du != -1) dv++;
-        console << " received NOTIFYDIAMETER d =" << d << " from " << sender->getConnectedBlockId() << "\n";
 
+        console << " received NOTIFYDIAMETER d =" << d << " from " << sender->getConnectedBlockId() << "\n";
+        sendMessageToAllNeighbors("INFORMDUDV",
+                                  new MessageOf<InformDuDvMessageData>(INFORMDUDV_MSG_ID,
+                                                                      InformDuDvMessageData(du, dv)),100,200,0);
         sendMessageToAllNeighbors("NOTIFYDIAMETER",
-                                  new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID, data),100,200, 1,sender);
+                                  new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID, data),100,200, 1, sender);
         setColor(WHITE);
         if(dv == 0) setColor(YELLOW);
     }
@@ -232,22 +246,53 @@ void DiameterMonitoringBlockCode::processLocalEvent(EventPtr pev) {
 
     switch (pev->eventType) {
         case EVENT_ADD_NEIGHBOR: {
-            if(D == -1) break;
+            if (D == -1) break;
             // Do something when a neighbor is added to an interface of the module
             console << " New neighbor added, sending ADDEDNEIGHBOR message\n";
-            uint64_t face = BaseSimulator::getWorld()->lattice->getOppositeDirection((std::static_pointer_cast<AddNeighborEvent>(pev))->face);
+            uint64_t face = BaseSimulator::getWorld()->lattice->getOppositeDirection(
+                (std::static_pointer_cast<AddNeighborEvent>(pev))->face);
 
             sendMessage("AddedNeighbor",
-                        new MessageOf<AddedNeighborMessageData>(ADDEDNEIGHBOR_MSG_ID,
-                                                      AddedNeighborMessageData(du, dv, D)),
+                        new MessageOf<AddedNeighborMessageData>(
+                            ADDEDNEIGHBOR_MSG_ID, AddedNeighborMessageData(du, dv, D)),
                         module->getInterface(face), 100, 200);
             break;
         }
-
         case EVENT_REMOVE_NEIGHBOR: {
             // Do something when a neighbor is removed from an interface of the module
+            if (D == -1) break;
+            uint64_t face = BaseSimulator::getWorld()->lattice->getOppositeDirection(
+                (std::static_pointer_cast<RemoveNeighborEvent>(pev))->face);
+
+            console << " Neighbor removed, recalculating diameter\n";
+            uint64_t oppositeFace = BaseSimulator::getWorld()->lattice->getOppositeDirection(face);
+            int duRemoved = faceDuDvMap[face].first;
+            int dvRemoved = faceDuDvMap[face].second;
+            int duOpposite = faceDuDvMap[oppositeFace].first;
+            int dvOpposite = faceDuDvMap[oppositeFace].second;
+            console << " Removed neighbor had du=" << duRemoved << ", dv=" << dvRemoved << "\n";
+            console << " Opposite face( " << module->getNeighborIDForFace(oppositeFace)
+                    << " ) has du=" << duOpposite << ", dv=" << dvOpposite << "\n";
+            bool duAffected = true;
+            bool dvAffected = true;
+            for (auto it = faceDuDvMap.begin(); it != faceDuDvMap.end(); ++it) {
+                if (it->first == face) continue;
+                if (it->second.first <= duRemoved) duAffected = false;
+                if (it->second.second <= dvRemoved) dvAffected = false;
+            }
+            if (duAffected || dvAffected) {
+                cerr << " Diameter needs to be recalculated due to neighbor removal\n";
+                round = 1;
+                distance = 0;
+                nbWaitedAnswers = sendMessageToAllNeighbors(
+                    "Sample Broadcast",
+                    new MessageOf<GOBFSMessageData>(BFSGO_MSG_ID, GOBFSMessageData(distance, round)),
+                    100, 200, 0);
+            }
             break;
         }
+        default:
+            break;
     }
 }
 
@@ -258,6 +303,11 @@ void DiameterMonitoringBlockCode::onBlockSelected() {
     cerr << endl << "--- PRINT MODULE " << *module << "---" << endl;
     cerr << " Distance from master: " << distance << endl;
     cerr << "D: " << D << ", du: " << du << ", dv: " << dv << endl;
+    // Print du,dv per face
+    for (const auto& [face, duDv] : faceDuDvMap) {
+        cerr << " Face " << face << ": du=" << duDv.first << ", dv=" << duDv.second << endl;
+    }
+    cerr << "------------------------" << endl << endl;
 }
 
 void DiameterMonitoringBlockCode::onAssertTriggered() {

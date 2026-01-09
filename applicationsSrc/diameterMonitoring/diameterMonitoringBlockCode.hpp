@@ -10,6 +10,7 @@ static const int BFSBACK_MSG_ID = 1001;
 static const int FARTHEST_MSG_ID = 1002;
 static const int NOTIFYDIAMETER_MSG_ID = 1003;
 static const int ADDEDNEIGHBOR_MSG_ID = 1004;
+static const int INFORMDUDV_MSG_ID = 1005;
 
 using namespace BlinkyBlocks;
 
@@ -34,6 +35,12 @@ struct NotifyDiameterMessageData {
     NotifyDiameterMessageData(int D, int du, int dv) : D(D), du{du}, dv{dv} {}
 };
 
+struct InformDuDvMessageData {
+    int du;
+    int dv;
+    InformDuDvMessageData(int du, int dv) : du(du), dv(dv) {}
+};
+
 class DiameterMonitoringBlockCode : public BlinkyBlocksBlockCode {
 private:
     int distance, du{-1}, dv{-1}, D{-1};
@@ -44,6 +51,7 @@ private:
     P2PNetworkInterface *parent{nullptr};
     int nbWaitedAnswers{0};
     int nbAddedNeighborsReceived{0};
+    map<int, pair<int,int>> faceDuDvMap;
     BlinkyBlocksBlock *module;
 public :
     DiameterMonitoringBlockCode(BlinkyBlocksBlock *host);
@@ -80,6 +88,8 @@ public :
     void handleNotifyDiameterMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
 
     void handleAddedNeighborMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
+
+    void handleInformDuDvMessage(std::shared_ptr<Message> _msg, P2PNetworkInterface *sender);
     /// Advanced blockcode handlers below
 
     /**
