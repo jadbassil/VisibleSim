@@ -263,8 +263,18 @@ void DiameterMonitoringBlockCode::processLocalEvent(EventPtr pev) {
             if (D == -1) break;
             uint64_t face = BaseSimulator::getWorld()->lattice->getOppositeDirection(
                 (std::static_pointer_cast<RemoveNeighborEvent>(pev))->face);
-
+            
             console << " Neighbor removed, recalculating diameter\n";
+            Cell3DPosition removedPos;
+            module->getNeighborPos(face, removedPos);
+            bool isMin = true;
+            for(auto pos: lattice->getActiveNeighborCells(removedPos)) {
+                if(lattice->getBlock(pos)->blockId < module->blockId) {
+                    isMin = false;
+                    break;
+                }
+            }
+            if(!isMin) break; // Only the module with the lowest ID among its neighbors handles the removal
             uint64_t oppositeFace = BaseSimulator::getWorld()->lattice->getOppositeDirection(face);
             int duRemoved = faceDuDvMap[face].first;
             int dvRemoved = faceDuDvMap[face].second;
