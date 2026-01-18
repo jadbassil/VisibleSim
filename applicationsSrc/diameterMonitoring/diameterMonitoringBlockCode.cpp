@@ -139,6 +139,9 @@ void DiameterMonitoringBlockCode::handleFarthestMessage(std::shared_ptr<Message>
             D = dv;
             du = 0;
             cerr << " Diameter monitoring fully complete at leaf " << module->blockId << " with diameter " << D << "\n";
+            cerr << "number of messages: " << getScheduler()->getNbreMessages() << "\n";
+            cerr << "time: " << getScheduler()->now() << "\n";
+
             sendMessageToAllNeighbors("NOTIFYDIAMETER",
                                       new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID, NotifyDiameterMessageData(D)),100,200, 0);
         }
@@ -184,21 +187,25 @@ void DiameterMonitoringBlockCode::handleAddedNeighborMessage(std::shared_ptr<Mes
                 100, 200, 0);
         } else if (du < D and dv < D) {
             // STABILITY RULE
-            console << " STABILITY RULE\n";
+            cerr << " STABILITY RULE\n";
+            cerr << " Diameter remains " << D << "\n";
+            cerr << "number of messages: " << getScheduler()->getNbreMessages() << "\n";
+            cerr << "time: " << getScheduler()->now() << "\n";
         } else {
             // GROWTH RULE
-            if (du > D) {
+            if (du >= D) {
                 D = du;
                 dv = 0;
+                cerr << " GROWTH RULE, new diameter " << D << "\n";
                 sendMessageToAllNeighbors(
                     "NOTIFYDIAMETER",
                     new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID,
                                                              NotifyDiameterMessageData(D, du, -1)),
                     100, 200, 0);   
-            } else if (dv > D) {
+            } else if (dv >= D) {
                 D = dv;
                 du = 0;
-
+                cerr << " GROWTH RULE, new diameter " << D << "\n";
                 sendMessageToAllNeighbors(
                     "NOTIFYDIAMETER",
                     new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID,
@@ -226,7 +233,13 @@ void DiameterMonitoringBlockCode::handleNotifyDiameterMessage(std::shared_ptr<Me
         sendMessageToAllNeighbors("NOTIFYDIAMETER",
                                   new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID, data),100,200, 1, sender);
         setColor(WHITE);
-        if(dv == 0) setColor(YELLOW);
+        if(dv == 0 or du == 0) {
+            module->setColor(YELLOW);
+            cerr << " Diameter monitoring complete at module " << module->blockId << " with diameter " << D << "\n";
+            cerr << "number of messages: " << getScheduler()->getNbreMessages() << "\n";
+            cerr << "time: " << getScheduler()->now() << "\n";
+        };
+        
     }
 }
 
@@ -298,6 +311,11 @@ void DiameterMonitoringBlockCode::processLocalEvent(EventPtr pev) {
                     "Sample Broadcast",
                     new MessageOf<GOBFSMessageData>(BFSGO_MSG_ID, GOBFSMessageData(distance, round)),
                     100, 200, 0);
+            } else {
+                console << " Diameter unaffected by neighbor removal\n";
+                cerr << " Diameter remains " << D << "\n";
+                cerr << "number of messages: " << getScheduler()->getNbreMessages() << "\n";
+                cerr << "time: " << getScheduler()->now() << "\n";
             }
             break;
         }
@@ -368,6 +386,6 @@ bool DiameterMonitoringBlockCode::parseUserCommandLineArgument(int &argc, char *
 
 string DiameterMonitoringBlockCode::onInterfaceDraw() {
     stringstream trace;
-    trace << "Some value " << 123;
+    trace << "Diameter " << 10;
     return trace.str();
 }
