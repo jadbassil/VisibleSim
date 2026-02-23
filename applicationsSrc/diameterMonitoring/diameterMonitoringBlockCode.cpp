@@ -2,7 +2,8 @@
 
 using namespace BlinkyBlocks;
 
-DiameterMonitoringBlockCode::DiameterMonitoringBlockCode(BlinkyBlocksBlock *host) : BlinkyBlocksBlockCode(host) {
+DiameterMonitoringBlockCode::DiameterMonitoringBlockCode(BlinkyBlocksBlock* host)
+    : BlinkyBlocksBlockCode(host) {
     // @warning Do not remove block below, as a blockcode with a NULL host might be created
     //  for command line parsing
     if (not host) return;
@@ -28,20 +29,42 @@ DiameterMonitoringBlockCode::DiameterMonitoringBlockCode(BlinkyBlocksBlock *host
                                    std::placeholders::_1, std::placeholders::_2));
     // Set the module pointer
     module = static_cast<BlinkyBlocksBlock*>(hostBlock);
-  }
+}
+
+int DiameterMonitoringBlockCode::DIAMETER = -1;
+
+int DiameterMonitoringBlockCode::   calculateRealConfigurationDiameter() {
+    // Optimized diameter calculation: For each block, find its eccentricity (max distance to any other block)
+    // The diameter is the maximum eccentricity. This avoids redundant distance calculations: O(N²) instead of O(N³)
+    unsigned int diameter = 0;
+    for (auto &block1 : BaseSimulator::getWorld()->buildingBlocksMap) {
+        unsigned int maxDistance = 0;
+        for(auto &block2 : BaseSimulator::getWorld()->buildingBlocksMap) {
+            if (block1.first != block2.first) {
+                unsigned int d = BaseSimulator::getWorld()->lattice->getCellDistance(block1.second->position, block2.second->position);
+                maxDistance = std::max(maxDistance, d);
+            }
+        }
+        diameter = std::max(diameter, maxDistance);
+    }
+    return (int) diameter;
+}
+
 
 void DiameterMonitoringBlockCode::startup() {
     console << "start";
     // Sample distance coloring algorithm below
     parent = nullptr;
-    if (module->blockId == 1) { // Master ID is 1
+    if (module->blockId == 1) {  // Master ID is 1
         module->setColor(RED);
         distance = 0;
         round = 1;
-        nbWaitedAnswers = sendMessageToAllNeighbors("Sample Broadcast",
-                                  new MessageOf<GOBFSMessageData>(BFSGO_MSG_ID,GOBFSMessageData(distance, round)),100,200,0);
+        nbWaitedAnswers = sendMessageToAllNeighbors(
+            "Sample Broadcast",
+            new MessageOf<GOBFSMessageData>(BFSGO_MSG_ID, GOBFSMessageData(distance, round)), 100,
+            200, 0);
     } else {
-        distance = -1; // Unknown distance
+        distance = -1;  // Unknown distance
         hostBlock->setColor(LIGHTGREY);
     }
 
@@ -50,61 +73,67 @@ void DiameterMonitoringBlockCode::startup() {
 }
 
 void DiameterMonitoringBlockCode::handleBfsGoMessage(std::shared_ptr<Message> _msg,
-                                               P2PNetworkInterface* sender) {
+                                                     P2PNetworkInterface* sender) {
     MessageOf<GOBFSMessageData>* msg = static_cast<MessageOf<GOBFSMessageData>*>(_msg.get());
 
     int d = msg->getData()->distance + 1;
     round = msg->getData()->round;
     console << " received d =" << d << " from " << sender->getConnectedBlockId() << "\n";
-                                    
+
     if (parent == nullptr || distance > d) {
         console << " updated distance = " << d << "\n";
         distance = d;
-        maxDownDistance  = distance;
+        maxDownDistance = distance;
         parent = sender;
-        //module->setColor(Colors[distance % NB_COLORS]);
-        if(round == 2) du = distance;
-        else if (round == 3) {dv = distance; D=-1;}
+        // module->setColor(Colors[distance % NB_COLORS]);
+        if (round == 2)
+            du = distance;
+        else if (round == 3) {
+            dv = distance;
+            D = -1;
+        }
         // Broadcast to all neighbors but ignore sender
-        nbWaitedAnswers = sendMessageToAllNeighbors("BFSGO Broadcast",
-                                  new MessageOf<GOBFSMessageData>(BFSGO_MSG_ID,GOBFSMessageData(distance, round)),100,200,1,sender);
+        nbWaitedAnswers = sendMessageToAllNeighbors(
+            "BFSGO Broadcast",
+            new MessageOf<GOBFSMessageData>(BFSGO_MSG_ID, GOBFSMessageData(distance, round)), 100,
+            200, 1, sender);
         if (nbWaitedAnswers == 0) {
             // Leaf node, send back immediately
             maxDownDistance = distance;
             console << " leaf node, sending back maxDownDistance = " << maxDownDistance << "\n";
-            sendMessage("BFSBACK",
-                                      new MessageOf<int>(BFSBACK_MSG_ID,maxDownDistance), parent, 100,200);
+            sendMessage("BFSBACK", new MessageOf<int>(BFSBACK_MSG_ID, maxDownDistance), parent, 100,
+                        200);
             parent = nullptr;
             maxDownDistance = 0;
             distance = 0;
         }
     } else {
-        sendMessage("BFSBACK",
-                                  new MessageOf<int>(BFSBACK_MSG_ID,-1), sender, 100,200);
+        sendMessage("BFSBACK", new MessageOf<int>(BFSBACK_MSG_ID, -1), sender, 100, 200);
     }
 }
 
 void DiameterMonitoringBlockCode::handleBfsBackMessage(std::shared_ptr<Message> _msg,
-                                               P2PNetworkInterface* sender) {
+                                                       P2PNetworkInterface* sender) {
     MessageOf<int>* msg = static_cast<MessageOf<int>*>(_msg.get());
 
     int d = *msg->getData();
     console << " received BFSBACK d =" << d << " from " << sender->getConnectedBlockId() << "\n";
-    if( d > maxDownDistance) {
+    if (d > maxDownDistance) {
         maxDownDistance = d;
         interfaceToFarthest = sender;
     }
     nbWaitedAnswers--;
     if (nbWaitedAnswers == 0) {
         if (parent == nullptr) {
-            console << " BFS complete at master " << module->blockId << ", diameter is " << maxDownDistance << "\n";
-            sendMessage("Farthest",
-                                      new MessageOf<int>(FARTHEST_MSG_ID, D), interfaceToFarthest, 100,200);
+            console << " BFS complete at master " << module->blockId << ", diameter is "
+                    << maxDownDistance << "\n";
+            sendMessage("Farthest", new MessageOf<int>(FARTHEST_MSG_ID, D), interfaceToFarthest,
+                        100, 200);
             interfaceToFarthest = nullptr;
         } else {
             // Send back to parent
-            sendMessage("BFSBACK",
-                                      new MessageOf<int>(BFSBACK_MSG_ID, maxDownDistance), parent, 100,200);
+            sendMessage("BFSBACK", new MessageOf<int>(BFSBACK_MSG_ID, maxDownDistance), parent, 100,
+                        200);
         }
         parent = nullptr;
         maxDownDistance = 0;
@@ -113,47 +142,53 @@ void DiameterMonitoringBlockCode::handleBfsBackMessage(std::shared_ptr<Message> 
 }
 
 void DiameterMonitoringBlockCode::handleFarthestMessage(std::shared_ptr<Message> _msg,
-                                               P2PNetworkInterface* sender) {
-    if(interfaceToFarthest != nullptr) {
+                                                        P2PNetworkInterface* sender) {
+    if (interfaceToFarthest != nullptr) {
         console << " received FARTHEST at " << module->blockId << "\n";
         setColor(CYAN);
-        sendMessage("Farthest",
-                                  new MessageOf<int>(FARTHEST_MSG_ID, D), interfaceToFarthest, 100,200);
+        sendMessage("Farthest", new MessageOf<int>(FARTHEST_MSG_ID, D), interfaceToFarthest, 100,
+                    200);
         interfaceToFarthest = nullptr;
     } else {
-    
-        console << " Diameter monitoring complete at leaf " << module->blockId << " round " << round << "\n";
+        console << " Diameter monitoring complete at leaf " << module->blockId << " round " << round
+                << "\n";
         round++;
-        if(round <= 3){
-            //getScheduler()->toggle_pause();
-            if(round == 3) {
+        if (round <= 3) {
+            // getScheduler()->toggle_pause();
+            if (round == 3) {
                 dv = distance;
                 module->setColor(YELLOW);
-            } else if (round ==2) {
+            } else if (round == 2) {
                 du = distance;
                 module->setColor(GREEN);
             }
-            nbWaitedAnswers = sendMessageToAllNeighbors("GOMSG round",
-                                    new MessageOf<GOBFSMessageData>(BFSGO_MSG_ID,GOBFSMessageData(distance, round)),100,200, 0);
+            nbWaitedAnswers = sendMessageToAllNeighbors(
+                "GOMSG round",
+                new MessageOf<GOBFSMessageData>(BFSGO_MSG_ID, GOBFSMessageData(distance, round)),
+                100, 200, 0);
         } else {
             D = dv;
             du = 0;
-            cerr << " Diameter monitoring fully complete at leaf " << module->blockId << " with diameter " << D << "\n";
-            cerr << "number of messages: " << getScheduler()->getNbreMessages() << "\n";
+            cerr << " Diameter monitoring fully complete at leaf " << module->blockId
+                 << " with diameter " << D << "\n";
+            cerr << "number of messages: " << StatsCollector::getInstance().getNbProcessedMessages() << "\n";
             cerr << "time: " << getScheduler()->now() << "\n";
 
             sendMessageToAllNeighbors("NOTIFYDIAMETER",
-                                      new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID, NotifyDiameterMessageData(D)),100,200, 0);
+                                      new MessageOf<NotifyDiameterMessageData>(
+                                          NOTIFYDIAMETER_MSG_ID, NotifyDiameterMessageData(D)),
+                                      100, 200, 0);
         }
     }
 }
 
 void DiameterMonitoringBlockCode::handleInformDuDvMessage(std::shared_ptr<Message> _msg,
-                                                   P2PNetworkInterface* sender) {
+                                                          P2PNetworkInterface* sender) {
     MessageOf<InformDuDvMessageData>* msg =
         static_cast<MessageOf<InformDuDvMessageData>*>(_msg.get());
     InformDuDvMessageData data = *msg->getData();
-    faceDuDvMap[module->getFaceForNeighborID(sender->getConnectedBlockId())] = make_pair(data.du, data.dv);
+    faceDuDvMap[module->getFaceForNeighborID(sender->getConnectedBlockId())] =
+        make_pair(data.du, data.dv);
 }
 
 void DiameterMonitoringBlockCode::handleAddedNeighborMessage(std::shared_ptr<Message> _msg,
@@ -201,7 +236,7 @@ void DiameterMonitoringBlockCode::handleAddedNeighborMessage(std::shared_ptr<Mes
                     "NOTIFYDIAMETER",
                     new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID,
                                                              NotifyDiameterMessageData(D, du, -1)),
-                    100, 200, 0);   
+                    100, 200, 0);
             } else if (dv >= D) {
                 D = dv;
                 du = 0;
@@ -217,29 +252,33 @@ void DiameterMonitoringBlockCode::handleAddedNeighborMessage(std::shared_ptr<Mes
 }
 
 void DiameterMonitoringBlockCode::handleNotifyDiameterMessage(std::shared_ptr<Message> _msg,
-                                               P2PNetworkInterface* sender) {
-    MessageOf<NotifyDiameterMessageData>* msg = static_cast<MessageOf<NotifyDiameterMessageData>*>(_msg.get());
+                                                              P2PNetworkInterface* sender) {
+    MessageOf<NotifyDiameterMessageData>* msg =
+        static_cast<MessageOf<NotifyDiameterMessageData>*>(_msg.get());
     NotifyDiameterMessageData data = *msg->getData();
     int d = data.D;
-    if(D == -1 or d > D) {
+    if (D == -1 or d > D) {
         D = d;
-        if(data.dv != -1) du++;
-        if(data.du != -1) dv++;
+        if (data.dv != -1) du++;
+        if (data.du != -1) dv++;
 
-        console << " received NOTIFYDIAMETER d =" << d << " from " << sender->getConnectedBlockId() << "\n";
-        sendMessageToAllNeighbors("INFORMDUDV",
-                                  new MessageOf<InformDuDvMessageData>(INFORMDUDV_MSG_ID,
-                                                                      InformDuDvMessageData(du, dv)),100,200,0);
-        sendMessageToAllNeighbors("NOTIFYDIAMETER",
-                                  new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID, data),100,200, 1, sender);
+        console << " received NOTIFYDIAMETER d =" << d << " from " << sender->getConnectedBlockId()
+                << "\n";
+        sendMessageToAllNeighbors(
+            "INFORMDUDV",
+            new MessageOf<InformDuDvMessageData>(INFORMDUDV_MSG_ID, InformDuDvMessageData(du, dv)),
+            100, 200, 0);
+        sendMessageToAllNeighbors(
+            "NOTIFYDIAMETER", new MessageOf<NotifyDiameterMessageData>(NOTIFYDIAMETER_MSG_ID, data),
+            100, 200, 1, sender);
         setColor(WHITE);
-        if(dv == 0 or du == 0) {
+        if (dv == 0 or du == 0) {
             module->setColor(YELLOW);
-            cerr << " Diameter monitoring complete at module " << module->blockId << " with diameter " << D << "\n";
+            cerr << " Diameter monitoring complete at module " << module->blockId
+                 << " with diameter " << D << "\n";
             cerr << "number of messages: " << getScheduler()->getNbreMessages() << "\n";
             cerr << "time: " << getScheduler()->now() << "\n";
         };
-        
     }
 }
 
@@ -276,18 +315,20 @@ void DiameterMonitoringBlockCode::processLocalEvent(EventPtr pev) {
             if (D == -1) break;
             uint64_t face = BaseSimulator::getWorld()->lattice->getOppositeDirection(
                 (std::static_pointer_cast<RemoveNeighborEvent>(pev))->face);
-            
+
             console << " Neighbor removed, recalculating diameter\n";
             Cell3DPosition removedPos;
             module->getNeighborPos(face, removedPos);
             bool isMin = true;
-            for(auto pos: lattice->getActiveNeighborCells(removedPos)) {
-                if(lattice->getBlock(pos)->blockId < module->blockId) {
+            for (auto pos : lattice->getActiveNeighborCells(removedPos)) {
+                if (lattice->getBlock(pos)->blockId < module->blockId) {
                     isMin = false;
                     break;
                 }
             }
-            if(!isMin) break; // Only the module with the lowest ID among its neighbors handles the removal
+            if (!isMin)
+                break;  // Only the module with the lowest ID among its neighbors handles the
+                        // removal
             uint64_t oppositeFace = BaseSimulator::getWorld()->lattice->getOppositeDirection(face);
             int duRemoved = faceDuDvMap[face].first;
             int dvRemoved = faceDuDvMap[face].second;
@@ -307,10 +348,11 @@ void DiameterMonitoringBlockCode::processLocalEvent(EventPtr pev) {
                 cerr << " Diameter needs to be recalculated due to neighbor removal\n";
                 round = 1;
                 distance = 0;
-                nbWaitedAnswers = sendMessageToAllNeighbors(
-                    "Sample Broadcast",
-                    new MessageOf<GOBFSMessageData>(BFSGO_MSG_ID, GOBFSMessageData(distance, round)),
-                    100, 200, 0);
+                nbWaitedAnswers =
+                    sendMessageToAllNeighbors("Sample Broadcast",
+                                              new MessageOf<GOBFSMessageData>(
+                                                  BFSGO_MSG_ID, GOBFSMessageData(distance, round)),
+                                              100, 200, 0);
             } else {
                 console << " Diameter unaffected by neighbor removal\n";
                 cerr << " Diameter remains " << D << "\n";
@@ -336,6 +378,8 @@ void DiameterMonitoringBlockCode::onBlockSelected() {
         cerr << " Face " << face << ": du=" << duDv.first << ", dv=" << duDv.second << endl;
     }
     cerr << "------------------------" << endl << endl;
+    DiameterMonitoringBlockCode::DIAMETER = calculateRealConfigurationDiameter();
+
 }
 
 void DiameterMonitoringBlockCode::onAssertTriggered() {
@@ -345,39 +389,40 @@ void DiameterMonitoringBlockCode::onAssertTriggered() {
     // ...
 }
 
-bool DiameterMonitoringBlockCode::parseUserCommandLineArgument(int &argc, char **argv[]) {
+bool DiameterMonitoringBlockCode::parseUserCommandLineArgument(int& argc, char** argv[]) {
     /* Reading the command line */
     if ((argc > 0) && ((*argv)[0][0] == '-')) {
-        switch((*argv)[0][1]) {
-
+        switch ((*argv)[0][1]) {
             // Single character example: -b
-            case 'b':   {
+            case 'b': {
                 cout << "-b option provided" << endl;
                 return true;
             } break;
 
             // Composite argument example: --foo 13
             case '-': {
-                string varg = string((*argv)[0] + 2); // argv[0] without "--"
-                if (varg == string("foo")) { //
+                string varg = string((*argv)[0] + 2);  // argv[0] without "--"
+                if (varg == string("foo")) {           //
                     int fooArg;
                     try {
                         fooArg = stoi((*argv)[1]);
                         argc--;
                         (*argv)++;
-                    } catch(std::logic_error&) {
+                    } catch (std::logic_error&) {
                         stringstream err;
                         err << "foo must be an integer. Found foo = " << argv[1] << endl;
                         throw CLIParsingError(err.str());
                     }
 
                     cout << "--foo option provided with value: " << fooArg << endl;
-                } else return false;
+                } else
+                    return false;
 
                 return true;
             }
 
-            default: cerr << "Unrecognized command line argument: " << (*argv)[0] << endl;
+            default:
+                cerr << "Unrecognized command line argument: " << (*argv)[0] << endl;
         }
     }
 
@@ -386,6 +431,7 @@ bool DiameterMonitoringBlockCode::parseUserCommandLineArgument(int &argc, char *
 
 string DiameterMonitoringBlockCode::onInterfaceDraw() {
     stringstream trace;
-    trace << "Diameter " << 10;
+    trace << "Real Diameter " << DiameterMonitoringBlockCode::DIAMETER;
+    trace << " - Current D " << D;
     return trace.str();
 }

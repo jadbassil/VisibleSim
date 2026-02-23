@@ -56,6 +56,9 @@ private:
 public :
     DiameterMonitoringBlockCode(BlinkyBlocksBlock *host);
     ~DiameterMonitoringBlockCode() {};
+    
+    static int DIAMETER;
+    static int calculateRealConfigurationDiameter();
 
     /**
      * This function is called on startup of the blockCode, it can be used to perform initial
