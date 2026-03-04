@@ -31,6 +31,7 @@ def parse_output(stdout_text, stderr_text):
     # Parse from STDERR
     stderr_patterns = {
         'diameter': r'diameter\s+(\d+)',
+        'real_diameter': r'RealDiameter:\s*(\d+)',
     }
     
     for key, pattern in stderr_patterns.items():
@@ -115,9 +116,18 @@ def main():
             print(f"Parsed: {parsed}")
             parsed['config_file'] = cfg.name
             # Extract size from filename if possible (e.g., cube10.xml -> 10)
-            size_match = re.search(r'(\d+)', cfg.stem)
+            # Extract size from filename (e.g., cube10.xml -> 10 or random_100_20_0.xml -> 100)
+            size_match = re.search(r'[a-z]+(\d+)', cfg.stem)
+            # Extract occupancy from filename if possible (e.g., random_100_20_0.xml -> 20)
+            occupancy_match = re.search(r'_(\d+)_\d+$', cfg.stem)
+            # Extract trial number from filename if possible (e.g., random_100_20_0.xml -> 0)
+            trial_match = re.search(r'_(\d+)$', cfg.stem)
             if size_match:
                 parsed['size'] = int(size_match.group(1))
+            if occupancy_match:
+                parsed['occupancy'] = int(occupancy_match.group(1))
+            if trial_match:
+                parsed['trial'] = int(trial_match.group(1))
             # parsed['return_code'] = result.returncode
             all_results.append(parsed)
             

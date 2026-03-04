@@ -200,6 +200,9 @@ add_executable(diameterMonitoring applicationsSrc/diameterMonitoring/diameterMon
 target_link_libraries(diameterMonitoring BlinkyBlocks )
 set_target_properties(diameterMonitoring PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/diameterMonitoring)
 
+add_executable(VisibleSimLocomotion applicationsSrc/visibleSimLocomotion/joseph1.cpp applicationsSrc/visibleSimLocomotion/joseph1BlockCode.cpp)
+target_link_libraries(VisibleSimLocomotion Catoms3D)
+set_target_properties(VisibleSimLocomotion PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/VisibleSimLocomotion)
 
 # add_executable(slidingCubesExample applicationsSrc/slidingCubesExample/slidingCubesExample.cpp applicationsSrc/slidingCubesExample/slidingCubesExampleBlockCode.cpp)
 # target_link_libraries(slidingCubesExample SlidingCubes)

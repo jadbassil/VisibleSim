@@ -81,6 +81,7 @@ applicationsBin/*/*.dat
 applicationsBin/*/*.pdf
 applicationsBin/*/animation_*/
 applicationsBin/*/Screenshots/
+applicationsBin/*/*/*.xml
 
 # User-generated files
 applicationsBin/*/*.m

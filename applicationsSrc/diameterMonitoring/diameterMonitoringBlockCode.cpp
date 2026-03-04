@@ -33,20 +33,45 @@ DiameterMonitoringBlockCode::DiameterMonitoringBlockCode(BlinkyBlocksBlock* host
 
 int DiameterMonitoringBlockCode::DIAMETER = -1;
 
-int DiameterMonitoringBlockCode::   calculateRealConfigurationDiameter() {
-    // Optimized diameter calculation: For each block, find its eccentricity (max distance to any other block)
-    // The diameter is the maximum eccentricity. This avoids redundant distance calculations: O(N²) instead of O(N³)
+int DiameterMonitoringBlockCode::calculateRealConfigurationDiameter() {
+    // Optimized diameter calculation: For each block, do ONE BFS to find distances to all other blocks
+    // The diameter is the maximum eccentricity. This is O(N²) instead of O(N³) by avoiding repeated BFS calls
     unsigned int diameter = 0;
-    for (auto &block1 : BaseSimulator::getWorld()->buildingBlocksMap) {
+    auto* world = BaseSimulator::getWorld();
+    auto* lattice = world->lattice;
+    auto& blocksMap = world->buildingBlocksMap;
+    
+    // For each block, do ONE BFS to find distances to all other blocks
+    for (auto &startBlock : blocksMap) {
+        const Cell3DPosition& startPos = startBlock.second->position;
+        
+        // BFS to find all distances from this block
+        std::queue<Cell3DPosition> toVisit;
+        std::map<Cell3DPosition, unsigned int> distances;
+        toVisit.push(startPos);
+        distances[startPos] = 0;
+        
         unsigned int maxDistance = 0;
-        for(auto &block2 : BaseSimulator::getWorld()->buildingBlocksMap) {
-            if (block1.first != block2.first) {
-                unsigned int d = BaseSimulator::getWorld()->lattice->getCellDistance(block1.second->position, block2.second->position);
-                maxDistance = std::max(maxDistance, d);
+        
+        while (!toVisit.empty()) {
+            Cell3DPosition current = toVisit.front();
+            toVisit.pop();
+            unsigned int currentDistance = distances[current];
+            maxDistance = std::max(maxDistance, currentDistance);
+            
+            for (const Cell3DPosition &neighbor : lattice->getActiveNeighborCells(current)) {
+                if (distances.find(neighbor) == distances.end() && 
+                    lattice->cellHasBlock(neighbor) && 
+                    lattice->isInGrid(neighbor)) {
+                    distances[neighbor] = currentDistance + 1;
+                    toVisit.push(neighbor);
+                }
             }
         }
+        
         diameter = std::max(diameter, maxDistance);
     }
+    
     return (int) diameter;
 }
 
@@ -224,7 +249,7 @@ void DiameterMonitoringBlockCode::handleAddedNeighborMessage(std::shared_ptr<Mes
             // STABILITY RULE
             cerr << " STABILITY RULE\n";
             cerr << " Diameter remains " << D << "\n";
-            cerr << "number of messages: " << getScheduler()->getNbreMessages() << "\n";
+            cerr << "number of messages: " << StatsCollector::getInstance().getNbProcessedMessages() << "\n";
             cerr << "time: " << getScheduler()->now() << "\n";
         } else {
             // GROWTH RULE
@@ -276,8 +301,9 @@ void DiameterMonitoringBlockCode::handleNotifyDiameterMessage(std::shared_ptr<Me
             module->setColor(YELLOW);
             cerr << " Diameter monitoring complete at module " << module->blockId
                  << " with diameter " << D << "\n";
-            cerr << "number of messages: " << getScheduler()->getNbreMessages() << "\n";
+            cerr << "number of messages: " << StatsCollector::getInstance().getNbProcessedMessages() << "\n";
             cerr << "time: " << getScheduler()->now() << "\n";
+            cerr << "RealDiameter: " << DiameterMonitoringBlockCode::calculateRealConfigurationDiameter() << "\n";
         };
     }
 }
@@ -295,6 +321,8 @@ void DiameterMonitoringBlockCode::processLocalEvent(EventPtr pev) {
 
     // Do not remove line below
     BlinkyBlocksBlockCode::processLocalEvent(pev);
+
+ 
 
     switch (pev->eventType) {
         case EVENT_ADD_NEIGHBOR: {
