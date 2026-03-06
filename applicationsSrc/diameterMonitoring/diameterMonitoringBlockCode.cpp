@@ -71,7 +71,6 @@ int DiameterMonitoringBlockCode::calculateRealConfigurationDiameter() {
         
         diameter = std::max(diameter, maxDistance);
     }
-    
     return (int) diameter;
 }
 
