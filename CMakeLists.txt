@@ -204,6 +204,10 @@ add_executable(VisibleSimLocomotion applicationsSrc/visibleSimLocomotion/joseph1
 target_link_libraries(VisibleSimLocomotion Catoms3D)
 set_target_properties(VisibleSimLocomotion PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/VisibleSimLocomotion)
 
+add_executable(TEN-MaxFlow-Reconfiguration applicationsSrc/bfsMotionReachability/bfsMotionReachabilityCode.cpp applicationsSrc/bfsMotionReachability/bfsMotionReachability.cpp)
+target_link_libraries(TEN-MaxFlow-Reconfiguration Catoms3D)
+set_target_properties(TEN-MaxFlow-Reconfiguration PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/bfsMotionReachbility)
+
 # add_executable(slidingCubesExample applicationsSrc/slidingCubesExample/slidingCubesExample.cpp applicationsSrc/slidingCubesExample/slidingCubesExampleBlockCode.cpp)
 # target_link_libraries(slidingCubesExample SlidingCubes)
 # set_target_properties(slidingCubesExample PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/slidingCubesExample)
