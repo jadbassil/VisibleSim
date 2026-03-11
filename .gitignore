@@ -94,3 +94,5 @@ build/
 lib/
 
 .vscode/
+applicationsSrc/TEN-MaxFlow-Reconfiguration
+utilities/VisibleSimConfigGenerator
