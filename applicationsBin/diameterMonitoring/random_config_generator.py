@@ -6,8 +6,10 @@ import os
 # Path to the executable
 executable_path = "../../utilities/VisibleSimConfigGenerator/build/VisibleSimConfigGenerator"
 
+folder_name = "random_diameter_check_1"
+
 # Define cube sizes to generate
-sizes = [50, 100, 150, 200]
+sizes = range(50, 1000, 50)  # 50, 60, 70, 80, 90, 100
 occupancies = [0.2, 0.4, 0.6, 0.8]
 
 
@@ -20,9 +22,9 @@ if not os.path.exists(executable_path):
 for trial in range(10):
     for size in sizes:
         for occupancy in occupancies:
-            output_file = os.path.join("random_diameter_check", f"random_{size}_{int(occupancy*100)}_{trial}.xml")
-            if not os.path.exists("random_diameter_check"):
-                os.makedirs("random_diameter_check")
+            output_file = os.path.join(folder_name, f"random_{size}_{int(occupancy*100)}_{trial}.xml")
+            if not os.path.exists(folder_name):
+                os.makedirs(folder_name)
             print(f"Generating configuration for {size}, occupancy {occupancy}...")
             try:
                 result = subprocess.run(

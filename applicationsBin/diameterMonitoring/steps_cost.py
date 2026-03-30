@@ -12,7 +12,7 @@ events = ['Initial', 'Removal', 'Stability', 'Growth', 'Stability', 'Bridge']
 times_ms = [t / 1000 for t in times]
 
 # Create figure with two y-axes
-fig, ax1 = plt.subplots(figsize=(8, 5))
+fig, ax1 = plt.subplots(figsize=(7, 3.5))
 
 # Plot messages
 color1 = 'tab:blue'

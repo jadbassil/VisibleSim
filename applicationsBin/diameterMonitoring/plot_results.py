@@ -39,9 +39,9 @@ def plot_single_results(csv_file, vertical=False):
     
     # Plot 1: Number of Messages
     if 'num_messages' in df.columns:
-        ax1.plot(range(len(x_data)), df['num_messages'], color='steelblue', linewidth=1.5, marker='o', markersize=5)
+        ax1.plot(range(len(x_data)), df['num_messages'] / 1e5, color='steelblue', linewidth=1.5, marker='o', markersize=5)
         ax1.set_xlabel(x_label, fontsize=9)
-        ax1.set_ylabel('Number of Messages', fontsize=9)
+        ax1.set_ylabel('Number of Messages (×10⁵)', fontsize=9)
         ax1.set_title('Number of Messages per Configuration', fontsize=10, fontweight='bold')
         ax1.set_xticks(range(len(x_data)))
         ax1.set_xticklabels(x_data, rotation=45)
@@ -135,9 +135,9 @@ def plot_comparison(csv_files, vertical=False):
         
         # Plot 1: Number of Messages
         if 'num_messages' in df.columns:
-            ax1.plot(x_data, df['num_messages'].values, color='steelblue', linewidth=1.5, marker='o', markersize=5)
+            ax1.plot(x_data, df['num_messages'].values / 1e5, color='steelblue', linewidth=1.5, marker='o', markersize=5)
             ax1.set_xlabel(x_label, fontsize=9)
-            ax1.set_ylabel('Number of Messages', fontsize=9)
+            ax1.set_ylabel('Number of Messages (×10⁵)', fontsize=9)
             ax1.set_title('Number of Messages', fontsize=10, fontweight='bold')
             ax1.set_xticks(x_data)
             ax1.set_xticklabels(x_labels, rotation=0, fontsize=8)

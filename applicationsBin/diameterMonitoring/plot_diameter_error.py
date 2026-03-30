@@ -12,9 +12,9 @@ import re
 from pathlib import Path
 
 # Create output folder for plots
-output_folder = Path("plots")
+output_folder = Path("plots_error")
 output_folder.mkdir(exist_ok=True)
-csv_file = "simulation_results_random_diameter_check.csv"
+csv_file = "simulation_results_random_diameter_check_1.csv"
 df = pd.read_csv(csv_file)
 
 # Calculate error metrics
@@ -50,7 +50,7 @@ output_folder = Path("plots")
 output_folder.mkdir(exist_ok=True)
 
 # Read the CSV file
-csv_file = "simulation_results_random_diameter_check.csv"
+csv_file = "simulation_results_random_diameter_check_1.csv"
 df = pd.read_csv(csv_file)
 
 # Calculate error metrics
@@ -85,7 +85,7 @@ robot_counts = sorted(agg_df['num_robots'].unique())
 occupancy_levels = sorted(agg_df['occupancy'].unique())
 
 # Plot 1: Heatmap
-fig1, ax1 = plt.subplots(figsize=(3.5, 3.5))
+fig1, ax1 = plt.subplots(figsize=(3.5, 3))
 pivot_error = agg_df.pivot(index='num_robots', columns='occupancy', values='abs_error_mean')
 im1 = ax1.imshow(pivot_error, cmap='YlOrRd', aspect='auto')
 ax1.set_xticks(range(len(pivot_error.columns)))
@@ -172,7 +172,7 @@ print(f"Saved: {output_folder / '4_occupancy_comparison.pdf'}")
 plt.close()
 
 # Plot 5: Histogram
-fig5, ax5 = plt.subplots(figsize=(3.5, 3.5))
+fig5, ax5 = plt.subplots(figsize=(3.5, 2.5))
 n, bins, patches = ax5.hist(df['absolute_error'], bins=20, color='coral', edgecolor='black', alpha=0.7)
 ax5.axvline(df['absolute_error'].mean(), color='red', linestyle='--', linewidth=1.5, label=f'Mean: {df["absolute_error"].mean():.3f}')
 ax5.axvline(df['absolute_error'].median(), color='green', linestyle='--', linewidth=1.5, label=f'Median: {df["absolute_error"].median():.3f}')
