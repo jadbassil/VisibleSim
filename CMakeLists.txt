@@ -208,3 +208,11 @@ set_target_properties(demoReconfC3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_
 # add_executable(slidingCubesExample applicationsSrc/slidingCubesExample/slidingCubesExample.cpp applicationsSrc/slidingCubesExample/slidingCubesExampleBlockCode.cpp)
 # target_link_libraries(slidingCubesExample SlidingCubes)
 # set_target_properties(slidingCubesExample PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/slidingCubesExample)
+
+add_executable(gnnLocomotion
+    applicationsSrc/gnnLocomotion/gnnLocomotion.cpp
+    applicationsSrc/gnnLocomotion/gnnLocomotionBlockCode.cpp
+    applicationsSrc/gnnLocomotion/gymServer.cpp)
+target_link_libraries(gnnLocomotion SlidingCubes)
+set_target_properties(gnnLocomotion PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/gnnLocomotion)
