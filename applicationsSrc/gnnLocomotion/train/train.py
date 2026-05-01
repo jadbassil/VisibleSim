@@ -15,6 +15,7 @@ import argparse
 import os
 import sys
 import time
+from typing import Optional
 
 import numpy as np
 import torch
@@ -31,6 +32,49 @@ _CFG_DEFAULT = os.path.join(_HERE, "../../../applicationsBin/gnnLocomotion/confi
 SAVE_INTERVAL = 50
 LOG_INTERVAL  = 10
 CKPT_DIR      = os.path.join(_HERE, "checkpoints")
+
+
+def _init_wandb(args, ppo_cfg) -> Optional[object]:
+    if not args.wandb:
+        return None
+
+    try:
+        import wandb  # type: ignore
+    except ImportError:
+        print("[wandb] not installed; continuing without wandb logging.")
+        return None
+
+    run = wandb.init(
+        project=args.wandb_project,
+        entity=args.wandb_entity,
+        name=args.wandb_run_name,
+        mode=args.wandb_mode,
+        config={
+            "binary": args.binary,
+            "config": args.config,
+            "port": args.port,
+            "episodes": args.episodes,
+            "device": args.device,
+            "backbone": args.backbone,
+            "render": args.render,
+            "realtime": args.realtime,
+            "step_delay": args.step_delay,
+            "ppo": {
+                "lr": ppo_cfg.lr,
+                "gamma": ppo_cfg.gamma,
+                "gae_lambda": ppo_cfg.gae_lambda,
+                "clip_eps": ppo_cfg.clip_eps,
+                "value_coef": ppo_cfg.value_coef,
+                "entropy_coef": ppo_cfg.entropy_coef,
+                "max_grad_norm": ppo_cfg.max_grad_norm,
+                "n_epochs": ppo_cfg.n_epochs,
+                "batch_size": ppo_cfg.batch_size,
+                "n_steps": ppo_cfg.n_steps,
+            },
+        },
+    )
+    print(f"[wandb] run initialized: {run.name}")
+    return run
 
 
 def parse_args():
@@ -58,6 +102,32 @@ def parse_args():
         default=0.0,
         help="optional sleep (seconds) after each env step to slow playback",
     )
+    p.add_argument(
+        "--wandb",
+        action="store_true",
+        help="enable Weights & Biases logging",
+    )
+    p.add_argument(
+        "--wandb-project",
+        default="visible-sim-gnn-locomotion",
+        help="wandb project name",
+    )
+    p.add_argument(
+        "--wandb-entity",
+        default=None,
+        help="wandb entity/user/team (optional)",
+    )
+    p.add_argument(
+        "--wandb-run-name",
+        default=None,
+        help="wandb run name (optional)",
+    )
+    p.add_argument(
+        "--wandb-mode",
+        default="online",
+        choices=["online", "offline", "disabled"],
+        help="wandb mode",
+    )
     return p.parse_args()
 
 
@@ -71,6 +141,7 @@ def train(args):
     print(f"[train] render : {args.render}")
     print(f"[train] realtime : {args.realtime}")
     print(f"[train] step_delay : {args.step_delay}")
+    print(f"[train] wandb : {args.wandb}")
 
     if not os.path.isfile(args.binary):
         sys.exit(f"[train] Binary not found: {args.binary}\n"
@@ -88,6 +159,7 @@ def train(args):
 
     policy  = GNNPolicy(backbone=args.backbone)
     trainer = PPOTrainer(policy, ppo_cfg, device=args.device)
+    wandb_run = _init_wandb(args, ppo_cfg)
     env     = VisibleSimEnv(
         args.binary,
         args.config,
@@ -98,6 +170,7 @@ def train(args):
 
     ep_rewards: list = []
     ep_lengths: list = []
+    global_step = 0
 
     try:
         for episode in range(args.episodes):
@@ -119,6 +192,7 @@ def train(args):
                 next_obs, reward, done, info = env.step(actions_dict)
                 ep_reward += reward
                 ep_steps  += 1
+                global_step += 1
                 step_rewards.append(reward)
 
                 target_cells = len(next_obs.get("target", []))
@@ -138,6 +212,21 @@ def train(args):
                 # ---- update if rollout is full ----
                 if trainer.ready():
                     metrics = trainer.update()
+                    if wandb_run and metrics:
+                        recent_step_rewards = step_rewards[-LOG_INTERVAL:]
+                        mean_step_reward = np.mean(recent_step_rewards)
+                        wandb_run.log({
+                            "update/loss": metrics["loss"],
+                            "update/pg": metrics["pg"],
+                            "update/vf": metrics["vf"],
+                            "update/ent": metrics["ent"],
+                            "update/r_step": reward,
+                            "update/r_step_mean": mean_step_reward,
+                            "update/ep_r_partial": ep_reward,
+                            "train/global_step": global_step,
+                            "train/episode": episode,
+                        }, step=global_step)
+
                     if metrics and episode % LOG_INTERVAL == 0:
                         recent_step_rewards = step_rewards[-LOG_INTERVAL:]
                         mean_step_reward = np.mean(recent_step_rewards)
@@ -152,6 +241,13 @@ def train(args):
                 if done and target_reached:
                     print(f"  [target] reached at episode={episode} step={ep_steps}  "
                           f"in_target={in_target}/{target_cells}  ep_r={ep_reward:.3f}")
+                    if wandb_run:
+                        wandb_run.log({
+                            "episode/target_reached": 1,
+                            "episode/target_fill_ratio": in_target / max(target_cells, 1),
+                            "train/global_step": global_step,
+                            "train/episode": episode,
+                        }, step=global_step)
 
             # Final update at episode end
             if trainer.rollout:
@@ -169,6 +265,20 @@ def train(args):
                       f"steps={ep_steps:4d}  "
                       f"mean_steps={np.mean(recent_l):.1f}")
 
+            if wandb_run:
+                target_cells = len(next_obs.get("target", []))
+                in_target = sum(1 for b in next_obs.get("blocks", []) if b.get("in_target", False))
+                wandb_run.log({
+                    "episode/reward": ep_reward,
+                    "episode/steps": ep_steps,
+                    "episode/mean_reward_window": np.mean(ep_rewards[-LOG_INTERVAL:]),
+                    "episode/mean_steps_window": np.mean(ep_lengths[-LOG_INTERVAL:]),
+                    "episode/target_reached": int(target_reached),
+                    "episode/target_fill_ratio": in_target / max(target_cells, 1),
+                    "train/global_step": global_step,
+                    "train/episode": episode,
+                }, step=global_step)
+
             if episode > 0 and episode % SAVE_INTERVAL == 0:
                 ckpt = os.path.join(CKPT_DIR, f"policy_ep{episode:05d}.pt")
                 torch.save({
@@ -177,6 +287,11 @@ def train(args):
                     "optim_state": trainer.optim.state_dict(),
                 }, ckpt)
                 print(f"  [ckpt] Saved {ckpt}")
+                if wandb_run:
+                    wandb_run.log({
+                        "checkpoint/episode": episode,
+                        "train/global_step": global_step,
+                    }, step=global_step)
 
     except KeyboardInterrupt:
         print("\n[train] Interrupted.")
@@ -190,6 +305,9 @@ def train(args):
             "optim_state": trainer.optim.state_dict(),
         }, final_ckpt)
         print(f"[train] Saved final checkpoint: {final_ckpt}")
+        if wandb_run:
+            wandb_run.log({"checkpoint/final_saved": 1}, step=global_step)
+            wandb_run.finish()
 
 
 if __name__ == "__main__":

@@ -51,12 +51,14 @@ simulatorCode/deps/
 *.old
 .DS_Store
 
+*.pyc
 # External tools config files
 .projectile
 *.xcodeproj
 *.xcworkspace
 *.cbp
 *.layout
+*.pt
 utilities/LMParser/LMParser
 utilities/meld-compiler/dists/quicklisp/archives/
 utilities/meld-compiler/dists/quicklisp/software/
@@ -95,3 +97,7 @@ lib/
 
 .vscode/
 applicationsBin/diameterMonitoring/**/*.xml
+
+applicationsSrc/gnnLocomotion/train/checkpoints/*.pt
+applicationsSrc/gnnLocomotion/train/wandb/
+applicationsSrc/gnnLocomotion/train/__pycache__/*
