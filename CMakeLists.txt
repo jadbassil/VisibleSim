@@ -201,6 +201,10 @@ target_link_libraries(shapeDecomposition BlinkyBlocks)
 set_target_properties(shapeDecomposition PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/shapeDecomposition)
 
 
+add_executable(demoReconfC3D applicationsSrc/demoReconfC3D/demoReconfC3D.cpp applicationsSrc/demoReconfC3D/demoReconfC3DCode.cpp)
+target_link_libraries(demoReconfC3D Catoms3D)
+set_target_properties(demoReconfC3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/demoReconfC3D)
+
 # add_executable(slidingCubesExample applicationsSrc/slidingCubesExample/slidingCubesExample.cpp applicationsSrc/slidingCubesExample/slidingCubesExampleBlockCode.cpp)
 # target_link_libraries(slidingCubesExample SlidingCubes)
 # set_target_properties(slidingCubesExample PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/slidingCubesExample)

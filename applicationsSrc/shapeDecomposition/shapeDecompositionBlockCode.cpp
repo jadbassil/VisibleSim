@@ -819,61 +819,61 @@ void ShapeDecompositionBlockCode::processLocalEvent(EventPtr pev) {
             break;
         }
     }
-    if(BaseSimulator::getScheduler()->getEventsMapSize() == 1) {
-        cout << "No more events in the scheduler!\n";
-        // create and open a file to write the results
-        recordedTimes.push_back(BaseSimulator::getScheduler()->now());
-        recordedNbMessages.push_back(BaseSimulator::getScheduler()->getNbreMessages());
+//     if(BaseSimulator::getScheduler()->getEventsMapSize() == 1) {
+//         cout << "No more events in the scheduler!\n";
+//         // create and open a file to write the results
+//         recordedTimes.push_back(BaseSimulator::getScheduler()->now());
+//         recordedNbMessages.push_back(BaseSimulator::getScheduler()->getNbreMessages());
   
-            // find a random block
-        int randomBlockId = rand() % BaseSimulator::getWorld()->getNbBlocks();
-        ShapeDecompositionBlockCode* randomBlock = static_cast<ShapeDecompositionBlockCode*>(
-            BaseSimulator::getWorld()->getBlockById(randomBlockId)->blockCode);
-        randomBlock->initiateBorderTracing();
+//             // find a random block
+//         int randomBlockId = rand() % BaseSimulator::getWorld()->getNbBlocks();
+//         ShapeDecompositionBlockCode* randomBlock = static_cast<ShapeDecompositionBlockCode*>(
+//             BaseSimulator::getWorld()->getBlockById(randomBlockId)->blockCode);
+//         randomBlock->initiateBorderTracing();
         
-        nbTraces++;
-        if(nbTraces == 50) {
-            // write recordedTimes and recordedNbMessages to a file in a json format
-            // Build a safe basename for the config file (strip directories and extension)
-            std::string cfgPath = BaseSimulator::Simulator::configFileName;
-            std::string stem;
-            {
-                // Use filesystem if available (C++17); fallback to manual parsing otherwise
-#if __cplusplus >= 201703L
-                stem = std::filesystem::path(cfgPath).stem().string();
-#else
-                size_t slashPos = cfgPath.find_last_of("/\\");
-                std::string fileOnly = (slashPos == std::string::npos) ? cfgPath : cfgPath.substr(slashPos+1);
-                size_t dotPos = fileOnly.find_last_of('.');
-                stem = (dotPos == std::string::npos) ? fileOnly : fileOnly.substr(0,dotPos);
-#endif
-            }
-            std::string outputName = "aina26_results_" + stem + ".json";
-            std::ofstream resultsFile(outputName, std::ios::out);
-            if(resultsFile.is_open()) {
-                resultsFile << "{\n";
-                resultsFile << "  \"numberOfModules\": " << BaseSimulator::getWorld()->getNbBlocks() << ",\n";
-                resultsFile << "  \"recordedTimes\": [";
-                for (size_t i = 0; i < recordedTimes.size(); i++) {
-                    resultsFile << recordedTimes[i];
-                    if (i + 1 != recordedTimes.size()) resultsFile << ", ";
-                }
-                resultsFile << "],\n";
-                resultsFile << "  \"recordedNbMessages\": [";
-                for (size_t i = 0; i < recordedNbMessages.size(); i++) {
-                    resultsFile << recordedNbMessages[i];
-                    if (i + 1 != recordedNbMessages.size()) resultsFile << ", ";
-                }
-                resultsFile << "]\n";
-                resultsFile << "}\n";
-                resultsFile.close();
-                std::cout << "[JSON] Wrote trace summary to " << outputName << std::endl;
-            } else {
-                std::cerr << "[JSON] Failed to open output file: " << outputName << std::endl;
-            }
-            exit(0);
-        }
-    }
+//         nbTraces++;
+//         if(nbTraces == 50) {
+//             // write recordedTimes and recordedNbMessages to a file in a json format
+//             // Build a safe basename for the config file (strip directories and extension)
+//             std::string cfgPath = BaseSimulator::Simulator::configFileName;
+//             std::string stem;
+//             {
+//                 // Use filesystem if available (C++17); fallback to manual parsing otherwise
+// #if __cplusplus >= 201703L
+//                 stem = std::filesystem::path(cfgPath).stem().string();
+// #else
+//                 size_t slashPos = cfgPath.find_last_of("/\\");
+//                 std::string fileOnly = (slashPos == std::string::npos) ? cfgPath : cfgPath.substr(slashPos+1);
+//                 size_t dotPos = fileOnly.find_last_of('.');
+//                 stem = (dotPos == std::string::npos) ? fileOnly : fileOnly.substr(0,dotPos);
+// #endif
+//             }
+//             std::string outputName = "aina26_results_" + stem + ".json";
+//             std::ofstream resultsFile(outputName, std::ios::out);
+//             if(resultsFile.is_open()) {
+//                 resultsFile << "{\n";
+//                 resultsFile << "  \"numberOfModules\": " << BaseSimulator::getWorld()->getNbBlocks() << ",\n";
+//                 resultsFile << "  \"recordedTimes\": [";
+//                 for (size_t i = 0; i < recordedTimes.size(); i++) {
+//                     resultsFile << recordedTimes[i];
+//                     if (i + 1 != recordedTimes.size()) resultsFile << ", ";
+//                 }
+//                 resultsFile << "],\n";
+//                 resultsFile << "  \"recordedNbMessages\": [";
+//                 for (size_t i = 0; i < recordedNbMessages.size(); i++) {
+//                     resultsFile << recordedNbMessages[i];
+//                     if (i + 1 != recordedNbMessages.size()) resultsFile << ", ";
+//                 }
+//                 resultsFile << "]\n";
+//                 resultsFile << "}\n";
+//                 resultsFile.close();
+//                 std::cout << "[JSON] Wrote trace summary to " << outputName << std::endl;
+//             } else {
+//                 std::cerr << "[JSON] Failed to open output file: " << outputName << std::endl;
+//             }
+//             exit(0);
+//         }
+//     }
 
 }
 
@@ -890,84 +890,84 @@ void ShapeDecompositionBlockCode::onBlockSelected() {
     //     b1->module->setColor(CYAN);
     //     b2->module->setColor(CYAN);
     // }
-    console << "Block " << module->blockId << " selected\n";
-    console << "latestCornersForSegment: ";
-    for (auto &corner : latestCornersForSegment) {
-        console << corner << " ";
-    }
-    console << "\n";
-    // print intersections count
-    console << "Intersections count:\n";
-    for (auto &ic : intersectionsCount) {
-        console << "Point: " << ic.first << " Count: " << ic.second << "\n";
-    }
+    // console << "Block " << module->blockId << " selected\n";
+    // console << "latestCornersForSegment: ";
+    // for (auto &corner : latestCornersForSegment) {
+    //     console << corner << " ";
+    // }
+    // console << "\n";
+    // // print intersections count
+    // console << "Intersections count:\n";
+    // for (auto &ic : intersectionsCount) {
+    //     console << "Point: " << ic.first << " Count: " << ic.second << "\n";
+    // }
     initiateBorderTracing();
-    console << "previous corner: " << prevCorner.position << "\n";
-    for (auto &b_in : bridgesIn) {
-        console << "bridgeIn for initiator " << b_in.first << ": ";
-        if (b_in.second) {
-            console << b_in.second->getConnectedBlockId() << "\n";
-        } else {
-            console << "NULL\n";
-        }
-    }
-    for (auto &b_out : bridgeOut) {
-        console << "bridgeOut for initiator " << b_out.first << ": ";
-        if (!b_out.second.empty()) {
-            for (auto &iface : b_out.second) {
-                console << iface->getConnectedBlockId() << " ";
-            }
-            console << "\n";
-        } else {
-            console << "NULL\n";
-        }
-    }
-    for(auto &bd : bridgesDistance) {
-        console << "bridge distance for initiator " << bd.first << ": " << bd.second << "\n";
-    }
+    // console << "previous corner: " << prevCorner.position << "\n";
+    // for (auto &b_in : bridgesIn) {
+    //     console << "bridgeIn for initiator " << b_in.first << ": ";
+    //     if (b_in.second) {
+    //         console << b_in.second->getConnectedBlockId() << "\n";
+    //     } else {
+    //         console << "NULL\n";
+    //     }
+    // }
+    // for (auto &b_out : bridgeOut) {
+    //     console << "bridgeOut for initiator " << b_out.first << ": ";
+    //     if (!b_out.second.empty()) {
+    //         for (auto &iface : b_out.second) {
+    //             console << iface->getConnectedBlockId() << " ";
+    //         }
+    //         console << "\n";
+    //     } else {
+    //         console << "NULL\n";
+    //     }
+    // }
+    // for(auto &bd : bridgesDistance) {
+    //     console << "bridge distance for initiator " << bd.first << ": " << bd.second << "\n";
+    // }
 
-    for(auto &nw : nbWaitedBridges) {
-        console << "nbWaitedBridges for initiator " << nw.first << ": " << nw.second << "\n";
-    }
+    // for(auto &nw : nbWaitedBridges) {
+    //     console << "nbWaitedBridges for initiator " << nw.first << ": " << nw.second << "\n";
+    // }
 
-    for (auto &i_p : initiator_prevNext) {
-        console << "initiator: " << i_p.first << " prev: " << i_p.second.first
-                << " next: " << i_p.second.second << "\n";
-    }
+    // for (auto &i_p : initiator_prevNext) {
+    //     console << "initiator: " << i_p.first << " prev: " << i_p.second.first
+    //             << " next: " << i_p.second.second << "\n";
+    // }
 
 
-    // print nextDirections and prevDirections
-    cout << "nextDirections: ";
-    for (auto &dir : nextDirections) {
-        cout << DIRECTIONS_NAMES[static_cast<short>(dir)] << " ";
-    }
-    cout << "\n";
-    cout << "prevDirections: ";
-    for (auto &dir : prevDirections) {
-        cout << DIRECTIONS_NAMES[static_cast<short>(dir)] << " ";
-    }
-    cout << endl;
+    // // print nextDirections and prevDirections
+    // cout << "nextDirections: ";
+    // for (auto &dir : nextDirections) {
+    //     cout << DIRECTIONS_NAMES[static_cast<short>(dir)] << " ";
+    // }
+    // cout << "\n";
+    // cout << "prevDirections: ";
+    // for (auto &dir : prevDirections) {
+    //     cout << DIRECTIONS_NAMES[static_cast<short>(dir)] << " ";
+    // }
+    // cout << endl;
 
-    cout << "prevCorner: " << prevCorner.position << " prev: " << (int)prevCorner.prevDir
-         << " next: " << (int)prevCorner.nextDir << endl;
+    // cout << "prevCorner: " << prevCorner.position << " prev: " << (int)prevCorner.prevDir
+    //      << " next: " << (int)prevCorner.nextDir << endl;
 
-    // print borderInitiators
-    for (auto &init : borderInitiators) {
-        cout << "borderInitiators: " << DIRECTIONS_NAMES[static_cast<short>(init.first)] << " "
-             << init.second << endl;
-    }
+    // // print borderInitiators
+    // for (auto &init : borderInitiators) {
+    //     cout << "borderInitiators: " << DIRECTIONS_NAMES[static_cast<short>(init.first)] << " "
+    //          << init.second << endl;
+    // }
 
-    Cell3DPosition start(9, 2, 0);
-    Cell3DPosition end(2, 5, 0);
-    vector<Cell3DPosition> points = bresenhamLine(start, module->position);
-    cout << "Bresenham line: ";
-    for (auto &p : points) {
-        cout << p << " ";
-    }
-    cout << endl;
+    // Cell3DPosition start(9, 2, 0);
+    // Cell3DPosition end(2, 5, 0);
+    // vector<Cell3DPosition> points = bresenhamLine(start, module->position);
+    // cout << "Bresenham line: ";
+    // for (auto &p : points) {
+    //     cout << p << " ";
+    // }
+    // cout << endl;
 
-    cout << "nbCorners: " << nbCorners << endl;
-    cout << "-----------------------\n\n";
+    // cout << "nbCorners: " << nbCorners << endl;
+    // cout << "-----------------------\n\n";
     // print corners
     // for (auto &corner : corners) {
     //     cout << "corner: " << corner.position << " prev: " <<
