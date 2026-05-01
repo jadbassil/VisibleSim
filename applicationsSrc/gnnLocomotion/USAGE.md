@@ -16,6 +16,7 @@ python -m venv .venv
 source .venv/bin/activate
 pip install torch numpy
 pip install torch_geometric   # optional but recommended — enables GAT/GCN backbones
+pip install wandb             # optional — experiment tracking
 ```
 
 Without `torch_geometric` the policy degrades to an MLP that ignores graph structure.
@@ -46,6 +47,11 @@ python train.py [OPTIONS]
   --render            Launch VisibleSim with GUI (disabled by default)
   --realtime          With --render, use realtime scheduler for visible motion
   --step-delay FLOAT  Sleep N seconds after each step to slow playback (default: 0)
+    --wandb             Enable Weights & Biases logging
+    --wandb-project STR wandb project name (default: visible-sim-gnn-locomotion)
+    --wandb-entity STR  wandb user/team (optional)
+    --wandb-run-name STR wandb run name (optional)
+    --wandb-mode STR    wandb mode: online | offline | disabled (default: online)
 ```
 
 ### Examples
@@ -64,6 +70,26 @@ GCN backbone (lighter, easier to analyse):
 ```sh
 python train.py --backbone gcn
 ```
+
+Training with wandb tracking:
+```sh
+python train.py --wandb --wandb-project marl --backbone gcn
+```
+
+Training with wandb in offline mode:
+```sh
+python train.py --wandb --wandb-mode offline --wandb-project marl
+```
+
+### Weights & Biases (wandb)
+
+If `--wandb` is set, the trainer logs:
+
+- PPO update metrics (`loss`, `pg`, `vf`, `ent`, step reward stats)
+- Episode metrics (reward, steps, rolling means, target reached)
+- Checkpoint events
+
+If `wandb` is not installed, training continues and prints a warning.
 
 ---
 
