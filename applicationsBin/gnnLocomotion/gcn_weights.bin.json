@@ -1,0 +1,71 @@
+{
+  "magic": "GCN1",
+  "version": 1,
+  "hidden": 64,
+  "node_dim": 12,
+  "edge_dim": 6,
+  "n_actions": 13,
+  "n_layers": 3,
+  "crc32": 2285232949,
+  "size_bytes": 97108,
+  "shapes": [
+    {
+      "layer": 0,
+      "msg_lin.weight": [
+        64,
+        18
+      ],
+      "self_lin.weight": [
+        64,
+        12
+      ],
+      "bias": [
+        64
+      ]
+    },
+    {
+      "layer": 1,
+      "msg_lin.weight": [
+        64,
+        70
+      ],
+      "self_lin.weight": [
+        64,
+        64
+      ],
+      "bias": [
+        64
+      ]
+    },
+    {
+      "layer": 2,
+      "msg_lin.weight": [
+        64,
+        70
+      ],
+      "self_lin.weight": [
+        64,
+        64
+      ],
+      "bias": [
+        64
+      ]
+    },
+    {
+      "actor_fc1.weight": [
+        64,
+        64
+      ],
+      "actor_fc1.bias": [
+        64
+      ],
+      "actor_fc2.weight": [
+        13,
+        64
+      ],
+      "actor_fc2.bias": [
+        13
+      ]
+    }
+  ]
+}

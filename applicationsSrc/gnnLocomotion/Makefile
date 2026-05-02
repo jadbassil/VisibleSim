@@ -4,7 +4,7 @@ mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 current_dir := $(notdir $(patsubst %/,%,$(dir $(mkfile_path))))
 APPDIR = ../../applicationsBin/$(current_dir)
 
-SRCS      = gnnLocomotion.cpp gnnLocomotionBlockCode.cpp gymServer.cpp
+SRCS      = gnnLocomotion.cpp gnnLocomotionBlockCode.cpp gymServer.cpp gcnPolicy.cpp
 OUT       = $(APPDIR)/gnnLocomotion
 MODULELIB = -lsimSlidingCubes
 TESTS     =
@@ -17,7 +17,8 @@ OS = $(shell uname -s)
 SIMULATORLIB = $(MODULELIB:-l%=../../simulatorCore/lib/lib%.a)
 
 ifeq ($(GLOBAL_INCLUDES), )
-INCLUDES = -I. -I../../simulatorCore/src -I/usr/local/include -I/opt/local/include \
+INCLUDES = -I. -I../../simulatorCore/src -I../../simulatorCore/src/deps \
+           -I/usr/local/include -I/opt/local/include \
            -I/usr/X11/include -I/opt/homebrew/include
 else
 INCLUDES = -I. -I../../simulatorCore/src $(GLOBAL_INCLUDES)

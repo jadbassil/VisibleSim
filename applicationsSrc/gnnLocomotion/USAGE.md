@@ -203,3 +203,80 @@ action = probs.argmax(dim=-1)
 ```
 
 The GCN backbone is preferred for on-robot use because the per-hop information radius is explicit and the parameter count is lower (≈28k vs ≈38k for GAT).
+
+---
+
+## Deploy Mode (C++ in-simulator distributed inference)
+
+The simulator can run the trained policy directly in C++ — no Python loop, no leader, no TCP. Each module independently runs the GCN forward pass on its local 3-hop neighbourhood and decides its own motion every step. See `ARCHITECTURE.md` for the protocol details.
+
+### 1. Train a GCN policy
+
+```sh
+cd applicationsSrc/gnnLocomotion/train
+source .venv/bin/activate
+python train.py --backbone gcn --episodes 2000
+```
+
+Deploy mode requires the GCN backbone (the C++ runtime is GCN-only).
+
+### 2. Export weights to the binary format
+
+```sh
+python export_weights.py \
+  --ckpt checkpoints/policy_final.pt \
+  --out  ../../../applicationsBin/gnnLocomotion/gcn_weights.bin
+```
+
+This writes `gcn_weights.bin` and a sibling `gcn_weights.bin.json` listing the tensor shapes.
+
+### 3. Verify export parity (recommended)
+
+```sh
+python test_export_parity.py \
+  --ckpt checkpoints/policy_final.pt \
+  --bin  ../../../applicationsBin/gnnLocomotion/gcn_weights.bin
+```
+
+The script loads the binary with NumPy, runs forward on a synthetic 4-node graph, and asserts `max_abs_diff < 1e-4` against the PyTorch policy.
+
+### 4. Run the simulator in deploy mode
+
+`applicationsBin/gnnLocomotion/config_deploy.xml` enables deploy mode via:
+
+```xml
+<deploy enabled="true" weights="gcn_weights.bin" seed="42"/>
+```
+
+Run it:
+
+```sh
+# From project root, after building gnnLocomotion:
+cd applicationsBin/gnnLocomotion
+./gnnLocomotion -c config_deploy.xml -r        # GUI, realtime
+./gnnLocomotion -c config_deploy.xml -t        # headless, fastest scheduler
+```
+
+You should see one log line per module per step:
+
+```
+[GCN id=1 step=1 action=2 inTarget=0 isAP=0]
+[GCN id=2 step=1 action=0 inTarget=0 isAP=1]
+...
+```
+
+`moveTo` failures (collisions when two modules pick the same destination) are logged but the simulation continues.
+
+### 5. Override weights without editing XML
+
+```sh
+GNN_DEPLOY_WEIGHTS=/absolute/path/to/gcn_weights.bin \
+  ./gnnLocomotion -c config.xml -t
+```
+
+The env var sets `deployMode = true` regardless of the XML element, which is convenient for batch experiments and CI.
+
+### Known limitations
+
+- All modules move simultaneously every step, diverging from the one-move-per-step protocol used during training. Expect a success-rate gap until a simultaneous-move fine-tune is added.
+- Local articulation-point detection uses the 2-hop induced subgraph; it is exact for clusters smaller than the GNN's 3-hop receptive field (≤ ~20 modules in dense lattices).

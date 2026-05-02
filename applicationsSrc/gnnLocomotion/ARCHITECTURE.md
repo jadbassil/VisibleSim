@@ -213,3 +213,87 @@ The default curriculum stage uses a 2×3 rectangle that must locomote 2 cells to
 - **Overlap**: 2 blocks (at x=3) start already inside the target, providing an immediate positive reward signal on episode start
 - **Max steps**: 200 per episode
 - **Grid**: 8×6×4
+
+---
+
+## Distributed Deployment (deploy mode)
+
+Deploy mode runs the trained GCN policy directly inside the simulator with **no Python loop, no leader, and no central coordinator**. Each module loads the same weights file at startup, runs its own copy of the forward pass in C++ (Eigen), and decides its own motion every step. This is a faithful simulation of true on-robot execution; the same C++ code is portable to physical hardware.
+
+### Components
+
+- **`train/export_weights.py`** — exports the trained `GNNPolicy(backbone='gcn')` weights to a flat little-endian binary (CRC-32 verified). Header: magic `GCN1`, version, `hidden=64`, `node_dim=12`, `edge_dim=6`, `n_actions=13`, `n_layers=3`. Body: 3 layers × (`msg_lin.weight`, `self_lin.weight`, `bias`), then actor `fc1`/`fc2` weights and biases, then a CRC-32 trailer.
+- **`gcnPolicy.hpp` / `.cpp`** — pure C++ Eigen port of the GCN forward pass. Singleton `GCNWeights::instance()` loads once; all modules share the read-only copy. Helpers: `buildNodeFeature(...)`, `gcnEmitMsg`, `gcnLayerForward`, `actorLogits`, `argmaxMasked`, `sampleMaskedSoftmax`.
+- **`gnnLocomotionBlockCode` (deploy path)** — added handlers, message types, and per-step state machine alongside the existing leader/gym path. Activated by a `<deploy>` element in `config.xml` or the `GNN_DEPLOY_WEIGHTS` env var.
+
+### Per-step protocol
+
+Each step executes a fixed sequence of P2P rounds, scheduled via `InterruptionEvent` and `t0 + ROUND_DT_US` deltas (default `2000 µs`). Every payload carries `step` so stale messages from prior steps are dropped.
+
+```
+DEPLOY_STEP_START  (interruption)
+  ├─ Phase A round 1   MSG_TOPO_1HOP    broadcast 1-hop neighbour mask + id
+  ├─ Phase A round 2   MSG_TOPO_2HOP    broadcast neighbour ids → each node has 2-hop subgraph
+  │                   ↳ compute is_ap locally via reachability over 2-hop induced subgraph
+  │                   ↳ build 12-d node feature h⁰
+  ├─ Phase B round 1   MSG_GNN_LAYER1   send msg_lin([h⁰ ‖ e_ji]) to each neighbour → h¹
+  ├─ Phase B round 2   MSG_GNN_LAYER2   → h²
+  ├─ Phase B round 3   MSG_GNN_LAYER3   → h³
+  └─ Phase C           actorLogits(h³) → masked argmax → moveTo() (or stay)
+```
+
+A round advances when either every connected interface has delivered its message for that round (the common case) or a watchdog/empty-buffer guard fires. Modules whose neighbour just moved tolerate missing messages: an isolated node treats the aggregated term as zero.
+
+### Message payloads
+
+| Type id | Name              | Payload struct                                            |
+|---------|-------------------|-----------------------------------------------------------|
+| 100     | `MSG_TOPO_1HOP`   | `{ step, id, mask6 }`                                     |
+| 101     | `MSG_TOPO_2HOP`   | `{ step, id, mask6, nbIds[6] }`                           |
+| 200     | `MSG_GNN_LAYER1`  | `{ step, fromDir, h[64] }` (msg_lin([h⁰ ‖ e_ji]))         |
+| 201     | `MSG_GNN_LAYER2`  | `{ step, fromDir, h[64] }`                                |
+| 202     | `MSG_GNN_LAYER3`  | `{ step, fromDir, h[64] }`                                |
+
+`fromDir` is the direction that the *receiver* sees the sender on (i.e., `d ^ 1` from the sender's perspective; SCLattice2 directions are paired Plus/Minus per axis). This avoids sending the full 6-d edge feature on the wire.
+
+### Local articulation-point detection
+
+Each module's 2-hop induced subgraph (built from `MSG_TOPO_2HOP` messages) is enough to test whether removing this module disconnects its direct neighbours from one another. The procedure:
+
+1. Build adjacency over `{ self ∪ direct neighbours ∪ 2-hop ids }` from the topology messages.
+2. Pick any direct neighbour as BFS source; run BFS *excluding* self.
+3. If any direct neighbour is unreachable from the source, declare self an articulation point.
+
+This is exact when every cut vertex has a witness within 2 hops. For pathological skinny clusters where the witness lies further away, the deployed policy falls back on its training-time bias (the `is_ap` feature was a node input during training, so the model still leans toward staying when the local context is a "bridge").
+
+### Action selection
+
+The mask used at deploy time mirrors the training-time mask:
+
+- action `0` (stay) always valid;
+- actions `1..k` valid for the `k` motions returned by `getAllMotions()`;
+- if the local AP test or the in-target flag is true, force stay.
+
+Action is picked by `argmaxMasked` for deterministic deployment. `sampleMaskedSoftmax` is also available for stochastic execution; a per-block xorshift64* RNG is seeded from `globalSeed ^ blockId` for reproducibility.
+
+### Step pacing and motion
+
+After acting, each module schedules the next `DEPLOY_STEP_START` at `now + 8 × ROUND_DT_US`, providing headroom for any in-flight motion. `onMotionEnd()` clears `motionPending`; if a step fires while a motion is still in flight, the step is deferred by one round.
+
+### Configuration
+
+```xml
+<world ...>
+  <deploy enabled="true" weights="gcn_weights.bin" seed="42"/>
+  <blockList ...> ... </blockList>
+  <targetList ...> ... </targetList>
+</world>
+```
+
+`weights` is resolved relative to the simulator's current working directory (i.e., `applicationsBin/gnnLocomotion/`). The env var `GNN_DEPLOY_WEIGHTS=<absolute_path>` overrides the XML setting and is convenient for batch scripts.
+
+### Known limitations
+
+- **All modules act simultaneously**, which diverges from the one-move-per-step protocol used during training. Expect a measurable success-rate gap. Mitigations (future work): a fine-tune pass with simultaneous moves, or a confidence-based mover-selection round (extra message exchanging max-softmax magnitudes; only top-k blocks move per step).
+- **2-hop AP detection** is exact only when every articulation point has a witness within 2 hops. Acceptable for the training cluster sizes (≤ ~20 modules); larger clusters would need extra topology rounds.
+- **Round delays** are simulation conveniences (`t0 + ROUND_DT_US`); they do not model real wireless contention.
