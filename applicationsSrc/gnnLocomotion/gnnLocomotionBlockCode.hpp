@@ -86,7 +86,13 @@ private:
     std::string   weightsPath;
     uint32_t      globalSeed    = 42;
     uint32_t      deployStep    = 0;
-    bool          motionPending = false;
+    bool          motionPending    = false;
+    Cell3DPosition pendingDest     = {};  // destination reserved in claimedDests
+    // Anti-oscillation: short circular history of recently occupied positions.
+    // If the next action would revisit any of them, the action is suppressed.
+    static constexpr int HIST_LEN = 4;
+    std::array<Cell3DPosition, HIST_LEN> posHistory{};
+    int posHistoryLen = 0;
 
     // Phase A buffers
     uint8_t                       nb1mask = 0;

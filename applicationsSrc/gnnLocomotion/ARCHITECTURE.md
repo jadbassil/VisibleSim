@@ -218,20 +218,20 @@ The default curriculum stage uses a 2×3 rectangle that must locomote 2 cells to
 
 ## Distributed Deployment (deploy mode)
 
-Deploy mode runs the trained GCN policy directly inside the simulator with **no Python loop, no leader, and no central coordinator**. Each module loads the same weights file at startup, runs its own copy of the forward pass in C++ (Eigen), and decides its own motion every step. This is a faithful simulation of true on-robot execution; the same C++ code is portable to physical hardware.
+Deploy mode runs the trained GCN policy directly inside the simulator with **no Python loop and no TCP**. Each module loads the same weights file at startup and runs its own copy of the GCN forward pass in C++ (Eigen). Modules exchange neighbourhood information over P2P messages, independently compute their preferred action, then elect a single winner via a shared in-process ballot. This matches the one-block-per-step training protocol and is a faithful simulation of on-robot execution.
 
 ### Components
 
 - **`train/export_weights.py`** — exports the trained `GNNPolicy(backbone='gcn')` weights to a flat little-endian binary (CRC-32 verified). Header: magic `GCN1`, version, `hidden=64`, `node_dim=12`, `edge_dim=6`, `n_actions=13`, `n_layers=3`. Body: 3 layers × (`msg_lin.weight`, `self_lin.weight`, `bias`), then actor `fc1`/`fc2` weights and biases, then a CRC-32 trailer.
 - **`gcnPolicy.hpp` / `.cpp`** — pure C++ Eigen port of the GCN forward pass. Singleton `GCNWeights::instance()` loads once; all modules share the read-only copy. Helpers: `buildNodeFeature(...)`, `gcnEmitMsg`, `gcnLayerForward`, `actorLogits`, `argmaxMasked`, `sampleMaskedSoftmax`.
-- **`gnnLocomotionBlockCode` (deploy path)** — added handlers, message types, and per-step state machine alongside the existing leader/gym path. Activated by a `<deploy>` element in `config.xml` or the `GNN_DEPLOY_WEIGHTS` env var.
+- **`gnnLocomotionBlockCode` (deploy path)** — handlers, message types, and per-step state machine added alongside the existing gym path. Activated by a `<deploy>` element in `config.xml` or the `GNN_DEPLOY_WEIGHTS` env var.
 
 ### Per-step protocol
 
-Each step executes a fixed sequence of P2P rounds, scheduled via `InterruptionEvent` and `t0 + ROUND_DT_US` deltas (default `2000 µs`). Every payload carries `step` so stale messages from prior steps are dropped.
+Each step executes a fixed sequence of P2P rounds scheduled via `InterruptionEvent` and `t0 + ROUND_DT_US` deltas (default `2000 µs`). Every payload carries `step` so stale messages from prior steps are dropped.
 
 ```
-DEPLOY_STEP_START  (interruption)
+DEPLOY_STEP_START  (interruption, fired simultaneously for all modules)
   ├─ Phase A round 1   MSG_TOPO_1HOP    broadcast 1-hop neighbour mask + id
   ├─ Phase A round 2   MSG_TOPO_2HOP    broadcast neighbour ids → each node has 2-hop subgraph
   │                   ↳ compute is_ap locally via reachability over 2-hop induced subgraph
@@ -239,10 +239,25 @@ DEPLOY_STEP_START  (interruption)
   ├─ Phase B round 1   MSG_GNN_LAYER1   send msg_lin([h⁰ ‖ e_ji]) to each neighbour → h¹
   ├─ Phase B round 2   MSG_GNN_LAYER2   → h²
   ├─ Phase B round 3   MSG_GNN_LAYER3   → h³
-  └─ Phase C           actorLogits(h³) → masked argmax → moveTo() (or stay)
+  └─ Phase C           actorLogits(h³) → anti-oscillation check → register vote in ballot
+                       last voter picks winner → one moveTo() → schedule all next steps
 ```
 
-A round advances when either every connected interface has delivered its message for that round (the common case) or a watchdog/empty-buffer guard fires. Modules whose neighbour just moved tolerate missing messages: an isolated node treats the aggregated term as zero.
+A round advances when all connected interfaces have delivered their message (common case) or a watchdog fires. Modules whose neighbour is mid-motion tolerate missing messages: an isolated node treats the aggregated term as zero.
+
+#### Watchdog safety
+
+Each phase has a dedicated watchdog `InterruptionEvent` that fires 3 × `ROUND_DT_US` after the phase begins. Watchdogs carry prerequisite guards to prevent stale events from a previous step corrupting the current step's state:
+
+| Watchdog              | Guard before firing              |
+|-----------------------|----------------------------------|
+| `DEPLOY_TIMEOUT_TOPO1`  | `!topo2Sent`                   |
+| `DEPLOY_TIMEOUT_TOPO2`  | `!topo2Advanced`               |
+| `DEPLOY_TIMEOUT_LAYER1` | `!layerAdvanced[0] && topo2Advanced` |
+| `DEPLOY_TIMEOUT_LAYER2` | `!layerAdvanced[1] && layerAdvanced[0]` |
+| `DEPLOY_TIMEOUT_LAYER3` | `!layerAdvanced[2] && layerAdvanced[1]` |
+
+Without the prerequisite guards, a stale watchdog from step N can fire in step N+1 (after `clearDeployStepBuffers` resets the idempotency flags) and call `gcnLayerForward` with `h_self` at the wrong dimension, causing an Eigen assertion.
 
 ### Message payloads
 
@@ -254,11 +269,11 @@ A round advances when either every connected interface has delivered its message
 | 201     | `MSG_GNN_LAYER2`  | `{ step, fromDir, h[64] }`                                |
 | 202     | `MSG_GNN_LAYER3`  | `{ step, fromDir, h[64] }`                                |
 
-`fromDir` is the direction that the *receiver* sees the sender on (i.e., `d ^ 1` from the sender's perspective; SCLattice2 directions are paired Plus/Minus per axis). This avoids sending the full 6-d edge feature on the wire.
+`fromDir` is the direction the *receiver* sees the sender on (i.e., `d ^ 1`; SCLattice2 directions are paired Plus/Minus per axis). This avoids sending the full 6-d edge feature on the wire.
 
 ### Local articulation-point detection
 
-Each module's 2-hop induced subgraph (built from `MSG_TOPO_2HOP` messages) is enough to test whether removing this module disconnects its direct neighbours from one another. The procedure:
+Each module's 2-hop induced subgraph (built from `MSG_TOPO_2HOP` messages) is enough to test whether removing this module disconnects its direct neighbours from one another:
 
 1. Build adjacency over `{ self ∪ direct neighbours ∪ 2-hop ids }` from the topology messages.
 2. Pick any direct neighbour as BFS source; run BFS *excluding* self.
@@ -266,19 +281,30 @@ Each module's 2-hop induced subgraph (built from `MSG_TOPO_2HOP` messages) is en
 
 This is exact when every cut vertex has a witness within 2 hops. For pathological skinny clusters where the witness lies further away, the deployed policy falls back on its training-time bias (the `is_ap` feature was a node input during training, so the model still leans toward staying when the local context is a "bridge").
 
-### Action selection
+### Action selection and winner ballot
 
-The mask used at deploy time mirrors the training-time mask:
+After the GNN forward pass each module applies the same action mask as training (`is_ap` or `in_target` → force stay; otherwise actions `1..k` enabled for the `k` valid motions) and runs `argmaxMasked`.
 
-- action `0` (stay) always valid;
-- actions `1..k` valid for the `k` motions returned by `getAllMotions()`;
-- if the local AP test or the in-target flag is true, force stay.
+**Anti-oscillation filter**: before registering the vote, each module checks its proposed destination against a circular history of the last `HIST_LEN = 4` positions it occupied. If the destination matches any recent position, the action is suppressed to stay. This prevents the policy from getting stuck in N-step cycles where it repeatedly revisits the same cells.
 
-Action is picked by `argmaxMasked` for deterministic deployment. `sampleMaskedSoftmax` is also available for stochastic execution; a per-block xorshift64* RNG is seeded from `globalSeed ^ blockId` for reproducibility.
+**Shared ballot** (`static DeployBallot`): every module registers `{blockId, action, self*, motions}`. When all N modules have voted:
+1. The last voter picks the **winner**: the lowest block ID with a non-stay action. This mirrors the ascending-ID selection used during training.
+2. The winner's `moveTo()` is the only `moveTo()` issued per step (one block moves, as in training).
+3. The winner's current position is pushed into its position history.
+4. **Deadlock escape**: if all blocks voted stay (histories blocked every option), all histories are cleared so the policy can explore from the current state again.
+5. The last voter schedules `DEPLOY_STEP_START` for **all** modules at the same future simulation time, enforcing global step synchronisation.
 
-### Step pacing and motion
+### Step synchronisation and motion pacing
 
-After acting, each module schedules the next `DEPLOY_STEP_START` at `now + 8 × ROUND_DT_US`, providing headroom for any in-flight motion. `onMotionEnd()` clears `motionPending`; if a step fires while a motion is still in flight, the step is deferred by one round.
+The ballot last voter schedules the next `DEPLOY_STEP_START` for all modules at:
+
+```
+nextStep = now + max(motionDuration, 8 × ROUND_DT_US)
+```
+
+where `motionDuration = 1 100 000 µs` when a move was issued (the `TeleportationStartEvent` fires at `now + 1 000 000 µs`; the 100 ms buffer ensures `onMotionEnd` clears `motionPending` before the next step begins).
+
+All modules therefore start each step at the same simulation time. This replaces the previous per-module independent scheduling, which could leave fast (isolated) modules thousands of steps ahead of the rest of the cluster.
 
 ### Configuration
 
@@ -290,10 +316,11 @@ After acting, each module schedules the next `DEPLOY_STEP_START` at `now + 8 × 
 </world>
 ```
 
-`weights` is resolved relative to the simulator's current working directory (i.e., `applicationsBin/gnnLocomotion/`). The env var `GNN_DEPLOY_WEIGHTS=<absolute_path>` overrides the XML setting and is convenient for batch scripts.
+`weights` is resolved relative to the simulator's current working directory (`applicationsBin/gnnLocomotion/`). The env var `GNN_DEPLOY_WEIGHTS=<absolute_path>` overrides the XML setting.
 
 ### Known limitations
 
-- **All modules act simultaneously**, which diverges from the one-move-per-step protocol used during training. Expect a measurable success-rate gap. Mitigations (future work): a fine-tune pass with simultaneous moves, or a confidence-based mover-selection round (extra message exchanging max-softmax magnitudes; only top-k blocks move per step).
-- **2-hop AP detection** is exact only when every articulation point has a witness within 2 hops. Acceptable for the training cluster sizes (≤ ~20 modules); larger clusters would need extra topology rounds.
+- **Policy convergence gap**: the trained GCN was optimised for the training state distribution (full-graph observations via Python). In deploy mode each module sees only its L-hop neighbourhood. For small clusters (≤ 6 modules, diameter ≤ 3) 3-hop GCN coverage should be sufficient, but the policy may not reliably complete reconfiguration without further fine-tuning on the deploy execution model.
+- **2-hop AP detection** is exact only when every articulation point has a witness within 2 hops. Acceptable for clusters up to ~20 modules in dense lattices; larger clusters would need extra topology rounds.
 - **Round delays** are simulation conveniences (`t0 + ROUND_DT_US`); they do not model real wireless contention.
+- **Parallel motion** (future work): the ballot currently selects one mover per step. Extending to top-k movers (e.g., via a confidence-based selection round) would increase throughput while preserving connectivity safety.

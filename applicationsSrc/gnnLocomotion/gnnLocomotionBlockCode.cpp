@@ -10,12 +10,34 @@
 #include <functional>
 #include <iostream>
 #include <queue>
+#include <set>
 #include <string>
 #include <unordered_set>
 
 using namespace BaseSimulator;
 
 namespace GNNLocomotion {
+
+// Shared across all modules: destinations that have already been claimed this
+// step by another module's moveTo() call.  Prevents DoubleInsertionException
+// when two modules pick the same destination in the same step.
+static std::set<Cell3DPosition> claimedDests;
+
+// Per-step action ballot: every module registers its intended action; when all
+// have voted the last voter picks the single winner and schedules the next step
+// for everyone at the same simulation time, enforcing global step sync.
+struct DeployBallotEntry {
+    int    action;
+    GNNLocomotionCode* code;
+    std::vector<std::pair<Cell3DPosition, uint8_t>> motions;
+};
+struct DeployBallot {
+    uint32_t                         step    = 0;
+    std::map<bID, DeployBallotEntry> votes;
+    bool                             settled = false;
+    void reset(uint32_t s) { step = s; votes.clear(); settled = false; }
+};
+static DeployBallot g_ballot;
 
 // ---------------------------------------------------------------------------
 // Construction
@@ -73,6 +95,7 @@ void GNNLocomotionCode::startup() {
 void GNNLocomotionCode::onMotionEnd() {
     if (deployMode) {
         motionPending = false;
+        claimedDests.erase(pendingDest);
         return;
     }
     GymServer* gs = GymServer::getInstance();
@@ -107,7 +130,11 @@ void GNNLocomotionCode::onInterruptionEvent(std::shared_ptr<Event> event) {
                 }
                 break;
             case DEPLOY_TIMEOUT_LAYER1:
-                if (!layerAdvanced[0]) {
+                // Guard: topo2 must have completed (h_self is NODE_DIM).
+                // Without this, a stale watchdog from step N can fire in step N+1
+                // after clearDeployStepBuffers reset layerAdvanced[0] but before
+                // topo2 built h_self, causing an Eigen dimension mismatch.
+                if (!layerAdvanced[0] && topo2Advanced) {
                     layerAdvanced[0] = true;
                     h_self = gcnLayerForward(GCNWeights::instance().layers[0],
                                              h_self, incoming[0]);
@@ -115,7 +142,8 @@ void GNNLocomotionCode::onInterruptionEvent(std::shared_ptr<Event> event) {
                 }
                 break;
             case DEPLOY_TIMEOUT_LAYER2:
-                if (!layerAdvanced[1]) {
+                // Guard: layer 0 must have completed (h_self is HIDDEN).
+                if (!layerAdvanced[1] && layerAdvanced[0]) {
                     layerAdvanced[1] = true;
                     h_self = gcnLayerForward(GCNWeights::instance().layers[1],
                                              h_self, incoming[1]);
@@ -123,7 +151,8 @@ void GNNLocomotionCode::onInterruptionEvent(std::shared_ptr<Event> event) {
                 }
                 break;
             case DEPLOY_TIMEOUT_LAYER3:
-                if (!layerAdvanced[2]) {
+                // Guard: layer 1 must have completed (h_self is HIDDEN).
+                if (!layerAdvanced[2] && layerAdvanced[1]) {
                     layerAdvanced[2] = true;
                     h_self = gcnLayerForward(GCNWeights::instance().layers[2],
                                              h_self, incoming[2]);
@@ -742,23 +771,27 @@ void GNNLocomotionCode::runActorAndMove() {
     const auto& W = GCNWeights::instance();
     Eigen::VectorXf logits = actorLogits(W, h_self);
 
-    // Build action mask consistent with training:
-    //  - action 0 (stay) always valid
-    //  - actions 1..k valid if there are k motions
-    //  - if isAP or inTarget, force stay (mirrors training mask)
     auto motions = module->getAllMotions();
-    int nMoves   = std::min<int>(motions.size(), N_ACTIONS - 1);
+    int  nMoves  = std::min<int>(static_cast<int>(motions.size()), N_ACTIONS - 1);
     bool inT     = (target != nullptr && target->isInTarget(module->position));
-    // Recompute isAP from local view used during forward
     bool isAP    = localIsArticulationPoint();
 
     std::array<bool, N_ACTIONS> mask{};
     mask[0] = true;
-    if (!inT && !isAP) {
+    if (!inT && !isAP)
         for (int i = 1; i <= nMoves; i++) mask[i] = true;
-    }
 
     int action = argmaxMasked(logits, mask);
+
+    // Anti-oscillation: suppress any action that would revisit a recently
+    // occupied position.  Without this, a block caught in an N-step policy
+    // cycle keeps winning the ballot and prevents others from moving.
+    if (posHistoryLen > 0 && action != 0 && action - 1 < static_cast<int>(motions.size())) {
+        const Cell3DPosition dest = motions[action - 1].first;
+        for (int h = 0; h < posHistoryLen; h++) {
+            if (dest == posHistory[h]) { action = 0; break; }
+        }
+    }
 
     std::cout << "[GCN id=" << module->blockId
               << " step=" << deployStep
@@ -766,19 +799,64 @@ void GNNLocomotionCode::runActorAndMove() {
               << " inTarget=" << (int)inT
               << " isAP=" << (int)isAP << "]\n";
 
-    if (!motionPending && action != 0 && action - 1 < static_cast<int>(motions.size())) {
-        const Cell3DPosition& dest = motions[action - 1].first;
-        if (module->moveTo(dest)) {
-            motionPending = true;
-        } else {
-            std::cout << "  [GCN id=" << module->blockId
-                      << "] moveTo failed (occupied)\n";
+    // Register this block's vote in the shared ballot.
+    size_t totalBlocks = BaseSimulator::getWorld()->getMap().size();
+    if (g_ballot.step != deployStep) g_ballot.reset(deployStep);
+    g_ballot.votes[module->blockId] = {action, this, std::move(motions)};
+
+    // Wait until every block has voted before acting (mirrors training: one
+    // block moves per step, chosen as the lowest ID with a non-stay action).
+    if (g_ballot.votes.size() < totalBlocks || g_ballot.settled) return;
+    g_ballot.settled = true;
+
+    // Pick winner: lowest block ID with a non-stay action.
+    bID               winner  = 0;
+    GNNLocomotionCode* winCode = nullptr;
+    for (auto& [id, e] : g_ballot.votes) {  // map iterates in ascending ID order
+        if (e.action != 0) { winner = id; winCode = e.code; break; }
+    }
+
+    // Deadlock escape: if every block voted stay (all histories exhausted),
+    // clear all histories so the policy can explore fresh from the current state.
+    if (winner == 0) {
+        for (auto& [id, e] : g_ballot.votes)
+            e.code->posHistoryLen = 0;
+    }
+
+    // Execute the winner's move.  Only one moveTo is issued per step.
+    Time motionDuration = 0;
+    if (winCode && !winCode->motionPending) {
+        auto& e   = g_ballot.votes[winner];
+        int   act = e.action;
+        if (act - 1 < static_cast<int>(e.motions.size())) {
+            const Cell3DPosition dest = e.motions[act - 1].first;
+            if (winCode->module->moveTo(dest)) {
+                // Push current position into the winner's history (FIFO, newest at [0]).
+                for (int h = std::min(winCode->posHistoryLen, HIST_LEN - 1); h > 0; h--)
+                    winCode->posHistory[h] = winCode->posHistory[h - 1];
+                winCode->posHistory[0] = winCode->module->position;
+                winCode->posHistoryLen = std::min(winCode->posHistoryLen + 1, HIST_LEN);
+                winCode->motionPending = true;
+                winCode->pendingDest     = dest;
+                claimedDests.insert(dest);
+                // TeleportationStartEvent fires at now+1000000 µs; wait until
+                // motion completes before beginning the next step.
+                motionDuration = 1'100'000;
+            } else {
+                std::cout << "  [GCN winner id=" << winner
+                          << "] moveTo failed (occupied)\n";
+            }
         }
     }
 
-    // Schedule the next step.
-    scheduler->schedule(new InterruptionEvent<int>(
-        scheduler->now() + 8 * ROUND_DT_US, module, DEPLOY_STEP_START));
+    // Schedule the next step for ALL blocks at the same simulation time so
+    // every module begins step N+1 in sync.
+    Time nextStep = scheduler->now()
+                  + std::max(static_cast<Time>(motionDuration), 8 * ROUND_DT_US);
+    for (auto& [id, e] : g_ballot.votes) {
+        scheduler->schedule(new InterruptionEvent<int>(
+            nextStep, e.code->module, DEPLOY_STEP_START));
+    }
 }
 
 } // namespace GNNLocomotion
