@@ -849,6 +849,20 @@ void GNNLocomotionCode::runActorAndMove() {
         }
     }
 
+    // Termination check: stop if shape is complete or step budget exhausted.
+    int inTarget    = countBlocksInTarget();
+    int totalTarget = static_cast<int>(getTargetCells().size());
+    bool shapeDone  = (totalTarget > 0 && inTarget >= totalTarget);
+    bool timeDone   = (deployStep >= MAX_STEPS);
+
+    if (shapeDone || timeDone) {
+        std::cout << "[GCN deploy] "
+                  << (shapeDone ? "target shape reached" : "step limit reached")
+                  << " at step " << deployStep
+                  << " (" << inTarget << "/" << totalTarget << " in target)\n";
+        return; // do not schedule next step — let the event queue drain
+    }
+
     // Schedule the next step for ALL blocks at the same simulation time so
     // every module begins step N+1 in sync.
     Time nextStep = scheduler->now()

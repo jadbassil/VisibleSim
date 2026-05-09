@@ -29,9 +29,12 @@ _HERE        = os.path.dirname(os.path.abspath(__file__))
 _BIN_DEFAULT = os.path.join(_HERE, "../../../applicationsBin/gnnLocomotion/gnnLocomotion")
 _CFG_DEFAULT = os.path.join(_HERE, "../../../applicationsBin/gnnLocomotion/config.xml")
 
-SAVE_INTERVAL = 50
-LOG_INTERVAL  = 10
-CKPT_DIR      = os.path.join(_HERE, "checkpoints")
+SAVE_INTERVAL    = 50
+LOG_INTERVAL     = 10
+CKPT_DIR         = os.path.join(_HERE, "checkpoints")
+SUCCESS_WINDOW   = 200   # rolling window size for solve-rate
+SUCCESS_THRESH   = 0.95  # stop when solve rate exceeds this
+SUCCESS_MIN_EP   = 200   # don't check before this many episodes
 
 
 def _init_wandb(args, ppo_cfg) -> Optional[object]:
@@ -149,7 +152,7 @@ def train(args):
 
     ppo_cfg = PPOConfig(
         lr           = 3e-4,
-        n_steps      = 20,
+        n_steps      = 256,
         n_epochs     = 4,
         batch_size   = 32,
         clip_eps     = 0.2,
@@ -168,8 +171,9 @@ def train(args):
         realtime=args.realtime,
     )
 
-    ep_rewards: list = []
-    ep_lengths: list = []
+    ep_rewards: list  = []
+    ep_lengths: list  = []
+    ep_solved:  list  = []   # 1 if target reached, 0 otherwise
     global_step = 0
 
     try:
@@ -239,8 +243,8 @@ def train(args):
                               f"ep_r={ep_reward:.3f}")
 
                 if done and target_reached:
-                    print(f"  [target] reached at episode={episode} step={ep_steps}  "
-                          f"in_target={in_target}/{target_cells}  ep_r={ep_reward:.3f}")
+                    # print(f"  [target] reached at episode={episode} step={ep_steps}  "
+                    #       f"in_target={in_target}/{target_cells}  ep_r={ep_reward:.3f}")
                     if wandb_run:
                         wandb_run.log({
                             "episode/target_reached": 1,
@@ -250,11 +254,14 @@ def train(args):
                         }, step=global_step)
 
             # Final update at episode end
-            if trainer.rollout:
-                trainer.update()
+            # if trainer.rollout:
+            #     trainer.update()
 
             ep_rewards.append(ep_reward)
             ep_lengths.append(ep_steps)
+            ep_solved.append(1 if target_reached else 0)
+
+            solve_rate = np.mean(ep_solved[-SUCCESS_WINDOW:])
 
             if episode % LOG_INTERVAL == 0:
                 recent_r = ep_rewards[-LOG_INTERVAL:]
@@ -263,7 +270,9 @@ def train(args):
                       f"reward={ep_reward:7.2f}  "
                       f"mean_r={np.mean(recent_r):7.2f}  "
                       f"steps={ep_steps:4d}  "
-                      f"mean_steps={np.mean(recent_l):.1f}")
+                      f"mean_steps={np.mean(recent_l):.1f}"
+                      + (f"  solve_rate={solve_rate:.2f}"
+                         if len(ep_solved) >= SUCCESS_WINDOW else ""))
 
             if wandb_run:
                 target_cells = len(next_obs.get("target", []))
@@ -275,9 +284,15 @@ def train(args):
                     "episode/mean_steps_window": np.mean(ep_lengths[-LOG_INTERVAL:]),
                     "episode/target_reached": int(target_reached),
                     "episode/target_fill_ratio": in_target / max(target_cells, 1),
+                    "episode/solve_rate": solve_rate,
                     "train/global_step": global_step,
                     "train/episode": episode,
                 }, step=global_step)
+
+            if episode >= SUCCESS_MIN_EP and solve_rate >= SUCCESS_THRESH:
+                print(f"[train] Early stop at episode {episode}: "
+                      f"solve_rate={solve_rate:.2f} over last {SUCCESS_WINDOW} episodes.")
+                break
 
             if episode > 0 and episode % SAVE_INTERVAL == 0:
                 ckpt = os.path.join(CKPT_DIR, f"policy_ep{episode:05d}.pt")
