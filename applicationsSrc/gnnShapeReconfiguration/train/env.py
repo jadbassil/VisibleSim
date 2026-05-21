@@ -1,15 +1,11 @@
 """
-VisibleSimEnv — Gym wrapper around the gnnLocomotion VisibleSim binary.
+VisibleSimEnv — Gym wrapper around the gnnShapeReconfiguration VisibleSim binary.
 
 Protocol (newline-delimited JSON over TCP):
   C++ → Python:  observation JSON  (on connect and after every step)
   Python → C++:  {"type":"step","actions":{"<blockId>": <actionIdx>, ...}}
 
 Action index 0 = stay; 1..N = index into getAllMotions() for that block.
-
-Locomotion objective: maximise displacement of the swarm's center of mass
-along a fixed direction vector.  Reward = Φ(s') − Φ(s) where
-Φ(s) = dot(CoM, direction).  There is no terminal shape condition.
 """
 import json
 import os
@@ -23,17 +19,18 @@ import numpy as np
 import torch
 
 MAX_ACTIONS_PER_BLOCK = 13  # 0=stay + up to 12 moves
-NODE_FEAT_DIM = 12          # 3 pos + 1 directional_pos + 6 neighbor bits + 1 n_moves + 1 is_ap
+NODE_FEAT_DIM = 12          # 3 pos + 1 in_target + 6 neighbor-presence bits + 1 n_moves + 1 is_ap
 
 
 class VisibleSimEnv:
     """
     Single-process Gym-style environment backed by a VisibleSim subprocess.
 
-    Parameters
-    ----------
-    direction : (3,) array-like
-        Locomotion direction unit vector. Defaults to +X = [1, 0, 0].
+    reset() launches the binary and returns the initial observation dict.
+    step(actions_dict) sends actions and returns (obs, reward, done, info).
+    close() kills the subprocess and closes the socket.
+
+    Graph tensors for the GNN are produced by obs_to_tensors(obs).
     """
 
     def __init__(
@@ -45,7 +42,6 @@ class VisibleSimEnv:
         realtime: bool = True,
         connect_timeout: float = 20.0,
         step_timeout: float = 30.0,
-        direction: Tuple[float, float, float] = (1.0, 0.0, 0.0),
     ):
         self.binary_path = os.path.abspath(binary_path)
         self.config_path = os.path.abspath(config_path)
@@ -54,10 +50,6 @@ class VisibleSimEnv:
         self.realtime = realtime
         self.connect_timeout = connect_timeout
         self.step_timeout = step_timeout
-
-        d = np.array(direction, dtype=np.float32)
-        norm = np.linalg.norm(d)
-        self.direction = d / norm if norm > 1e-6 else np.array([1.0, 0.0, 0.0], dtype=np.float32)
 
         self.proc: Optional[subprocess.Popen] = None
         self.sock: Optional[socket.socket] = None
@@ -86,14 +78,13 @@ class VisibleSimEnv:
         obs = self._recv_obs()
         self.block_ids = [b["id"] for b in obs["blocks"]]
 
-        # Locomotion reward: ΔCoM · direction (potential shaping, γ=1).
-        # obs["reward"] carries the connectivity penalty (-10) if applicable;
-        # otherwise it is 0.
+        # Potential-based shaping: F = γ·Φ(s') − Φ(s).  Using γ=1 (no discount).
+        # Φ(s) = −(mean min-distance from each non-target block to nearest target cell)
         new_potential = self._potential(obs)
         shaping = new_potential - self._prev_potential
         self._prev_potential = new_potential
 
-        reward = obs["reward"] + shaping
+        reward = obs["reward"] + 0.1 * shaping
         return obs, reward, obs["done"], {"step": obs["step"]}
 
     def close(self):
@@ -107,31 +98,29 @@ class VisibleSimEnv:
         """
         Returns (x, edge_index, edge_attr, action_masks) as torch tensors.
 
-        x(3) = directional_pos = dot(pos, direction) / grid_max_extent
-               replaces the in_target flag from shape reconfiguration.
+        x            : [N, NODE_FEAT_DIM]  node features
+        edge_index   : [2, E]              directed edges (both directions)
+        edge_attr    : [E, 6]              one-hot direction per edge
+        action_masks : [N, MAX_ACTIONS]    bool; True = action is valid
+
+        Articulation-point constraint: blocks whose removal would disconnect
+        the cluster have all non-stay actions masked out.
         """
         blocks = obs["blocks"]
         grid   = obs["grid_size"]
 
         id_to_idx = {b["id"]: i for i, b in enumerate(blocks)}
-        art_points = self._articulation_points(obs)
 
-        # Grid extent along the travel direction for normalisation.
-        grid_arr = np.array(grid, dtype=np.float32)
-        extent = float(np.dot(self.direction, grid_arr))
-        if extent < 1.0:
-            extent = 1.0
+        art_points = self._articulation_points(obs)
 
         node_feats = []
         for b in blocks:
-            pos = np.array(b["pos"], dtype=np.float32)
-            directional_pos = float(np.dot(self.direction, pos)) / extent
             feats = [
                 b["pos"][0] / max(grid[0], 1),
                 b["pos"][1] / max(grid[1], 1),
                 b["pos"][2] / max(grid[2], 1),
-                directional_pos,                                            # replaces in_target
-                *[float(nb != -1) for nb in b["neighbors"]],               # 6 bits
+                float(b["in_target"]),
+                *[float(nb != -1) for nb in b["neighbors"]],   # 6 bits
                 min(len(b["moves"]), MAX_ACTIONS_PER_BLOCK - 1) / (MAX_ACTIONS_PER_BLOCK - 1),
                 float(b["id"] in art_points),
             ]
@@ -148,11 +137,10 @@ class VisibleSimEnv:
                     one_hot[d] = 1.0
                     edge_attr.append(one_hot)
 
-        # Locomotion mask: only articulation points are forced to stay.
-        # There are no in_target locked blocks.
+        # Action mask: blocks in_target and articulation points are forced to stay.
         masks = []
         for b in blocks:
-            if b["id"] in art_points:
+            if b["id"] in art_points or b["in_target"]:
                 mask = [True] + [False] * (MAX_ACTIONS_PER_BLOCK - 1)
             else:
                 n_moves = min(len(b["moves"]), MAX_ACTIONS_PER_BLOCK - 1)
@@ -206,13 +194,25 @@ class VisibleSimEnv:
 
     def _potential(self, obs: dict) -> float:
         """
-        Φ(s) = dot(CoM, direction).
-        Shaping reward F = Φ(s') − Φ(s) = dot(ΔCoM, direction):
-        positive when the swarm moves along the travel axis.
+        Φ(s) = −mean over non-target blocks of the L1 distance to the
+               nearest target cell.
         """
-        positions = np.array([b["pos"] for b in obs["blocks"]], dtype=np.float32)
-        com = positions.mean(axis=0)
-        return float(np.dot(self.direction, com))
+        targets = obs.get("target", [])
+        if not targets:
+            return 0.0
+        target_arr = np.array([[t[0], t[1], t[2]] for t in targets], dtype=np.float32)
+
+        non_target_blocks = [b for b in obs["blocks"] if not b["in_target"]]
+        if not non_target_blocks:
+            return 0.0
+
+        total = 0.0
+        for b in non_target_blocks:
+            pos = np.array(b["pos"], dtype=np.float32)
+            dists = np.abs(target_arr - pos).sum(axis=1)
+            total += float(dists.min())
+
+        return -(total / len(non_target_blocks))
 
     # ------------------------------------------------------------------
     # Internal helpers

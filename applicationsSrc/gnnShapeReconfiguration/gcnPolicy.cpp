@@ -6,7 +6,7 @@
 #include <fstream>
 #include <stdexcept>
 
-namespace GNNLocomotion {
+namespace GNNShapeReconfiguration {
 
 namespace {
 
@@ -143,7 +143,7 @@ Eigen::VectorXf edgeFeature(int direction) {
 
 Eigen::VectorXf buildNodeFeature(const Cell3DPosition& gridSize,
                                  const Cell3DPosition& pos,
-                                 float directionalPos,
+                                 bool inTarget,
                                  uint8_t neighborMask6,
                                  int nMoves,
                                  bool isAP) {
@@ -154,10 +154,7 @@ Eigen::VectorXf buildNodeFeature(const Cell3DPosition& gridSize,
     x(0) = static_cast<float>(pos[0]) / gx;
     x(1) = static_cast<float>(pos[1]) / gy;
     x(2) = static_cast<float>(pos[2]) / gz;
-    // x(3): directional progress along the locomotion axis (replaces in_target).
-    // Each block sees how far along the travel direction it currently is,
-    // letting the policy distinguish leading from trailing modules.
-    x(3) = directionalPos;
+    x(3) = inTarget ? 1.0f : 0.0f;
     for (int d = 0; d < 6; d++)
         x(4 + d) = (neighborMask6 & (1u << d)) ? 1.0f : 0.0f;
     int capped = std::min(nMoves, N_ACTIONS - 1);
@@ -234,4 +231,4 @@ int sampleMaskedSoftmax(const Eigen::VectorXf& logits,
     return 0;
 }
 
-} // namespace GNNLocomotion
+} // namespace GNNShapeReconfiguration

@@ -1,11 +1,10 @@
-#include "gnnLocomotionBlockCode.hpp"
+#include "gnnShapeReconfigurationBlockCode.hpp"
 #include "robots/slidingCubes/slidingCubesBlock.h"
 #include "grid/lattice.h"
 #include "base/world.h"
 #include "base/simulator.h"
 #include "deps/TinyXML/tinyxml.h"
 #include <algorithm>
-#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <functional>
@@ -17,13 +16,13 @@
 
 using namespace BaseSimulator;
 
-namespace GNNLocomotion {
+namespace GNNShapeReconfiguration {
 
 static std::set<Cell3DPosition> claimedDests;
 
 struct DeployBallotEntry {
     int    action;
-    GNNLocomotionCode* code;
+    GNNShapeReconfigurationCode* code;
     std::vector<std::pair<Cell3DPosition, uint8_t>> motions;
 };
 struct DeployBallot {
@@ -38,31 +37,14 @@ static DeployBallot g_ballot;
 // Construction
 // ---------------------------------------------------------------------------
 
-GNNLocomotionCode::GNNLocomotionCode(SlidingCubes::SlidingCubesBlock* host)
+GNNShapeReconfigurationCode::GNNShapeReconfigurationCode(SlidingCubes::SlidingCubesBlock* host)
     : SlidingCubes::SlidingCubesBlockCode(host), module(host) {}
-
-// ---------------------------------------------------------------------------
-// Locomotion helpers
-// ---------------------------------------------------------------------------
-
-float GNNLocomotionCode::computeDirectionalPos(const Cell3DPosition& pos) const {
-    auto* latt = BaseSimulator::getWorld()->lattice;
-    // Extent along the travel direction (used to normalise to [0,1]).
-    float extent = locomotionDir[0] * static_cast<float>(std::max<int>(1, latt->gridSize[0]))
-                 + locomotionDir[1] * static_cast<float>(std::max<int>(1, latt->gridSize[1]))
-                 + locomotionDir[2] * static_cast<float>(std::max<int>(1, latt->gridSize[2]));
-    if (extent <= 0.0f) extent = 1.0f;
-    float dot = locomotionDir[0] * static_cast<float>(pos[0])
-              + locomotionDir[1] * static_cast<float>(pos[1])
-              + locomotionDir[2] * static_cast<float>(pos[2]);
-    return dot / extent;
-}
 
 // ---------------------------------------------------------------------------
 // startup
 // ---------------------------------------------------------------------------
 
-void GNNLocomotionCode::startup() {
+void GNNShapeReconfigurationCode::startup() {
     parseDeployConfig();
 
     if (deployMode) {
@@ -79,8 +61,6 @@ void GNNLocomotionCode::startup() {
 
     std::cout << "[GNN] Leader block " << module->blockId
               << " — starting gym server on port " << GYM_PORT << "\n";
-    std::cout << "[GNN] Locomotion direction: ["
-              << locomotionDir[0] << "," << locomotionDir[1] << "," << locomotionDir[2] << "]\n";
 
     GymServer* gs = GymServer::getInstance();
 
@@ -99,7 +79,7 @@ void GNNLocomotionCode::startup() {
 // onMotionEnd
 // ---------------------------------------------------------------------------
 
-void GNNLocomotionCode::onMotionEnd() {
+void GNNShapeReconfigurationCode::onMotionEnd() {
     if (deployMode) {
         motionPending = false;
         claimedDests.erase(pendingDest);
@@ -113,7 +93,7 @@ void GNNLocomotionCode::onMotionEnd() {
 // onInterruptionEvent
 // ---------------------------------------------------------------------------
 
-void GNNLocomotionCode::onInterruptionEvent(std::shared_ptr<Event> event) {
+void GNNShapeReconfigurationCode::onInterruptionEvent(std::shared_ptr<Event> event) {
     auto* ie = dynamic_cast<InterruptionEvent<int>*>(event.get());
     if (!ie) return;
 
@@ -127,11 +107,11 @@ void GNNLocomotionCode::onInterruptionEvent(std::shared_ptr<Event> event) {
                 if (!topo2Advanced) {
                     topo2Advanced = true;
                     bool isAP = localIsArticulationPoint();
-                    float dp  = computeDirectionalPos(module->position);
+                    bool inT  = (target != nullptr && target->isInTarget(module->position));
                     int nMoves = static_cast<int>(module->getAllMotions().size());
                     h_self = buildNodeFeature(
                         BaseSimulator::getWorld()->lattice->gridSize,
-                        module->position, dp, nb1mask, nMoves, isAP);
+                        module->position, inT, nb1mask, nMoves, isAP);
                     emitLayerMessages(0);
                 }
                 break;
@@ -176,7 +156,7 @@ void GNNLocomotionCode::onInterruptionEvent(std::shared_ptr<Event> event) {
 // Scheduling helpers
 // ---------------------------------------------------------------------------
 
-void GNNLocomotionCode::scheduleGymTick(Time delayUs) {
+void GNNShapeReconfigurationCode::scheduleGymTick(Time delayUs) {
     scheduler->schedule(
         new InterruptionEvent<int>(scheduler->now() + delayUs, module, GYM_TICK));
 }
@@ -185,7 +165,7 @@ void GNNLocomotionCode::scheduleGymTick(Time delayUs) {
 // Gym step logic
 // ---------------------------------------------------------------------------
 
-void GNNLocomotionCode::onGymTick() {
+void GNNShapeReconfigurationCode::onGymTick() {
     if (episodeDone) return;
 
     if (!GymServer::getInstance()->hasStep()) {
@@ -194,10 +174,11 @@ void GNNLocomotionCode::onGymTick() {
     }
 
     auto actions = GymServer::getInstance()->getAndClearStep();
+    prevInTarget = countBlocksInTarget();
     executeActions(std::move(actions));
 }
 
-void GNNLocomotionCode::executeActions(std::map<bID, int> actions) {
+void GNNShapeReconfigurationCode::executeActions(std::map<bID, int> actions) {
     while (!moveQueue.empty()) moveQueue.pop();
 
     auto& worldMap = BaseSimulator::getWorld()->getMap();
@@ -226,7 +207,7 @@ void GNNLocomotionCode::executeActions(std::map<bID, int> actions) {
     executeNextMove();
 }
 
-bool GNNLocomotionCode::isArticulationPoint(const SlidingCubes::SlidingCubesBlock* sc) const {
+bool GNNShapeReconfigurationCode::isArticulationPoint(const SlidingCubes::SlidingCubesBlock* sc) const {
     auto& worldMap = BaseSimulator::getWorld()->getMap();
     if (worldMap.size() <= 2) return false;
 
@@ -238,7 +219,9 @@ bool GNNLocomotionCode::isArticulationPoint(const SlidingCubes::SlidingCubesBloc
 
     if (remaining.empty()) return false;
 
-    bID startId = *remaining.begin();
+    auto* lattice = BaseSimulator::getWorld()->lattice;
+    (void)lattice;
+    bID startId   = *remaining.begin();
     std::unordered_set<bID> visited;
     std::queue<bID> bfsQ;
     visited.insert(startId);
@@ -263,7 +246,7 @@ bool GNNLocomotionCode::isArticulationPoint(const SlidingCubes::SlidingCubesBloc
     return visited.size() < remaining.size();
 }
 
-void GNNLocomotionCode::executeNextMove() {
+void GNNShapeReconfigurationCode::executeNextMove() {
     if (episodeDone) return;
 
     while (!moveQueue.empty()) {
@@ -289,18 +272,18 @@ void GNNLocomotionCode::executeNextMove() {
     onAllMovesComplete();
 }
 
-void GNNLocomotionCode::onAllMovesComplete() {
+void GNNShapeReconfigurationCode::onAllMovesComplete() {
     currentStep++;
+    int newInTarget = countBlocksInTarget();
+    int totalTarget = static_cast<int>(getTargetCells().size());
 
-    // Locomotion task: episode ends only at step limit (no shape-done condition).
-    bool timeDone = (currentStep >= MAX_STEPS);
-    episodeDone   = episodeDone || timeDone;
+    bool shapeDone = (totalTarget > 0 && newInTarget >= totalTarget);
+    bool timeDone  = (currentStep >= MAX_STEPS);
+    episodeDone    = episodeDone || shapeDone || timeDone;
 
-    GymObs obs  = buildObs();
-    // Reward is computed entirely by Python's potential shaping (ΔCoM · direction).
-    // The C++ side sends reward=0; Python adds the shaping term in step().
-    obs.reward  = pendingPenalty;
-    obs.done    = episodeDone;
+    GymObs obs   = buildObs();
+    obs.reward   = computeReward(prevInTarget, newInTarget, episodeDone) + pendingPenalty;
+    obs.done     = episodeDone;
     pendingPenalty = 0.0;
 
     GymServer::getInstance()->setObs(obs);
@@ -313,7 +296,7 @@ void GNNLocomotionCode::onAllMovesComplete() {
 // Observation builder
 // ---------------------------------------------------------------------------
 
-GymObs GNNLocomotionCode::buildObs() {
+GymObs GNNShapeReconfigurationCode::buildObs() {
     GymObs obs;
     obs.step     = currentStep;
     obs.maxSteps = MAX_STEPS;
@@ -330,9 +313,7 @@ GymObs GNNLocomotionCode::buildObs() {
         BlockObs b;
         b.id       = id;
         b.pos      = sc->position;
-        // in_target repurposed: true if this block is leading the locomotion
-        // (directional position > 0.5) — keeps the JSON protocol unchanged.
-        b.inTarget = (computeDirectionalPos(sc->position) > 0.5f);
+        b.inTarget = (target != nullptr && target->isInTarget(sc->position));
 
         for (int d = 0; d < 6; d++) {
             auto* iface = sc->getInterface(SCLattice2::Direction(d));
@@ -347,16 +328,52 @@ GymObs GNNLocomotionCode::buildObs() {
         obs.blocks.push_back(std::move(b));
     }
 
-    // No target cells for locomotion — send empty list.
-    obs.target.clear();
+    obs.target = getTargetCells();
     return obs;
+}
+
+// ---------------------------------------------------------------------------
+// Target cell cache
+// ---------------------------------------------------------------------------
+
+std::vector<Cell3DPosition>& GNNShapeReconfigurationCode::getTargetCells() {
+    if (!targetCacheBuilt) {
+        targetCacheBuilt = true;
+        if (target) {
+            auto* latt = BaseSimulator::getWorld()->lattice;
+            for (int x = 0; x < latt->gridSize[0]; x++)
+                for (int y = 0; y < latt->gridSize[1]; y++)
+                    for (int z = 0; z < latt->gridSize[2]; z++) {
+                        Cell3DPosition pos(x, y, z);
+                        if (target->isInTarget(pos))
+                            targetCells.push_back(pos);
+                    }
+        }
+    }
+    return targetCells;
+}
+
+int GNNShapeReconfigurationCode::countBlocksInTarget() const {
+    if (!target) return 0;
+    int count = 0;
+    for (auto& [id, bb] : BaseSimulator::getWorld()->getMap())
+        if (target->isInTarget(bb->position)) count++;
+    return count;
+}
+
+double GNNShapeReconfigurationCode::computeReward(int prevIn, int newIn, bool done) const {
+    double r = static_cast<double>(newIn - prevIn);
+    r -= 0.01;
+    if (done && newIn >= static_cast<int>(targetCells.size()))
+        r += 10.0;
+    return r;
 }
 
 // ===========================================================================
 // Deploy mode
 // ===========================================================================
 
-void GNNLocomotionCode::parseDeployConfig() {
+void GNNShapeReconfigurationCode::parseDeployConfig() {
     if (const char* env = std::getenv("GNN_DEPLOY_WEIGHTS")) {
         deployMode  = true;
         weightsPath = env;
@@ -376,28 +393,11 @@ void GNNLocomotionCode::parseDeployConfig() {
                 if (d->QueryUnsignedAttribute("seed", &s) == TIXML_SUCCESS)
                     globalSeed = s;
             }
-
-            // Parse <locomotion direction="dx,dy,dz"/> if present.
-            TiXmlElement* loco = worldElt->FirstChildElement("locomotion");
-            if (loco) {
-                const char* dirStr = loco->Attribute("direction");
-                if (dirStr) {
-                    float dx = 0, dy = 0, dz = 0;
-                    if (std::sscanf(dirStr, "%f,%f,%f", &dx, &dy, &dz) == 3) {
-                        float len = std::sqrt(dx*dx + dy*dy + dz*dz);
-                        if (len > 1e-6f) {
-                            locomotionDir[0] = dx / len;
-                            locomotionDir[1] = dy / len;
-                            locomotionDir[2] = dz / len;
-                        }
-                    }
-                }
-            }
         }
     }
 }
 
-void GNNLocomotionCode::onDeployStartup() {
+void GNNShapeReconfigurationCode::onDeployStartup() {
     if (weightsPath.empty()) {
         std::cerr << "[GCN deploy] missing weights path; aborting\n";
         deployMode = false;
@@ -421,19 +421,19 @@ void GNNLocomotionCode::onDeployStartup() {
     if (rngState == 0) rngState = 1;
 
     addMessageEventFunc2(MSG_TOPO_1HOP,
-        std::bind(&GNNLocomotionCode::onTopo1Msg, this,
+        std::bind(&GNNShapeReconfigurationCode::onTopo1Msg, this,
                   std::placeholders::_1, std::placeholders::_2));
     addMessageEventFunc2(MSG_TOPO_2HOP,
-        std::bind(&GNNLocomotionCode::onTopo2Msg, this,
+        std::bind(&GNNShapeReconfigurationCode::onTopo2Msg, this,
                   std::placeholders::_1, std::placeholders::_2));
     addMessageEventFunc2(MSG_GNN_LAYER1,
-        std::bind(&GNNLocomotionCode::onGnnLayerMsg, this, 0,
+        std::bind(&GNNShapeReconfigurationCode::onGnnLayerMsg, this, 0,
                   std::placeholders::_1, std::placeholders::_2));
     addMessageEventFunc2(MSG_GNN_LAYER2,
-        std::bind(&GNNLocomotionCode::onGnnLayerMsg, this, 1,
+        std::bind(&GNNShapeReconfigurationCode::onGnnLayerMsg, this, 1,
                   std::placeholders::_1, std::placeholders::_2));
     addMessageEventFunc2(MSG_GNN_LAYER3,
-        std::bind(&GNNLocomotionCode::onGnnLayerMsg, this, 2,
+        std::bind(&GNNShapeReconfigurationCode::onGnnLayerMsg, this, 2,
                   std::placeholders::_1, std::placeholders::_2));
 
     Time t0 = scheduler->now() + 1'000 + (module->blockId % 8);
@@ -441,7 +441,7 @@ void GNNLocomotionCode::onDeployStartup() {
         new InterruptionEvent<int>(t0, module, DEPLOY_STEP_START));
 }
 
-int GNNLocomotionCode::expectedNeighborCount() const {
+int GNNShapeReconfigurationCode::expectedNeighborCount() const {
     int n = 0;
     for (int d = 0; d < 6; d++) {
         auto* iface = module->getInterface(SCLattice2::Direction(d));
@@ -450,7 +450,7 @@ int GNNLocomotionCode::expectedNeighborCount() const {
     return n;
 }
 
-void GNNLocomotionCode::clearDeployStepBuffers() {
+void GNNShapeReconfigurationCode::clearDeployStepBuffers() {
     nb1mask = 0;
     nb1ids.fill(0);
     topo1Got.fill(false);
@@ -466,7 +466,7 @@ void GNNLocomotionCode::clearDeployStepBuffers() {
     }
 }
 
-void GNNLocomotionCode::onDeployStepStart() {
+void GNNShapeReconfigurationCode::onDeployStepStart() {
     deployStep++;
     clearDeployStepBuffers();
 
@@ -487,10 +487,10 @@ void GNNLocomotionCode::onDeployStepStart() {
         scheduler->now() + 3 * ROUND_DT_US, module, DEPLOY_TIMEOUT_TOPO1));
 
     if (expectedNeighborCount() == 0) {
-        float dp = computeDirectionalPos(module->position);
+        bool inT = (target != nullptr && target->isInTarget(module->position));
         h_self = buildNodeFeature(
             BaseSimulator::getWorld()->lattice->gridSize,
-            module->position, dp, 0,
+            module->position, inT, 0,
             static_cast<int>(module->getAllMotions().size()), false);
         for (int L = 0; L < N_LAYERS; L++)
             h_self = gcnLayerForward(GCNWeights::instance().layers[L], h_self, {});
@@ -500,8 +500,8 @@ void GNNLocomotionCode::onDeployStepStart() {
     }
 }
 
-void GNNLocomotionCode::onTopo1Msg(std::shared_ptr<Message> m,
-                                    P2PNetworkInterface* sender) {
+void GNNShapeReconfigurationCode::onTopo1Msg(std::shared_ptr<Message> m,
+                                              P2PNetworkInterface* sender) {
     if (!deployMode) return;
     auto* msg = static_cast<MessageOf<TopoPayload>*>(m.get());
     const TopoPayload& pl = *msg->getData();
@@ -514,13 +514,13 @@ void GNNLocomotionCode::onTopo1Msg(std::shared_ptr<Message> m,
     maybeAdvanceFromTopo1();
 }
 
-void GNNLocomotionCode::maybeAdvanceFromTopo1() {
+void GNNShapeReconfigurationCode::maybeAdvanceFromTopo1() {
     if (topo2Sent) return;
     if (topo1Received < expectedNeighborCount()) return;
     emitTopo2();
 }
 
-void GNNLocomotionCode::emitTopo2() {
+void GNNShapeReconfigurationCode::emitTopo2() {
     if (topo2Sent) return;
     topo2Sent = true;
 
@@ -538,8 +538,8 @@ void GNNLocomotionCode::emitTopo2() {
         scheduler->now() + 3 * ROUND_DT_US, module, DEPLOY_TIMEOUT_TOPO2));
 }
 
-void GNNLocomotionCode::onTopo2Msg(std::shared_ptr<Message> m,
-                                    P2PNetworkInterface* sender) {
+void GNNShapeReconfigurationCode::onTopo2Msg(std::shared_ptr<Message> m,
+                                              P2PNetworkInterface* sender) {
     if (!deployMode) return;
     auto* msg = static_cast<MessageOf<Topo2Payload>*>(m.get());
     const Topo2Payload& pl = *msg->getData();
@@ -552,22 +552,22 @@ void GNNLocomotionCode::onTopo2Msg(std::shared_ptr<Message> m,
     maybeAdvanceFromTopo2();
 }
 
-void GNNLocomotionCode::maybeAdvanceFromTopo2() {
+void GNNShapeReconfigurationCode::maybeAdvanceFromTopo2() {
     if (topo2Advanced) return;
     if (topo2Received < expectedNeighborCount()) return;
     topo2Advanced = true;
 
     bool isAP = localIsArticulationPoint();
-    float dp  = computeDirectionalPos(module->position);
+    bool inT  = (target != nullptr && target->isInTarget(module->position));
     int nMoves = static_cast<int>(module->getAllMotions().size());
     h_self = buildNodeFeature(
         BaseSimulator::getWorld()->lattice->gridSize,
-        module->position, dp, nb1mask, nMoves, isAP);
+        module->position, inT, nb1mask, nMoves, isAP);
 
     emitLayerMessages(0);
 }
 
-bool GNNLocomotionCode::localIsArticulationPoint() const {
+bool GNNShapeReconfigurationCode::localIsArticulationPoint() const {
     int nNb = expectedNeighborCount();
     if (nNb <= 1) return false;
 
@@ -627,7 +627,7 @@ bool GNNLocomotionCode::localIsArticulationPoint() const {
     return false;
 }
 
-void GNNLocomotionCode::emitLayerMessages(int layer) {
+void GNNShapeReconfigurationCode::emitLayerMessages(int layer) {
     const auto& W = GCNWeights::instance();
     for (int d = 0; d < 6; d++) {
         if (!(nb1mask & (1u << d))) continue;
@@ -657,9 +657,9 @@ void GNNLocomotionCode::emitLayerMessages(int layer) {
     if (expectedNeighborCount() == 0) maybeAdvanceLayer(layer);
 }
 
-void GNNLocomotionCode::onGnnLayerMsg(int layer,
-                                       std::shared_ptr<Message> m,
-                                       P2PNetworkInterface* sender) {
+void GNNShapeReconfigurationCode::onGnnLayerMsg(int layer,
+                                                 std::shared_ptr<Message> m,
+                                                 P2PNetworkInterface* sender) {
     if (!deployMode) return;
     auto* msg = static_cast<MessageOf<GNNMsgPayload>*>(m.get());
     const GNNMsgPayload& pl = *msg->getData();
@@ -673,7 +673,7 @@ void GNNLocomotionCode::onGnnLayerMsg(int layer,
     maybeAdvanceLayer(layer);
 }
 
-void GNNLocomotionCode::maybeAdvanceLayer(int layer) {
+void GNNShapeReconfigurationCode::maybeAdvanceLayer(int layer) {
     if (layerAdvanced[layer]) return;
     if (layerMsgReceived[layer] < expectedNeighborCount()) return;
     layerAdvanced[layer] = true;
@@ -688,18 +688,18 @@ void GNNLocomotionCode::maybeAdvanceLayer(int layer) {
     }
 }
 
-void GNNLocomotionCode::runActorAndMove() {
+void GNNShapeReconfigurationCode::runActorAndMove() {
     const auto& W = GCNWeights::instance();
     Eigen::VectorXf logits = actorLogits(W, h_self);
 
     auto motions = module->getAllMotions();
     int  nMoves  = std::min<int>(static_cast<int>(motions.size()), N_ACTIONS - 1);
+    bool inT     = (target != nullptr && target->isInTarget(module->position));
     bool isAP    = localIsArticulationPoint();
 
-    // Locomotion: all non-AP blocks are free to move — no in_target lock.
     std::array<bool, N_ACTIONS> mask{};
     mask[0] = true;
-    if (!isAP)
+    if (!inT && !isAP)
         for (int i = 1; i <= nMoves; i++) mask[i] = true;
 
     int action = argmaxMasked(logits, mask);
@@ -714,7 +714,7 @@ void GNNLocomotionCode::runActorAndMove() {
     std::cout << "[GCN id=" << module->blockId
               << " step=" << deployStep
               << " action=" << action
-              << " dp=" << computeDirectionalPos(module->position)
+              << " inTarget=" << (int)inT
               << " isAP=" << (int)isAP << "]\n";
 
     size_t totalBlocks = BaseSimulator::getWorld()->getMap().size();
@@ -725,7 +725,7 @@ void GNNLocomotionCode::runActorAndMove() {
     g_ballot.settled = true;
 
     bID               winner  = 0;
-    GNNLocomotionCode* winCode = nullptr;
+    GNNShapeReconfigurationCode* winCode = nullptr;
     for (auto& [id, e] : g_ballot.votes) {
         if (e.action != 0) { winner = id; winCode = e.code; break; }
     }
@@ -757,10 +757,16 @@ void GNNLocomotionCode::runActorAndMove() {
         }
     }
 
-    // Locomotion: terminate only on step budget exhaustion, not on shape match.
-    bool timeDone = (deployStep >= MAX_STEPS);
-    if (timeDone) {
-        std::cout << "[GCN deploy] step limit reached at step " << deployStep << "\n";
+    int inTarget    = countBlocksInTarget();
+    int totalTarget = static_cast<int>(getTargetCells().size());
+    bool shapeDone  = (totalTarget > 0 && inTarget >= totalTarget);
+    bool timeDone   = (deployStep >= MAX_STEPS);
+
+    if (shapeDone || timeDone) {
+        std::cout << "[GCN deploy] "
+                  << (shapeDone ? "target shape reached" : "step limit reached")
+                  << " at step " << deployStep
+                  << " (" << inTarget << "/" << totalTarget << " in target)\n";
         return;
     }
 
@@ -772,4 +778,4 @@ void GNNLocomotionCode::runActorAndMove() {
     }
 }
 
-} // namespace GNNLocomotion
+} // namespace GNNShapeReconfiguration

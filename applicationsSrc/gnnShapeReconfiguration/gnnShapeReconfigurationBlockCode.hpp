@@ -14,12 +14,13 @@
 #include <utility>
 #include <vector>
 
-namespace GNNLocomotion {
+namespace GNNShapeReconfiguration {
 
 // Payload values for InterruptionEvent<int>
 static constexpr int GYM_TICK              = 1;
 static constexpr int MOVE_DONE             = 2;
 static constexpr int DEPLOY_STEP_START     = 3;
+// Phase watchdog ids
 static constexpr int DEPLOY_TIMEOUT_TOPO1  = 10;
 static constexpr int DEPLOY_TIMEOUT_TOPO2  = 11;
 static constexpr int DEPLOY_TIMEOUT_LAYER1 = 20;
@@ -59,20 +60,21 @@ struct GNNMsgPayload {
     float    h[HIDDEN];
 };
 
-class GNNLocomotionCode : public SlidingCubes::SlidingCubesBlockCode {
+class GNNShapeReconfigurationCode : public SlidingCubes::SlidingCubesBlockCode {
 private:
     SlidingCubes::SlidingCubesBlock* module = nullptr;
     bool isLeader = false;
 
     // ---- Training/leader runtime state ----
     int    currentStep    = 0;
+    int    prevInTarget   = 0;
     bool   episodeDone    = false;
     double pendingPenalty = 0.0;
 
     std::queue<std::pair<SlidingCubes::SlidingCubesBlock*, Cell3DPosition>> moveQueue;
 
-    // ---- Locomotion direction (unit vector, parsed from XML or defaulting to +X) ----
-    float locomotionDir[3] = {1.0f, 0.0f, 0.0f};
+    std::vector<Cell3DPosition> targetCells;
+    bool targetCacheBuilt = false;
 
     // ---- Deploy-mode runtime state ----
     bool          deployMode    = false;
@@ -107,22 +109,19 @@ private:
     uint64_t                      rngState = 1;
 
 public:
-    explicit GNNLocomotionCode(SlidingCubes::SlidingCubesBlock* host);
-    ~GNNLocomotionCode() override = default;
+    explicit GNNShapeReconfigurationCode(SlidingCubes::SlidingCubesBlock* host);
+    ~GNNShapeReconfigurationCode() override = default;
 
     void startup() override;
     void onMotionEnd() override;
     void onInterruptionEvent(std::shared_ptr<Event> event) override;
 
     static BlockCode* buildNewBlockCode(BaseSimulator::BuildingBlock* host) {
-        return new GNNLocomotionCode(
+        return new GNNShapeReconfigurationCode(
             static_cast<SlidingCubes::SlidingCubesBlock*>(host));
     }
 
 private:
-    // ---- Locomotion helpers ----
-    float computeDirectionalPos(const Cell3DPosition& pos) const;
-
     // ---- Training (gym) path ----
     void scheduleGymTick(Time delayUs = TICK_IDLE_US);
     void onGymTick();
@@ -133,6 +132,9 @@ private:
     bool isArticulationPoint(const SlidingCubes::SlidingCubesBlock* sc) const;
 
     GymObs buildObs();
+    std::vector<Cell3DPosition>& getTargetCells();
+    int countBlocksInTarget() const;
+    double computeReward(int prevIn, int newIn, bool done) const;
 
     // ---- Deploy path ----
     void parseDeployConfig();
@@ -157,4 +159,4 @@ private:
     void runActorAndMove();
 };
 
-} // namespace GNNLocomotion
+} // namespace GNNShapeReconfiguration

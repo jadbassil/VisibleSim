@@ -4,7 +4,12 @@
 
 **C++ build** (see project-root `MACOS_SETUP.md` for macOS dependencies):
 ```sh
-# From project root
+cd applicationsSrc/gnnLocomotion
+make -j$(sysctl -n hw.ncpu)
+```
+
+Or via CMake:
+```sh
 cmake -B build .
 cmake --build build --target gnnLocomotion
 ```
@@ -12,14 +17,21 @@ cmake --build build --target gnnLocomotion
 **Python environment** (Python 3.9+):
 ```sh
 cd applicationsSrc/gnnLocomotion/train
-python -m venv .venv
-source .venv/bin/activate
-pip install torch numpy
-pip install torch_geometric   # optional but recommended — enables GAT/GCN backbones
-pip install wandb             # optional — experiment tracking
+uv sync          # preferred — uses pyproject.toml + uv.lock
+# or:
+python -m venv .venv && source .venv/bin/activate
+pip install torch numpy torch_geometric wandb
 ```
 
 Without `torch_geometric` the policy degrades to an MLP that ignores graph structure.
+
+---
+
+## What this app does
+
+A cluster of 6 sliding-cube modules learns to locomote as a whole in a fixed direction (default: +X). The policy is a 3-layer GNN: each module independently decides whether to move based on its local neighbourhood. The reward at each step is the displacement of the swarm's center of mass along the travel direction.
+
+There is **no target shape** and no solve-rate criterion — the task is open-ended locomotion.
 
 ---
 
@@ -44,21 +56,33 @@ python train.py [OPTIONS]
   --episodes INT      Number of training episodes (default: 2000)
   --device STR        Compute device: cpu | cuda (default: auto-detected)
   --backbone STR      GNN encoder: gat | gcn (default: gat)
+  --direction DX,DY,DZ  Locomotion direction vector, will be normalised
+                        (default: 1,0,0 — +X axis)
   --render            Launch VisibleSim with GUI (disabled by default)
   --realtime          With --render, use realtime scheduler for visible motion
   --step-delay FLOAT  Sleep N seconds after each step to slow playback (default: 0)
-    --wandb             Enable Weights & Biases logging
-    --wandb-project STR wandb project name (default: visible-sim-gnn-locomotion)
-    --wandb-entity STR  wandb user/team (optional)
-    --wandb-run-name STR wandb run name (optional)
-    --wandb-mode STR    wandb mode: online | offline | disabled (default: online)
+  --wandb             Enable Weights & Biases logging
+  --wandb-project STR wandb project name (default: visible-sim-gnn-locomotion)
+  --wandb-entity STR  wandb user/team (optional)
+  --wandb-run-name STR wandb run name (optional)
+  --wandb-mode STR    wandb mode: online | offline | disabled (default: online)
 ```
 
 ### Examples
 
-Headless training (fastest):
+Headless training in +X (fastest):
 ```sh
 python train.py --episodes 2000 --backbone gat
+```
+
+Train to locomote in the +Y direction:
+```sh
+python train.py --direction 0,1,0
+```
+
+Train to locomote diagonally (+X +Y):
+```sh
+python train.py --direction 1,1,0   # normalised to [0.707, 0.707, 0] at runtime
 ```
 
 Training with GUI and visible motion:
@@ -66,30 +90,52 @@ Training with GUI and visible motion:
 python train.py --render --realtime --step-delay 0.2
 ```
 
-GCN backbone (lighter, easier to analyse):
+GCN backbone (required for deploy mode):
 ```sh
 python train.py --backbone gcn
 ```
 
 Training with wandb tracking:
 ```sh
-python train.py --wandb --wandb-project marl --backbone gcn
+python train.py --wandb --wandb-project marl-locomotion --backbone gcn
 ```
 
-Training with wandb in offline mode:
-```sh
-python train.py --wandb --wandb-mode offline --wandb-project marl
+> **Important**: the `--direction` you pass to `train.py` must match the `direction` attribute in `config.xml` `<locomotion direction="..."/>` and `config_deploy.xml`. If they differ the directional-position feature (node x(3)) will be computed differently in Python vs. C++, and the deployed policy will behave inconsistently.
+
+---
+
+## Changing the Locomotion Direction
+
+1. Edit `applicationsBin/gnnLocomotion/config.xml`:
+   ```xml
+   <locomotion direction="0,1,0"/>   <!-- +Y instead of +X -->
+   ```
+2. Pass the same direction to the training script:
+   ```sh
+   python train.py --direction 0,1,0
+   ```
+3. After training, update `config_deploy.xml` with the same direction before deploying.
+
+No rebuild is required for direction changes — the direction is parsed at runtime.
+
+---
+
+## Changing the Initial Shape or Grid
+
+Edit `applicationsBin/gnnLocomotion/config.xml`:
+
+```xml
+<world gridSize="W,H,D" windowSize="1200,800">
+    <locomotion direction="dx,dy,dz"/>
+    <blockList color="80,160,255" blockSize="10.0,10.0,10.0" ids="ORDERED">
+        <block position="x,y,z"/>
+        <!-- one entry per module -->
+    </blockList>
+    <!-- no targetList -->
+</world>
 ```
 
-### Weights & Biases (wandb)
-
-If `--wandb` is set, the trainer logs:
-
-- PPO update metrics (`loss`, `pg`, `vf`, `ent`, step reward stats)
-- Episode metrics (reward, steps, rolling means, target reached)
-- Checkpoint events
-
-If `wandb` is not installed, training continues and prints a warning.
+Episode hyperparameters (`MAX_STEPS`, `GYM_PORT`) are constants in `gnnLocomotionBlockCode.hpp` and require a rebuild.
 
 ---
 
@@ -127,51 +173,26 @@ policy.eval()
 Every 10 episodes a summary line is printed:
 
 ```
-Episode    10  reward=  2.40  mean_r=  1.85  steps=  47  mean_steps=52.3
+Episode    10  reward=  3.12  mean_r=  2.47  steps= 200  mean_steps=200.0
 ```
 
-During PPO updates (also every 10 episodes):
+The reward is the total CoM displacement along the travel direction accumulated over the episode (positive = the swarm moved forward). Unlike shape reconfiguration there is no `solve_rate` column — locomotion is a continuous task.
+
+During PPO updates:
 
 ```
-  [update] loss=0.0423  pg=0.0311  vf=0.0089  ent=0.0023  r_step=0.980  r_step_mean=0.712  ep_r=2.40
+  [update] loss=0.0412  pg=0.0298  vf=0.0091  ent=0.0023
 ```
 
 | Field | Meaning |
 |---|---|
-| `reward` | Total reward for this episode |
+| `reward` | Total locomotion reward this episode (ΣΔCoM·direction) |
 | `mean_r` | Mean episode reward over last 10 episodes |
-| `steps` | Steps taken this episode |
+| `steps` | Always `MAX_STEPS` unless a connectivity violation ends the episode early |
 | `loss` | Total PPO loss |
 | `pg` | Policy gradient loss |
 | `vf` | Value function loss |
 | `ent` | Mean entropy (higher = more exploration) |
-
----
-
-## Changing the Task
-
-Edit `applicationsBin/gnnLocomotion/config.xml` to change the initial and target shapes, then rebuild:
-
-```sh
-cmake --build build --target gnnLocomotion
-```
-
-The XML format:
-```xml
-<world gridSize="W,H,D" windowSize="1200,800">
-    <blockList color="80,160,255" blockSize="10.0,10.0,10.0" ids="ORDERED">
-        <block position="x,y,z"/>
-        <!-- one entry per module -->
-    </blockList>
-    <targetList>
-        <target format="grid">
-            <cell position="x,y,z" color="255,100,100"/>
-        </target>
-    </targetList>
-</world>
-```
-
-Episode hyperparameters (`MAX_STEPS`, `GYM_PORT`) are constants in `gnnLocomotionBlockCode.hpp` and require a rebuild.
 
 ---
 
@@ -181,10 +202,10 @@ To inspect the initial configuration visually:
 ```sh
 cd applicationsBin/gnnLocomotion
 ./gnnLocomotion -c config.xml -r    # GUI, realtime
-./gnnLocomotion -c config.xml -t    # headless (exits immediately without gym client)
+./gnnLocomotion -c config.xml -t    # headless (blocks waiting for gym client)
 ```
 
-Without a Python client connected the simulator will block waiting for a step request. Use Ctrl-C to exit.
+Without a Python client connected the simulator waits for a step request. Use Ctrl-C to exit.
 
 ---
 
@@ -198,24 +219,25 @@ policy.load_state_dict(torch.load("checkpoints/policy_final.pt")["model_state"])
 policy.eval()
 
 # x, edge_index, edge_attr built from local neighbourhood only
+# x[:, 3] = directionalPos = dot(pos, direction) / grid_extent  (not in_target)
 probs = policy.distributed_act(x, edge_index, edge_attr, action_masks)
 action = probs.argmax(dim=-1)
 ```
 
-The GCN backbone is preferred for on-robot use because the per-hop information radius is explicit and the parameter count is lower (≈28k vs ≈38k for GAT).
+The GCN backbone is preferred for on-robot use because the per-hop information radius is explicit and the parameter count is lower.
 
 ---
 
 ## Deploy Mode (C++ in-simulator distributed inference)
 
-The simulator can run the trained policy directly in C++ — no Python loop, no leader, no TCP. Each module independently runs the GCN forward pass on its local 3-hop neighbourhood and decides its own motion every step. See `ARCHITECTURE.md` for the protocol details.
+The simulator can run the trained policy directly in C++ — no Python loop, no TCP. Each module independently runs the GCN forward pass on its local 3-hop neighbourhood and decides its own motion every step.
 
 ### 1. Train a GCN policy
 
 ```sh
 cd applicationsSrc/gnnLocomotion/train
 source .venv/bin/activate
-python train.py --backbone gcn --episodes 2000
+python train.py --backbone gcn --episodes 2000 --direction 1,0,0
 ```
 
 Deploy mode requires the GCN backbone (the C++ runtime is GCN-only).
@@ -242,16 +264,16 @@ The script loads the binary with NumPy, runs forward on a synthetic 4-node graph
 
 ### 4. Run the simulator in deploy mode
 
-`applicationsBin/gnnLocomotion/config_deploy.xml` enables deploy mode via:
+`applicationsBin/gnnLocomotion/config_deploy.xml` enables deploy mode:
 
 ```xml
 <deploy enabled="true" weights="gcn_weights.bin" seed="42"/>
+<locomotion direction="1,0,0"/>
 ```
 
 Run it:
 
 ```sh
-# From project root, after building gnnLocomotion:
 cd applicationsBin/gnnLocomotion
 ./gnnLocomotion -c config_deploy.xml -r        # GUI, realtime
 ./gnnLocomotion -c config_deploy.xml -t        # headless, fastest scheduler
@@ -260,12 +282,15 @@ cd applicationsBin/gnnLocomotion
 You should see one log line per module per step:
 
 ```
-[GCN id=1 step=1 action=2 inTarget=0 isAP=0]
-[GCN id=2 step=1 action=0 inTarget=0 isAP=1]
+[GCN id=1 step=1 action=2 dp=0.17 isAP=0]
+[GCN id=2 step=1 action=0 dp=0.25 isAP=1]
 ...
 ```
 
-`moveTo` failures (collisions when two modules pick the same destination) are logged but the simulation continues.
+- `dp` — directional position `dot(pos, direction) / extent` for this module
+- `isAP=1` — this module is an articulation point and was forced to stay
+
+The simulation terminates at `MAX_STEPS` (no shape-completion check).
 
 ### 5. Override weights without editing XML
 
@@ -274,9 +299,8 @@ GNN_DEPLOY_WEIGHTS=/absolute/path/to/gcn_weights.bin \
   ./gnnLocomotion -c config.xml -t
 ```
 
-The env var sets `deployMode = true` regardless of the XML element, which is convenient for batch experiments and CI.
-
 ### Known limitations
 
-- All modules move simultaneously every step, diverging from the one-move-per-step protocol used during training. Expect a success-rate gap until a simultaneous-move fine-tune is added.
-- Local articulation-point detection uses the 2-hop induced subgraph; it is exact for clusters smaller than the GNN's 3-hop receptive field (≤ ~20 modules in dense lattices).
+- **Feature drift**: as the swarm locomotes, `directionalPos` values grow. If the swarm travels beyond the grid extent used during training, this feature saturates at or above 1.0, which is out-of-distribution. Use a longer grid or re-train with domain randomisation over starting positions.
+- **Local AP detection** uses the 2-hop induced subgraph; it is exact for clusters smaller than the GNN's 3-hop receptive field (≤ ~20 modules in dense lattices).
+- **One mover per step**: the ballot selects one mover per step, mirroring the training protocol. This limits locomotion speed. A top-k ballot extension would improve throughput.

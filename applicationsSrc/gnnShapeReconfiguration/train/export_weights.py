@@ -4,7 +4,7 @@ Export a trained GCN policy to a flat little-endian binary for the C++ deploy ru
 Usage
 -----
   python export_weights.py --ckpt checkpoints/policy_final.pt \
-                           --out  ../../../applicationsBin/gnnLocomotion/gcn_weights.bin
+                           --out  ../../../applicationsBin/gnnShapeReconfiguration/gcn_weights.bin
 """
 import argparse
 import json
@@ -17,8 +17,8 @@ import torch
 
 from model import GNNPolicy, NODE_DIM, EDGE_DIM, HIDDEN, MAX_ACTIONS
 
-MAGIC    = b"GCN1"
-VERSION  = 1
+MAGIC   = b"GCN1"
+VERSION = 1
 N_LAYERS = 3
 
 

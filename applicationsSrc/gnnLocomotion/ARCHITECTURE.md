@@ -2,7 +2,11 @@
 
 ## Overview
 
-This application trains a Graph Neural Network (GNN) policy to control a cluster of modular sliding-cube robots to reconfigure from an initial shape into a target shape. The C++ simulator (VisibleSim) acts as the physics engine and is controlled by a Python training loop over a TCP socket.
+This application trains a Graph Neural Network (GNN) policy to control a cluster of modular sliding-cube robots to **locomote as a whole in a given direction**. Each module independently decides whether to move and where, guided by a shared reward signal: the displacement of the swarm's center of mass (CoM) along the target direction.
+
+The C++ simulator (VisibleSim) acts as the physics engine and is controlled by a Python training loop over a TCP socket. The same GCN weights can then be deployed directly inside the simulator with no Python process.
+
+> **Relationship to `gnnShapeReconfiguration`**: this application shares the same distributed GNN infrastructure (gym protocol, deploy protocol, PPO loop) but differs in reward definition, node feature x(3), action mask, and termination condition. See the summary table at the bottom of this section.
 
 ---
 
@@ -42,22 +46,25 @@ Sent at episode start and after every step:
 {
   "step": 5,
   "max_steps": 200,
-  "grid_size": [8, 6, 4],
-  "reward": 0.99,
+  "grid_size": [12, 6, 4],
+  "reward": 0.0,
   "done": false,
   "blocks": [
     {
       "id": 1,
-      "pos": [1, 1, 0],
-      "in_target": false,
+      "pos": [3, 1, 0],
+      "in_target": true,
       "neighbors": [2, -1, -1, -1, -1, -1],
-      "moves": [[2, 1, 0], [1, 2, 0]]
+      "moves": [[4, 1, 0], [3, 2, 0]]
     }
   ],
-  "target": [[3,1,0], [4,1,0], [5,1,0], [3,2,0], [4,2,0], [5,2,0]]
+  "target": []
 }
 ```
 
+- `reward` — C++ sends `0.0` for normal steps; connectivity-violation penalty (`−10`) is the only non-zero value. The main locomotion reward is computed entirely by Python's potential shaping.
+- `in_target` — **repurposed**: `true` if `directionalPos > 0.5`, i.e., this block is in the leading half of the swarm along the travel direction. The field name is kept for protocol compatibility; it no longer indicates goal placement.
+- `target` — always an empty array; locomotion has no goal shape.
 - `neighbors[d]` — block ID of the neighbor in direction `d` (PlusX, MinusX, PlusY, MinusY, PlusZ, MinusZ), or `-1` if empty.
 - `moves` — list of valid destination positions from `getAllMotions()`.
 
@@ -103,22 +110,25 @@ The C++ check catches cases where the Python snapshot is stale (e.g., a previous
 
 ## Reward Function
 
-The total step reward received by Python combines two signals:
+The total step reward received by Python is:
 
 ```
-R_total = R_sim + 0.1 × (Φ(s') − Φ(s))
+R_total = R_sim + Φ(s') − Φ(s)
 ```
+
+**Φ(s) — locomotion potential** (Python, `env.py: _potential()`):
+
+```
+Φ(s) = dot(CoM(s), direction)
+```
+
+where `CoM(s)` is the mean position of all blocks and `direction` is the normalised travel vector (e.g., `[1, 0, 0]` for +X). The shaping reward `F = Φ(s') − Φ(s)` equals the CoM displacement along the travel axis per step — positive whenever the swarm moves forward.
 
 **R_sim** (from C++):
-- `+1` for each block newly placed in a target cell
-- `−0.01` time penalty per step
-- `+10` completion bonus when all target cells are filled
-- `−10` connectivity-violation penalty (episode ends)
+- `0.0` on normal steps (locomotion has no per-block goal signal)
+- `−10` connectivity-violation penalty (episode ends immediately)
 
-**Potential-based shaping** (Python, `env.py: _potential()`):
-- `Φ(s) = −mean L1 distance from each non-target block to its nearest target cell`
-- Shaping `F = Φ(s') − Φ(s)` is positive whenever any block moves closer to the goal
-- Coefficient `0.1` keeps shaping subordinate to the discrete placement signal
+> **Contrast with shape reconfiguration**: shape reconfiguration used `R_sim = (new_in_target − prev_in_target) − 0.01 + 10 × done` and `Φ(s) = −mean L1 distance to nearest target cell`. The locomotion objective replaces both with a single CoM-progress signal.
 
 ---
 
@@ -129,8 +139,9 @@ Before passing tensors to the policy, `obs_to_tensors()` builds a boolean mask `
 | Condition | Mask |
 |---|---|
 | Block is an articulation point | `[True, False×12]` — stay only |
-| Block is already in a target cell | `[True, False×12]` — stay only |
 | Normal block with `k` valid moves | `[True×(k+1), False×(12−k)]` |
+
+There is **no in-target lock** for locomotion — every non-AP block is free to move at every step. This is a key difference from shape reconfiguration, where blocks already placed in the target were forced to stay.
 
 Masking is applied inside the policy (`logits.masked_fill(~mask, −∞)`) before softmax.
 
@@ -151,15 +162,15 @@ Input: node features [N, 12], edge features [E, 6]
 
 ### Node features (12 dims)
 
-| Feature | Dims | Description |
+| Index | Feature | Description |
 |---|---|---|
-| Normalised position | 3 | `pos / grid_size` |
-| In-target flag | 1 | `1.0` if block is already placed |
-| Neighbour presence | 6 | One bit per direction (PlusX…MinusZ) |
-| Normalised move count | 1 | `n_moves / 12` |
-| Articulation-point flag | 1 | `1.0` if removing this block disconnects the cluster |
+| 0–2 | Normalised position | `pos / grid_size` per axis |
+| 3 | **Directional position** | `dot(pos, direction) / grid_extent` — how far this block is along the travel axis (replaces `in_target` from shape reconfiguration) |
+| 4–9 | Neighbour presence | One bit per direction (PlusX … MinusZ) |
+| 10 | Normalised move count | `n_moves / 12` |
+| 11 | Articulation-point flag | `1.0` if removing this block disconnects the cluster |
 
-The articulation-point flag lets the policy **internalise the connectivity constraint**: during training the model learns to correlate `is_ap=1` with the stay action, removing the need for an external mask at inference time. At inference on physical robots, each module computes its own AP flag using its L-hop neighbourhood (exact for clusters smaller than the GNN's receptive field).
+Feature x(3) tells the policy which blocks are at the leading vs. trailing edge of the swarm. Leading blocks (high `directionalPos`) benefit from moving further forward; trailing blocks (low `directionalPos`) may need to detach and leap-frog. The `in_target` concept is not used here.
 
 ### Edge features (6 dims)
 
@@ -182,8 +193,6 @@ Lower parameter count; the hop-count / information-radius relationship is explic
 
 After `L` message-passing layers, each node's hidden state depends only on its `L`-hop neighbourhood. `distributed_act()` runs encoder + actor only (no global pooling), so each physical module can execute it independently after `L` rounds of local message exchange with neighbours.
 
-The articulation-point feature is the only input that requires graph-wide knowledge. Each module computes it locally by checking whether its own removal disconnects its known L-hop subgraph. For clusters smaller than the receptive field (e.g., ≤~20 modules with L=3 and branching factor ≤6) this local check is exact.
-
 ---
 
 ## PPO Training (`ppo.py`)
@@ -191,7 +200,7 @@ The articulation-point feature is the only input that requires graph-wide knowle
 | Hyperparameter | Value |
 |---|---|
 | Learning rate | 3 × 10⁻⁴ |
-| Rollout length | 20 steps (before each update) |
+| Rollout length | 256 steps (before each update) |
 | Epochs per update | 4 |
 | Mini-batch size | 32 transitions |
 | Clip ε | 0.2 |
@@ -202,29 +211,32 @@ The articulation-point feature is the only input that requires graph-wide knowle
 
 Advantages are computed with **Generalized Advantage Estimation (GAE)** and normalised globally across the rollout. The value function is a single global scalar (centralised critic); advantages are broadcast to all nodes in the graph. The policy gradient uses the **clipped surrogate objective** (standard PPO). Per-node log-probabilities are averaged over all nodes for the policy loss.
 
+There is no early-stopping solve-rate criterion because locomotion has no binary success condition. Training runs for `--episodes` iterations or until interrupted.
+
 ---
 
 ## Episode Configuration (`config.xml`)
 
-The default curriculum stage uses a 2×3 rectangle that must locomote 2 cells to the right:
+The default configuration places 6 modules in a 2×3 rectangle on a 12×6×4 grid:
 
 - **Initial shape**: blocks at `(1..3, 1..2, 0)` — 6 modules
-- **Target shape**: cells at `(3..5, 1..2, 0)` — shifted right by 2
-- **Overlap**: 2 blocks (at x=3) start already inside the target, providing an immediate positive reward signal on episode start
+- **Travel direction**: `[1, 0, 0]` (+X axis)
+- **No target shape** — reward is accumulated CoM displacement in +X
 - **Max steps**: 200 per episode
-- **Grid**: 8×6×4
+
+The `<locomotion direction="dx,dy,dz"/>` XML element sets the travel direction for both the C++ feature computation and (via the `--direction` argument) the Python reward. The direction is normalised at runtime.
 
 ---
 
 ## Distributed Deployment (deploy mode)
 
-Deploy mode runs the trained GCN policy directly inside the simulator with **no Python loop and no TCP**. Each module loads the same weights file at startup and runs its own copy of the GCN forward pass in C++ (Eigen). Modules exchange neighbourhood information over P2P messages, independently compute their preferred action, then elect a single winner via a shared in-process ballot. This matches the one-block-per-step training protocol and is a faithful simulation of on-robot execution.
+Deploy mode runs the trained GCN policy directly inside the simulator with **no Python loop and no TCP**. Each module loads the same weights file at startup and runs its own copy of the GCN forward pass in C++ (Eigen). Modules exchange neighbourhood information over P2P messages, independently compute their preferred action, then elect a single winner via a shared in-process ballot.
 
 ### Components
 
 - **`train/export_weights.py`** — exports the trained `GNNPolicy(backbone='gcn')` weights to a flat little-endian binary (CRC-32 verified). Header: magic `GCN1`, version, `hidden=64`, `node_dim=12`, `edge_dim=6`, `n_actions=13`, `n_layers=3`. Body: 3 layers × (`msg_lin.weight`, `self_lin.weight`, `bias`), then actor `fc1`/`fc2` weights and biases, then a CRC-32 trailer.
-- **`gcnPolicy.hpp` / `.cpp`** — pure C++ Eigen port of the GCN forward pass. Singleton `GCNWeights::instance()` loads once; all modules share the read-only copy. Helpers: `buildNodeFeature(...)`, `gcnEmitMsg`, `gcnLayerForward`, `actorLogits`, `argmaxMasked`, `sampleMaskedSoftmax`.
-- **`gnnLocomotionBlockCode` (deploy path)** — handlers, message types, and per-step state machine added alongside the existing gym path. Activated by a `<deploy>` element in `config.xml` or the `GNN_DEPLOY_WEIGHTS` env var.
+- **`gcnPolicy.hpp` / `.cpp`** — pure C++ Eigen port of the GCN forward pass. Singleton `GCNWeights::instance()` loads once; all modules share the read-only copy. Key difference from shape reconfiguration: `buildNodeFeature` accepts `float directionalPos` instead of `bool inTarget`.
+- **`gnnLocomotionBlockCode` (deploy path)** — activated by `<deploy>` element or `GNN_DEPLOY_WEIGHTS` env var. The `<locomotion direction="..."/>` element in the same XML is parsed at startup to set `locomotionDir[3]`, which is used to compute each module's `directionalPos` during node feature construction.
 
 ### Per-step protocol
 
@@ -235,6 +247,7 @@ DEPLOY_STEP_START  (interruption, fired simultaneously for all modules)
   ├─ Phase A round 1   MSG_TOPO_1HOP    broadcast 1-hop neighbour mask + id
   ├─ Phase A round 2   MSG_TOPO_2HOP    broadcast neighbour ids → each node has 2-hop subgraph
   │                   ↳ compute is_ap locally via reachability over 2-hop induced subgraph
+  │                   ↳ compute directionalPos = dot(pos, locomotionDir) / extent
   │                   ↳ build 12-d node feature h⁰
   ├─ Phase B round 1   MSG_GNN_LAYER1   send msg_lin([h⁰ ‖ e_ji]) to each neighbour → h¹
   ├─ Phase B round 2   MSG_GNN_LAYER2   → h²
@@ -257,8 +270,6 @@ Each phase has a dedicated watchdog `InterruptionEvent` that fires 3 × `ROUND_D
 | `DEPLOY_TIMEOUT_LAYER2` | `!layerAdvanced[1] && layerAdvanced[0]` |
 | `DEPLOY_TIMEOUT_LAYER3` | `!layerAdvanced[2] && layerAdvanced[1]` |
 
-Without the prerequisite guards, a stale watchdog from step N can fire in step N+1 (after `clearDeployStepBuffers` resets the idempotency flags) and call `gcnLayerForward` with `h_self` at the wrong dimension, causing an Eigen assertion.
-
 ### Message payloads
 
 | Type id | Name              | Payload struct                                            |
@@ -269,7 +280,7 @@ Without the prerequisite guards, a stale watchdog from step N can fire in step N
 | 201     | `MSG_GNN_LAYER2`  | `{ step, fromDir, h[64] }`                                |
 | 202     | `MSG_GNN_LAYER3`  | `{ step, fromDir, h[64] }`                                |
 
-`fromDir` is the direction the *receiver* sees the sender on (i.e., `d ^ 1`; SCLattice2 directions are paired Plus/Minus per axis). This avoids sending the full 6-d edge feature on the wire.
+`fromDir` is the direction the *receiver* sees the sender on (i.e., `d ^ 1`; SCLattice2 directions are paired Plus/Minus per axis).
 
 ### Local articulation-point detection
 
@@ -279,48 +290,63 @@ Each module's 2-hop induced subgraph (built from `MSG_TOPO_2HOP` messages) is en
 2. Pick any direct neighbour as BFS source; run BFS *excluding* self.
 3. If any direct neighbour is unreachable from the source, declare self an articulation point.
 
-This is exact when every cut vertex has a witness within 2 hops. For pathological skinny clusters where the witness lies further away, the deployed policy falls back on its training-time bias (the `is_ap` feature was a node input during training, so the model still leans toward staying when the local context is a "bridge").
-
 ### Action selection and winner ballot
 
-After the GNN forward pass each module applies the same action mask as training (`is_ap` or `in_target` → force stay; otherwise actions `1..k` enabled for the `k` valid motions) and runs `argmaxMasked`.
+After the GNN forward pass each module applies the locomotion action mask (`is_ap` → force stay; all other blocks can move) and runs `argmaxMasked`. There is no `in_target` lock.
 
-**Anti-oscillation filter**: before registering the vote, each module checks its proposed destination against a circular history of the last `HIST_LEN = 4` positions it occupied. If the destination matches any recent position, the action is suppressed to stay. This prevents the policy from getting stuck in N-step cycles where it repeatedly revisits the same cells.
+**Anti-oscillation filter**: before registering the vote, each module checks its proposed destination against a circular history of the last `HIST_LEN = 4` positions it occupied. If the destination matches any recent position, the action is suppressed to stay.
 
 **Shared ballot** (`static DeployBallot`): every module registers `{blockId, action, self*, motions}`. When all N modules have voted:
-1. The last voter picks the **winner**: the lowest block ID with a non-stay action. This mirrors the ascending-ID selection used during training.
-2. The winner's `moveTo()` is the only `moveTo()` issued per step (one block moves, as in training).
+1. The last voter picks the **winner**: the lowest block ID with a non-stay action.
+2. The winner's `moveTo()` is the only `moveTo()` issued per step.
 3. The winner's current position is pushed into its position history.
-4. **Deadlock escape**: if all blocks voted stay (histories blocked every option), all histories are cleared so the policy can explore from the current state again.
-5. The last voter schedules `DEPLOY_STEP_START` for **all** modules at the same future simulation time, enforcing global step synchronisation.
+4. **Deadlock escape**: if all blocks voted stay (histories blocked every option), all histories are cleared.
+5. The last voter schedules `DEPLOY_STEP_START` for **all** modules at the same future simulation time.
+
+**Termination**: only on step-budget exhaustion (`deployStep >= MAX_STEPS`). There is no shape-completion check.
 
 ### Step synchronisation and motion pacing
-
-The ballot last voter schedules the next `DEPLOY_STEP_START` for all modules at:
 
 ```
 nextStep = now + max(motionDuration, 8 × ROUND_DT_US)
 ```
 
-where `motionDuration = 1 100 000 µs` when a move was issued (the `TeleportationStartEvent` fires at `now + 1 000 000 µs`; the 100 ms buffer ensures `onMotionEnd` clears `motionPending` before the next step begins).
-
-All modules therefore start each step at the same simulation time. This replaces the previous per-module independent scheduling, which could leave fast (isolated) modules thousands of steps ahead of the rest of the cluster.
+where `motionDuration = 1 100 000 µs` when a move was issued.
 
 ### Configuration
 
 ```xml
 <world ...>
   <deploy enabled="true" weights="gcn_weights.bin" seed="42"/>
+  <locomotion direction="1,0,0"/>
   <blockList ...> ... </blockList>
-  <targetList ...> ... </targetList>
+  <!-- no targetList -->
 </world>
 ```
 
-`weights` is resolved relative to the simulator's current working directory (`applicationsBin/gnnLocomotion/`). The env var `GNN_DEPLOY_WEIGHTS=<absolute_path>` overrides the XML setting.
+The `<locomotion direction="dx,dy,dz"/>` element must be present in both training (`config.xml`) and deploy (`config_deploy.xml`) configs and **must match the `--direction` used during training** so that the directional position feature is consistent. The direction is normalised to a unit vector at runtime.
+
+`weights` is resolved relative to the simulator's working directory (`applicationsBin/gnnLocomotion/`). The env var `GNN_DEPLOY_WEIGHTS=<absolute_path>` overrides the XML setting.
+
+---
+
+## Comparison with gnnShapeReconfiguration
+
+| Aspect | gnnShapeReconfiguration | gnnLocomotion |
+|---|---|---|
+| **Objective** | Fill a target shape | Translate CoM along a direction |
+| **Node feature x(3)** | `in_target` (bool) | `directionalPos` = `dot(pos,dir)/extent` |
+| **Action mask** | AP + in-target lock | AP only |
+| **Reward (C++)** | `Δin_target − 0.01 + 10×done` | `0` (connectivity penalty only) |
+| **Reward (Python)** | `R_sim + 0.1 × ΔΦ_shape` | `R_sim + ΔΦ_locomotion` |
+| **Potential Φ** | `−mean L1 dist to nearest target` | `dot(CoM, direction)` |
+| **Episode done** | All blocks in target OR max steps | Max steps only |
+| **Config** | `<targetList>` | `<locomotion direction="..."/>` |
+| **Train arg** | (none for direction) | `--direction dx,dy,dz` |
+| **Deploy log** | `inTarget=0` | `dp=0.25` |
 
 ### Known limitations
 
-- **Policy convergence gap**: the trained GCN was optimised for the training state distribution (full-graph observations via Python). In deploy mode each module sees only its L-hop neighbourhood. For small clusters (≤ 6 modules, diameter ≤ 3) 3-hop GCN coverage should be sufficient, but the policy may not reliably complete reconfiguration without further fine-tuning on the deploy execution model.
-- **2-hop AP detection** is exact only when every articulation point has a witness within 2 hops. Acceptable for clusters up to ~20 modules in dense lattices; larger clusters would need extra topology rounds.
-- **Round delays** are simulation conveniences (`t0 + ROUND_DT_US`); they do not model real wireless contention.
-- **Parallel motion** (future work): the ballot currently selects one mover per step. Extending to top-k movers (e.g., via a confidence-based selection round) would increase throughput while preserving connectivity safety.
+- **Policy convergence**: the GCN was trained on the locomotion objective but the directional-position feature changes over time as the swarm moves. Later in an episode the feature distribution drifts from the initial training distribution (blocks start near `x=1..3` but may be near `x=8+` after 100 steps). Curriculum learning or domain randomisation over starting positions can mitigate this.
+- **2-hop AP detection** is exact only when every articulation point has a witness within 2 hops. Acceptable for clusters up to ~20 modules in dense lattices.
+- **One mover per step**: the ballot currently selects one mover per step. Extending to top-k movers would increase locomotion speed.
