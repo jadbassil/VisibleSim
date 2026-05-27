@@ -62,6 +62,7 @@ Logged once per episode in the main loop (`train.py:211`). Reflects the trajecto
 | `episode/target_reached` | `1` if all target cells were filled before episode end, else `0`. | Computed step-by-step (`target_reached = True` once `in_target ≥ target_cells`). |
 | `episode/target_fill_ratio` | Fraction of target cells occupied at episode end. | `in_target / target_cells` (computed on the final `next_obs`). Ranges `[0, 1]`. |
 | `episode/solve_rate` | Rolling success rate over the last `SUCCESS_WINDOW=200` episodes. | `np.mean(ep_solved[-SUCCESS_WINDOW:])`. Used for early-stopping (training halts at `≥ 0.95`). |
+| `episode/best_window_rate` | Rolling success rate over the last `BEST_WINDOW=100` episodes. | Drives `policy_best.pt` selection — a new best checkpoint is saved whenever this exceeds the previous maximum (after `BEST_MIN_EP=100` episodes). Shorter window than `solve_rate` so the best checkpoint reacts faster to peaks. |
 
 ### Mid-episode success log
 
@@ -112,6 +113,8 @@ Sparse events; absent from the time series most of the time.
 | Metric | Definition | When logged |
 |---|---|---|
 | `checkpoint/episode` | Episode number at which the periodic checkpoint was saved. | Every `SAVE_INTERVAL=50` episodes (skipping episode 0). |
+| `checkpoint/best_episode` | Episode number at which a new `policy_best.pt` was written. | Whenever `episode/best_window_rate` exceeds its previous max (after `BEST_MIN_EP=100`). |
+| `checkpoint/best_solve_rate` | The `best_window_rate` value that triggered the new best save. | Same firing as `checkpoint/best_episode`. Strictly increasing across the run. |
 | `checkpoint/final_saved` | Always `1`. | Logged exactly once on training exit (normal completion, early stop, or `KeyboardInterrupt`). Indicates `policy_final.pt` was written. |
 
 ---

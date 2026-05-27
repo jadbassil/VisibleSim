@@ -34,7 +34,9 @@ LOG_INTERVAL     = 10
 CKPT_DIR         = os.path.join(_HERE, "checkpoints")
 SUCCESS_WINDOW   = 200
 SUCCESS_THRESH   = 0.95
-SUCCESS_MIN_EP   = 200
+SUCCESS_MIN_EP   = 1000
+BEST_WINDOW      = 100   # rolling window for "best" tracking
+BEST_MIN_EP      = 100   # don't start tracking best until this many episodes done
 
 
 def _init_wandb(args, ppo_cfg) -> Optional[object]:
@@ -134,6 +136,8 @@ def train(args):
     ep_lengths: list = []
     ep_solved:  list = []
     global_step = 0
+    best_solve_rate = -1.0
+    best_episode    = -1
 
     try:
         for episode in range(args.episodes):
@@ -197,6 +201,7 @@ def train(args):
             ep_solved.append(1 if target_reached else 0)
 
             solve_rate = np.mean(ep_solved[-SUCCESS_WINDOW:])
+            best_window_rate = np.mean(ep_solved[-BEST_WINDOW:])
 
             if episode % LOG_INTERVAL == 0:
                 recent_r = ep_rewards[-LOG_INTERVAL:]
@@ -216,9 +221,29 @@ def train(args):
                     "episode/target_reached":     int(target_reached),
                     "episode/target_fill_ratio":  in_target / max(target_cells, 1),
                     "episode/solve_rate":         solve_rate,
+                    "episode/best_window_rate":   best_window_rate,
                     "train/global_step":          global_step,
                     "train/episode":              episode,
                 }, step=global_step)
+
+            if episode >= BEST_MIN_EP and best_window_rate > best_solve_rate:
+                best_solve_rate = best_window_rate
+                best_episode    = episode
+                best_ckpt = os.path.join(CKPT_DIR, "policy_best.pt")
+                torch.save({
+                    "episode":         episode,
+                    "model_state":     policy.state_dict(),
+                    "optim_state":     trainer.optim.state_dict(),
+                    "solve_rate":      float(best_window_rate),
+                    "window":          BEST_WINDOW,
+                }, best_ckpt)
+                print(f"  [ckpt] New best: ep{episode} solve_rate(window={BEST_WINDOW})="
+                      f"{best_window_rate:.3f} → {best_ckpt}")
+                if wandb_run:
+                    wandb_run.log({
+                        "checkpoint/best_episode":    episode,
+                        "checkpoint/best_solve_rate": float(best_window_rate),
+                    }, step=global_step)
 
             if episode >= SUCCESS_MIN_EP and solve_rate >= SUCCESS_THRESH:
                 print(f"[train] Early stop at episode {episode}: "
@@ -245,6 +270,12 @@ def train(args):
         torch.save({"episode": args.episodes, "model_state": policy.state_dict(),
                     "optim_state": trainer.optim.state_dict()}, final_ckpt)
         print(f"[train] Saved final checkpoint: {final_ckpt}")
+        if best_episode >= 0:
+            print(f"[train] Best checkpoint: policy_best.pt "
+                  f"(ep{best_episode}, solve_rate={best_solve_rate:.3f})")
+        else:
+            print(f"[train] No best checkpoint saved "
+                  f"(needs ≥{BEST_MIN_EP} episodes with any solves).")
         if wandb_run:
             wandb_run.log({"checkpoint/final_saved": 1}, step=global_step)
             wandb_run.finish()

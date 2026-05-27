@@ -128,7 +128,8 @@ Episode hyperparameters (`MAX_STEPS`, `GYM_PORT`) are constants in `gnnShapeReco
 Checkpoints are saved to `train/checkpoints/`:
 
 - `policy_ep00050.pt`, `policy_ep00100.pt`, … every 50 episodes
-- `policy_final.pt` always written on exit (including Ctrl-C and early stop)
+- `policy_best.pt` — overwritten whenever the rolling solve rate over the last `BEST_WINDOW=100` episodes hits a new max (after `BEST_MIN_EP=100` episodes). **Use this one for deployment.**
+- `policy_final.pt` always written on exit (including Ctrl-C and early stop). Useful for resuming training, but for inference prefer `policy_best.pt` — PPO can regress late in a run.
 
 Each checkpoint contains:
 
@@ -137,6 +138,9 @@ Each checkpoint contains:
     "episode":     int,
     "model_state": dict,   # policy.state_dict()
     "optim_state": dict,   # trainer.optim.state_dict()
+    # policy_best.pt additionally contains:
+    # "solve_rate": float,  # rolling solve_rate that triggered this save
+    # "window":     int,    # window length used (BEST_WINDOW=100)
 }
 ```
 

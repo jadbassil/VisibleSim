@@ -101,4 +101,8 @@ applicationsBin/diameterMonitoring/**/*.xml
 applicationsSrc/gnnLocomotion/train/checkpoints/*.pt
 applicationsSrc/gnnLocomotion/train/wandb/
 applicationsSrc/gnnLocomotion/train/__pycache__/*
+
+applicationsSrc/gnnShapeReconfiguration/train/checkpoints/*.pt
+applicationsSrc/gnnShapeReconfiguration/train/wandb/
+applicationsSrc/gnnShapeReconfiguration/train/__pycache__/*
 .cache
