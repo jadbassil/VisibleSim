@@ -148,6 +148,51 @@ int pathLength(const Cell3DPosition& s,
     return -1;
 }
 
+std::vector<Cell3DPosition> findPath(const Cell3DPosition& s,
+                                     const Cell3DPosition& t,
+                                     const CellSet& occupied) {
+    if (s == t) return {};
+    std::map<Cell3DPosition, Cell3DPosition> parent;
+    std::queue<Cell3DPosition> q;
+    q.push(s);
+    parent[s] = s;
+    const size_t kMaxNodes = 400;
+    bool found = false;
+    while (!q.empty() && parent.size() < kMaxNodes) {
+        Cell3DPosition cur = q.front(); q.pop();
+        if (cur == t) { found = true; break; }
+        std::set<Cell3DPosition> candidates;
+        for (const auto& dp : fccNeighbors(cur)) {
+            Cell3DPosition pivot(cur[0]+dp[0], cur[1]+dp[1], cur[2]+dp[2]);
+            if (!occupied.count(pivot)) continue;
+            for (const auto& dq : fccNeighbors(pivot)) {
+                Cell3DPosition nx(pivot[0]+dq[0], pivot[1]+dq[1], pivot[2]+dq[2]);
+                if (nx == cur || occupied.count(nx)) continue;
+                candidates.insert(nx);
+            }
+        }
+        for (const auto& nx : candidates) {
+            if (parent.count(nx)) continue;
+            if (canMove(cur, nx, occupied)) {
+                parent[nx] = cur;
+                if (nx == t) { found = true; break; }
+                q.push(nx);
+            }
+        }
+        if (found) break;
+    }
+    if (!found && !parent.count(t)) return {};
+    // reconstruct
+    std::vector<Cell3DPosition> path;
+    Cell3DPosition cur = t;
+    while (!(cur == s)) {
+        path.push_back(cur);
+        cur = parent[cur];
+    }
+    std::reverse(path.begin(), path.end());
+    return path;
+}
+
 // ===========================================================================
 // Basis / MetaModule
 // ===========================================================================
@@ -313,6 +358,99 @@ static CellSet possibleBridges(const CellSet& Cpiv, const CellSet& Cblo) {
 }
 
 // ===========================================================================
+// Single-module routing with optional temporary bridges (shared by Transfer,
+// Disassembly and Assembly)
+// ===========================================================================
+
+struct RouteResult {
+    bool feasible{false};
+    int nBridges{0};
+    int pathMoves{0};
+    int setupMoves{0};
+    int clearMoves{0};
+    int total() const { return pathMoves + setupMoves + clearMoves; }
+};
+
+// Route one module from s to t. `pivots` are occupied cells that may serve as
+// rotation supports and to which temporary bridge modules can attach;
+// `blockers` are extra occupied cells that obstruct motion but cannot host
+// bridges. A direct path is tried first; if that fails and allowBridges is set,
+// up to two temporary bridge modules (paper Algorithm 1 heuristic) are placed
+// to unlock a path, charging their setup (s→bridge) and clear (bridge→t) moves.
+static RouteResult routeWithBridges(const Cell3DPosition& s,
+                                    const Cell3DPosition& t,
+                                    const CellSet& pivots,
+                                    const CellSet& blockers,
+                                    bool allowBridges) {
+    RouteResult r;
+    CellSet base = pivots;
+    base.insert(blockers.begin(), blockers.end());
+
+    {
+        CellSet env = base;
+        env.insert(s);
+        int d = pathLength(s, t, env);
+        if (d > 0) { r.feasible = true; r.pathMoves = d; return r; }
+    }
+    if (!allowBridges) return r;
+
+    CellSet bridgeCandidates = possibleBridges(pivots, blockers);
+    const int kMax = std::min<int>(2, static_cast<int>(bridgeCandidates.size()));
+    // Limit raw bridge candidates to the closest 12 to the source.
+    std::vector<Cell3DPosition> cands(bridgeCandidates.begin(), bridgeCandidates.end());
+    if (cands.size() > 12) {
+        std::sort(cands.begin(), cands.end(),
+                  [&](const Cell3DPosition& a, const Cell3DPosition& b) {
+                      return a.dist_taxi(s) < b.dist_taxi(s);
+                  });
+        cands.resize(12);
+    }
+
+    std::vector<int> idx;
+    std::function<bool(int)> dfs = [&](int start) -> bool {
+        CellSet env = base;
+        for (int i : idx) env.insert(cands[i]);
+        CellSet envWithS = env;
+        envWithS.insert(s);
+        int d = pathLength(s, t, envWithS);
+        if (d > 0) {
+            // Setup cost: route s → bridge_i, accumulating placed bridges.
+            int setupMoves = 0;
+            CellSet running = base;
+            running.insert(s);
+            for (int i : idx) {
+                int sm = pathLength(s, cands[i], running);
+                if (sm < 0) return false;
+                setupMoves += sm;
+                running.insert(cands[i]);
+            }
+            // Clear cost: route each bridge → t with all bridges present.
+            int clearMoves = 0;
+            for (auto it = idx.rbegin(); it != idx.rend(); ++it) {
+                int cm = pathLength(cands[*it], t, envWithS);
+                if (cm < 0) return false;
+                clearMoves += cm;
+            }
+            r.feasible = true;
+            r.nBridges = static_cast<int>(idx.size());
+            r.pathMoves = d;
+            r.setupMoves = setupMoves;
+            r.clearMoves = clearMoves;
+            return true;
+        }
+        if (static_cast<int>(idx.size()) >= kMax) return false;
+        for (int i = start; i < static_cast<int>(cands.size()); ++i) {
+            idx.push_back(i);
+            if (dfs(i + 1)) return true;
+            idx.pop_back();
+        }
+        return false;
+    };
+    dfs(0);
+    return r;
+}
+
+// ===========================================================================
 // Transfer planner (paper §5.2)
 // ===========================================================================
 
@@ -328,93 +466,127 @@ TransferPlan planTransfer(const MetaModule& mm, const Cell3DPosition& V) {
         Cpiv.insert(Cell3DPosition(p[0]+V[0], p[1]+V[1], p[2]+V[2]));
     }
     // Cblo = union of all neighboring meta-modules (worst case: all filled)
-    MetaModule m2 = mm;
     Cell3DPosition zero(0,0,0);
-    CellSet Cblo = tiledNeighborhood(m2, &zero);
+    CellSet Cblo = tiledNeighborhood(mm, &zero);
     // remove anything that overlaps Cpiv (Cpiv has the source + neighbor along V)
     for (const auto& p : Cpiv) Cblo.erase(p);
 
-    // First: can a single module already transfer from center to target with just Cpiv?
-    {
-        CellSet env = Cpiv;
-        env.insert(center);
-        // Worst case: surrounding meta-modules also full
-        for (const auto& q : Cblo) env.insert(q);
-        int d = pathLength(center, target, env);
-        if (d > 0) {
-            plan.feasible = true;
-            plan.nBridges = 0;
-            plan.nSetupBridgeMoves = 0;
-            plan.nTransferMovesPerModule = d;
-            plan.nClearBridgeMoves = 0;
-            return plan;
-        }
-    }
+    RouteResult r = routeWithBridges(center, target, Cpiv, Cblo, true);
+    plan.feasible = r.feasible;
+    plan.nBridges = r.nBridges;
+    plan.nSetupBridgeMoves = r.setupMoves;
+    plan.nTransferMovesPerModule = r.pathMoves;
+    plan.nClearBridgeMoves = r.clearMoves;
+    return plan;
+}
 
-    // Otherwise try bridges
-    CellSet bridgeCandidates = possibleBridges(Cpiv, Cblo);
+// ===========================================================================
+// Disassembly / Assembly planners (paper §5.3)
+// ===========================================================================
 
-    // Greedy DFS: try subsets of bridge candidates up to size kMax.
-    // kMax is intentionally small — most useful meta-modules need 0-2 bridges.
-    const int kMax = std::min<int>(2, static_cast<int>(bridgeCandidates.size()));
-    // Limit raw bridge candidates to the closest 12 to center.
-    std::vector<Cell3DPosition> cands(bridgeCandidates.begin(), bridgeCandidates.end());
-    if (cands.size() > 12) {
-        std::sort(cands.begin(), cands.end(),
-                  [&](const Cell3DPosition& a, const Cell3DPosition& b) {
-                      return a.dist_taxi(center) < b.dist_taxi(center);
-                  });
-        cands.resize(12);
-    }
+OperationPlan planDisassembly(const MetaModule& mm, const Cell3DPosition& V) {
+    OperationPlan plan;
+    const Cell3DPosition& center = mm.center;
 
-    std::vector<int> idx;
-    std::function<bool(int)> dfs = [&](int start) -> bool {
-        // build environment with chosen bridges
-        CellSet env = Cpiv;
-        for (const auto& q : Cblo) env.insert(q);
-        for (int i : idx) env.insert(cands[i]);
+    // Worst-case scaffolding: every neighbor meta-module is present, except the
+    // recipient slot along V (which receives the transferred modules and is
+    // therefore being emptied/filled, not a static pivot).
+    Cell3DPosition zero(0, 0, 0);
+    CellSet scaffold = tiledNeighborhood(mm, &zero);
+    for (const auto& p : mm.cells)
+        scaffold.erase(Cell3DPosition(p[0] + V[0], p[1] + V[1], p[2] + V[2]));
 
-        CellSet envWithCenter = env;
-        envWithCenter.insert(center);
-        int d = pathLength(center, target, envWithCenter);
-        if (d > 0) {
-            // Setup cost: sum of pathLength(center, bridge_i, partial_env)
-            int setupMoves = 0;
-            CellSet running = Cpiv;
-            for (const auto& q : Cblo) running.insert(q);
-            running.insert(center);
-            for (int i : idx) {
-                int s = pathLength(center, cands[i], running);
-                if (s < 0) return false;
-                setupMoves += s;
-                running.insert(cands[i]);
+    // Greedily peel modules off, always removing the cheapest reachable one.
+    // Pass 1 tries direct routes only; bridges are attempted only if the whole
+    // remaining set is stuck (keeps the common case cheap).
+    CellSet remaining = mm.cells;
+    int total = 0;
+    while (!remaining.empty()) {
+        auto bestRemovable = [&](bool bridges, int& bestCost,
+                                 Cell3DPosition& bestCell) -> bool {
+            bool any = false;
+            for (const auto& c : remaining) {
+                // Removing c must keep the rest connected (unless c is last).
+                CellSet rest = remaining;
+                rest.erase(c);
+                if (!rest.empty() && !isConnected(rest)) continue;
+                // c routes to the staging center over the other remaining
+                // modules plus the surrounding scaffolding.
+                CellSet pivots = rest;
+                pivots.insert(scaffold.begin(), scaffold.end());
+                RouteResult r = routeWithBridges(c, center, pivots, CellSet{}, bridges);
+                if (!r.feasible) continue;
+                int cost = r.total();
+                if (!any || cost < bestCost) { any = true; bestCost = cost; bestCell = c; }
+                if (bridges) break;   // expensive pass: accept first feasible
             }
-            // Clear cost: each bridge plus the last support module move to target.
-            // Approximation: shortest path from bridge to target inside env.
-            int clearMoves = 0;
-            for (auto it = idx.rbegin(); it != idx.rend(); ++it) {
-                CellSet clearEnv = envWithCenter;
-                for (int j : idx) clearEnv.insert(cands[j]);
-                int s = pathLength(cands[*it], target, clearEnv);
-                if (s < 0) return false;
-                clearMoves += s;
+            return any;
+        };
+        int bestCost = 0;
+        Cell3DPosition bestCell;
+        bool ok = bestRemovable(false, bestCost, bestCell)
+               || bestRemovable(true, bestCost, bestCell);
+        if (!ok) return plan;                   // stuck: no removable module
+        total += bestCost;
+        remaining.erase(bestCell);
+    }
+    plan.feasible = true;
+    plan.nMoves = total;
+    return plan;
+}
+
+OperationPlan planAssembly(const MetaModule& mm, const Cell3DPosition& V) {
+    OperationPlan plan;
+    const Cell3DPosition& center = mm.center;
+
+    // The slot is empty and every neighbor meta-module is present (worst case)
+    // EXCEPT the donor slot along V: that neighbor is the just-vacated source
+    // the modules stream in from, so it is the open channel that keeps the slot
+    // from being a fully-enclosed (and therefore unreachable) pocket.
+    Cell3DPosition zero(0, 0, 0);
+    CellSet scaffold = tiledNeighborhood(mm, &zero);
+    for (const auto& p : mm.cells)
+        scaffold.erase(Cell3DPosition(p[0] + V[0], p[1] + V[1], p[2] + V[2]));
+
+    // Greedily build M, always placing the cheapest reachable cell next.
+    CellSet placed;
+    CellSet remaining = mm.cells;
+    int total = 0;
+    while (!remaining.empty()) {
+        auto bestPlaceable = [&](bool bridges, int& bestCost,
+                                 Cell3DPosition& bestCell) -> bool {
+            bool any = false;
+            for (const auto& c : remaining) {
+                // A newly placed module must attach to the partial structure.
+                if (!placed.empty()) {
+                    CellSet grown = placed;
+                    grown.insert(c);
+                    if (!isConnected(grown)) continue;
+                }
+                // A module enters at center and routes to c over the
+                // already-placed modules plus the surrounding scaffolding.
+                CellSet pivots = placed;
+                pivots.insert(scaffold.begin(), scaffold.end());
+                pivots.insert(center);
+                RouteResult r = routeWithBridges(center, c, pivots, CellSet{}, bridges);
+                if (!r.feasible) continue;
+                int cost = r.total();
+                if (!any || cost < bestCost) { any = true; bestCost = cost; bestCell = c; }
+                if (bridges) break;   // expensive pass: accept first feasible
             }
-            plan.feasible = true;
-            plan.nBridges = static_cast<int>(idx.size());
-            plan.nSetupBridgeMoves = setupMoves;
-            plan.nTransferMovesPerModule = d;
-            plan.nClearBridgeMoves = clearMoves;
-            return true;
-        }
-        if (static_cast<int>(idx.size()) >= kMax) return false;
-        for (int i = start; i < static_cast<int>(cands.size()); ++i) {
-            idx.push_back(i);
-            if (dfs(i + 1)) return true;
-            idx.pop_back();
-        }
-        return false;
-    };
-    dfs(0);
+            return any;
+        };
+        int bestCost = 0;
+        Cell3DPosition bestCell;
+        bool ok = bestPlaceable(false, bestCost, bestCell)
+               || bestPlaceable(true, bestCost, bestCell);
+        if (!ok) return plan;                   // stuck: no placeable module
+        total += bestCost;
+        placed.insert(bestCell);
+        remaining.erase(bestCell);
+    }
+    plan.feasible = true;
+    plan.nMoves = total;
     return plan;
 }
 
@@ -428,15 +600,47 @@ AllDirectionsCost evaluateMetaModule(const MetaModule& mm) {
         mm.basis.Z,
         Cell3DPosition(-mm.basis.Z[0], -mm.basis.Z[1], -mm.basis.Z[2]),
     };
+
+    auto markInfeasible = [&]() {
+        out.feasible = false;
+        out.totalTransferMoves    = INT_MAX;
+        out.totalDisassemblyMoves = INT_MAX;
+        out.totalAssemblyMoves    = INT_MAX;
+        out.totalMoves            = INT_MAX;
+        return out;
+    };
+
+    // Stage 1 — Transfer (cheap) is the first gradient. Disassembly/Assembly
+    // use a bridge DFS that is far more expensive, so we only run them once all
+    // six transfers pass; this keeps the bulk of the population cheap to score
+    // while still letting the feasible-pair count climb (0..6 via transfer,
+    // then 6..18 via disassembly/assembly).
+    int tSum = 0, dSum = 0, aSum = 0;
     for (int i = 0; i < 6; ++i) {
         out.perDirection[i] = planTransfer(mm, dirs[i]);
-        if (!out.perDirection[i].feasible) {
-            out.feasible = false;
-            out.totalTransferMoves = INT_MAX;
-            return out;
+        if (out.perDirection[i].feasible) {
+            out.feasiblePairs++;
+            tSum += out.perDirection[i].totalMoves(1);
         }
-        out.totalTransferMoves += out.perDirection[i].totalMoves(1);
     }
+    if (out.feasiblePairs < 6) return markInfeasible();
+
+    // Stage 2 — Disassembly + Assembly in every direction.
+    for (int i = 0; i < 6; ++i) {
+        out.disassembly[i] = planDisassembly(mm, dirs[i]);
+        if (out.disassembly[i].feasible) { out.feasiblePairs++; dSum += out.disassembly[i].nMoves; }
+    }
+    for (int i = 0; i < 6; ++i) {
+        out.assembly[i] = planAssembly(mm, dirs[i]);
+        if (out.assembly[i].feasible) { out.feasiblePairs++; aSum += out.assembly[i].nMoves; }
+    }
+
+    out.feasible = (out.feasiblePairs == 18);
+    if (!out.feasible) return markInfeasible();
+    out.totalTransferMoves    = tSum;
+    out.totalDisassemblyMoves = dSum;
+    out.totalAssemblyMoves    = aSum;
+    out.totalMoves            = tSum + dSum + aSum;
     return out;
 }
 
@@ -546,12 +750,18 @@ CellSet crossover(const CellSet& a, const CellSet& b, int targetSize,
 
 double scoreFitness(const Indiv& ind, int targetSize) {
     if (!ind.cost.feasible) {
-        // Soft penalty so infeasibles still drive evolution
-        return -1e9 - static_cast<double>(ind.cells.size());
+        // Graded penalty: reward how many of the 18 (operation, direction)
+        // pairs are feasible so evolution can hill-climb toward full
+        // feasibility instead of facing a flat landscape. Any infeasible
+        // (<=17 pairs) still scores far below any fully-feasible individual.
+        return -1e9
+               + 1e6 * static_cast<double>(ind.cost.feasiblePairs)
+               - static_cast<double>(ind.cells.size());
     }
-    // size-first: huge weight on |M|, then transfer cost
+    // size-first: huge weight on |M|, then total relocation cost
+    // (transfer + disassembly + assembly).
     return -(1e6 * static_cast<double>(ind.cells.size())
-             + static_cast<double>(ind.cost.totalTransferMoves));
+             + static_cast<double>(ind.cost.totalMoves));
 }
 
 void evaluate(Indiv& ind, const Basis& basis, int targetSize) {
@@ -662,8 +872,12 @@ GenerationResult runGAForBasisSize(const Basis& basis,
                       << "] gen " << gen
                       << " best fitness " << best.fitness
                       << (best.cost.feasible
-                          ? " (feasible, transfer=" + std::to_string(best.cost.totalTransferMoves) + ")"
-                          : " (infeasible)")
+                          ? " (feasible, moves=" + std::to_string(best.cost.totalMoves)
+                            + " [T=" + std::to_string(best.cost.totalTransferMoves)
+                            + " D=" + std::to_string(best.cost.totalDisassemblyMoves)
+                            + " A=" + std::to_string(best.cost.totalAssemblyMoves) + "])"
+                          : " (infeasible, pairs=" + std::to_string(best.cost.feasiblePairs)
+                            + "/18)")
                       << std::endl;
         }
         if (best.cost.feasible) break; // size-first: any feasible at this size wins
@@ -696,7 +910,7 @@ GenerationResult runGenerator(const std::vector<CandidateBasis>& bases,
                 if (!best.found
                     || (int)r.best.cells.size() < (int)best.best.cells.size()
                     || ((int)r.best.cells.size() == (int)best.best.cells.size()
-                        && r.cost.totalTransferMoves < best.cost.totalTransferMoves)) {
+                        && r.cost.totalMoves < best.cost.totalMoves)) {
                     best = r;
                 }
             }
@@ -708,11 +922,15 @@ GenerationResult runGenerator(const std::vector<CandidateBasis>& bases,
 
 std::vector<CandidateBasis> defaultCandidateBases() {
     auto V = [](short x, short y, short z) { return Cell3DPosition(x,y,z); };
+    // cubic-2 (spacing 2) is intentionally excluded: it packs meta-modules
+    // solid, which seals the assembly slot under the OctaFace lock and makes
+    // Assemble infeasible in every direction. The remaining bases leave open
+    // channels (porosity) so Dismantle/Transfer/Assemble can succeed.
     return {
-        {{V(2,0,0), V(0,2,0), V(0,0,2)}, "cubic-2"},
         {{V(3,0,0), V(0,3,0), V(0,0,2)}, "ortho-3-3-2"},
         {{V(4,0,0), V(0,4,0), V(0,0,2)}, "ortho-4-4-2"},
         {{V(4,0,0), V(0,4,0), V(0,0,4)}, "cubic-4"},
+        {{V(5,0,0), V(0,5,0), V(0,0,4)}, "ortho-5-5-4"},
         {{V(6,0,0), V(0,6,0), V(0,0,2)}, "scaffold-flat"},
         {{V(8,0,0), V(4,3,0), V(4,1,4)}, "hexagonal (paper)"},
     };

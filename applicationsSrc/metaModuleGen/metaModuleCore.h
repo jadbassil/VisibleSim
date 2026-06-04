@@ -41,6 +41,13 @@ int pathLength(const Cell3DPosition& s,
                const Cell3DPosition& t,
                const CellSet& occupied);
 
+// Like pathLength but returns the actual sequence of intermediate cells the
+// moving module passes through, from the first hop up to and including t
+// (excluding the start s). Empty if t is unreachable. Used to animate motions.
+std::vector<Cell3DPosition> findPath(const Cell3DPosition& s,
+                                     const Cell3DPosition& t,
+                                     const CellSet& occupied);
+
 // ---------------------------------------------------------------------------
 // Meta-module definition
 // ---------------------------------------------------------------------------
@@ -103,12 +110,38 @@ struct TransferPlan {
 
 TransferPlan planTransfer(const MetaModule& mm, const Cell3DPosition& V);
 
-// Returns aggregate transfer cost over all 6 ±-directions; sets feasible=false
-// (and total=INT_MAX) if any direction is infeasible.
+// Disassembly / Assembly (paper §5.3) are modeled as sequences of single-module
+// motions. nMoves is the total number of motions in the sequence.
+struct OperationPlan {
+    bool feasible{false};
+    int nMoves{0};
+};
+
+// Disassembly in direction V: M takes itself apart, routing every module, one
+// at a time, to the staging cell `center` (from where it is transferred toward
+// the neighbor along V). The whole neighborhood is treated as filled scaffolding
+// except the recipient slot along V. Removing a module must keep the remaining
+// structure connected.
+OperationPlan planDisassembly(const MetaModule& mm, const Cell3DPosition& V);
+
+// Assembly in direction V: a fresh copy of M is built one module at a time from
+// `center` into an otherwise empty slot, with the whole neighborhood filled as
+// scaffolding. Each newly placed module must attach to the partial structure.
+OperationPlan planAssembly(const MetaModule& mm, const Cell3DPosition& V);
+
+// Returns aggregate relocation cost over all 6 ±-directions. A meta-module is
+// feasible iff disassembly, transfer and assembly all succeed in every
+// direction; otherwise feasible=false and the totals are INT_MAX.
 struct AllDirectionsCost {
     bool feasible{true};
+    int feasiblePairs{0};         // # feasible (operation, direction) pairs, 0..18
     int totalTransferMoves{0};
+    int totalDisassemblyMoves{0};
+    int totalAssemblyMoves{0};
+    int totalMoves{0};            // transfer + disassembly + assembly
     std::array<TransferPlan, 6> perDirection{};
+    std::array<OperationPlan, 6> disassembly{};
+    std::array<OperationPlan, 6> assembly{};
 };
 
 AllDirectionsCost evaluateMetaModule(const MetaModule& mm);
@@ -125,7 +158,7 @@ struct GAConfig {
     int tournamentK{3};
     int minSize{4};       // smallest |M| to try
     int maxSize{30};      // upper bound on |M|
-    int boundingRadius{3};// shape lives in [-r..r]^3
+    int boundingRadius{4};// shape lives in [-r..r]^3
     uint32_t seed{42};
     bool verbose{true};
 };
