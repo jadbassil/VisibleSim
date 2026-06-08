@@ -1,0 +1,2 @@
+# Python dependencies for the <<appName>> trainer (NumPy-only skeleton).
+numpy>=1.21
