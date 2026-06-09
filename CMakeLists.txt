@@ -196,6 +196,12 @@ add_executable(reconf2DDemo applicationsSrc/reconf2DDemo/reconf2DDemo.cpp applic
 target_link_libraries(reconf2DDemo Hexanodes)
 set_target_properties(reconf2DDemo PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/reconf2DDemo)
 
+add_executable(millionModuleMarch
+    applicationsSrc/millionModuleMarch/millionModuleMarch.cpp
+    applicationsSrc/millionModuleMarch/millionModuleMarchBlockCode.cpp)
+target_link_libraries(millionModuleMarch Catoms3D)
+set_target_properties(millionModuleMarch PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/millionModuleMarch)
+
 
 # add_executable(slidingCubesExample applicationsSrc/slidingCubesExample/slidingCubesExample.cpp applicationsSrc/slidingCubesExample/slidingCubesExampleBlockCode.cpp)
 # target_link_libraries(slidingCubesExample SlidingCubes)
