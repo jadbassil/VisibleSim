@@ -1,0 +1,78 @@
+<?xml version="1.0" standalone="no" ?>
+
+<!-- Million Module March - narrow/wide corridor (obstacle clearance + adaptive box).
+     A 2x5x2 block (20 catoms, 5 wide in y) marches +x through a corridor with
+     TWO narrow vertical slits (x=8 and x=16, each 5 wide -> 3
+     usable after the clearance margin) separated by a wide open region. The goal
+     box narrows to 3 at each slit and widens back to 5 in between:
+     wide -> narrow -> wide -> narrow -> wide. clearance="1" keeps one empty cell
+     from every wall; obstacles are never used as pivots. -->
+
+<world gridSize="26,9,4" windowSize="1800,900"
+       marchAxis="x" marchDir="1" marchSteps="24" marchStride="1"
+       adaptiveBox="true" clearance="1">
+
+    <camera target="130,45,15" directionSpherical="-30,28,300" angle="40"/>
+    <spotlight target="130,45,10" directionSpherical="-30,50,290" angle="50"/>
+
+    <blockList color="200,200,200" blockSize="10,10,10">
+
+        <!-- Robot: 2(x) x 5(y) x 2(z) block at the -x end, centred on the slits -->
+        <block position="1,2,0"/>
+        <block position="1,2,1"/>
+        <block position="1,3,0"/>
+        <block position="1,3,1"/>
+        <block position="1,4,0"/>
+        <block position="1,4,1"/>
+        <block position="1,5,0"/>
+        <block position="1,5,1"/>
+        <block position="1,6,0"/>
+        <block position="1,6,1"/>
+        <block position="2,2,0"/>
+        <block position="2,2,1"/>
+        <block position="2,3,0"/>
+        <block position="2,3,1"/>
+        <block position="2,4,0"/>
+        <block position="2,4,1"/>
+        <block position="2,5,0"/>
+        <block position="2,5,1"/>
+        <block position="2,6,0"/>
+        <block position="2,6,1"/>
+
+        <!-- Two 5-wide vertical slits at x=8 and x=16 (y in 2..6, full z) -->
+        <block position="8,0,0" obstacle="true"/>
+        <block position="8,0,1" obstacle="true"/>
+        <block position="8,0,2" obstacle="true"/>
+        <block position="8,0,3" obstacle="true"/>
+        <block position="8,1,0" obstacle="true"/>
+        <block position="8,1,1" obstacle="true"/>
+        <block position="8,1,2" obstacle="true"/>
+        <block position="8,1,3" obstacle="true"/>
+        <block position="8,7,0" obstacle="true"/>
+        <block position="8,7,1" obstacle="true"/>
+        <block position="8,7,2" obstacle="true"/>
+        <block position="8,7,3" obstacle="true"/>
+        <block position="8,8,0" obstacle="true"/>
+        <block position="8,8,1" obstacle="true"/>
+        <block position="8,8,2" obstacle="true"/>
+        <block position="8,8,3" obstacle="true"/>
+        <block position="16,0,0" obstacle="true"/>
+        <block position="16,0,1" obstacle="true"/>
+        <block position="16,0,2" obstacle="true"/>
+        <block position="16,0,3" obstacle="true"/>
+        <block position="16,1,0" obstacle="true"/>
+        <block position="16,1,1" obstacle="true"/>
+        <block position="16,1,2" obstacle="true"/>
+        <block position="16,1,3" obstacle="true"/>
+        <block position="16,7,0" obstacle="true"/>
+        <block position="16,7,1" obstacle="true"/>
+        <block position="16,7,2" obstacle="true"/>
+        <block position="16,7,3" obstacle="true"/>
+        <block position="16,8,0" obstacle="true"/>
+        <block position="16,8,1" obstacle="true"/>
+        <block position="16,8,2" obstacle="true"/>
+        <block position="16,8,3" obstacle="true"/>
+
+    </blockList>
+
+</world>

@@ -69,6 +69,7 @@ doc/html/
 
 # Configuration files (must be added manually)
 applicationsBin/*/*.xml
+!applicationsBin/MillionModuleMarch/*.xml
 
 # Screenshot and video exports
 applicationsBin/*/*.ppm

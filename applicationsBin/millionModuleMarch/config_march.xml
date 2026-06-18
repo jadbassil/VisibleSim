@@ -1,0 +1,40 @@
+<?xml version="1.0" standalone="no" ?>
+
+<!-- Million Module March - self-generated marching goal.
+     A 2x2x2 cube walks several body-lengths over flat ground / a small obstacle
+     with no hand-authored boxes. This is the paper's flat-ground experiment
+     ("move forward N module widths and reform the cube", Section 5.2).
+
+     There is intentionally NO <targetList>: the goal becomes the robot's own
+     bounding box, used as a window that slides forward along marchAxis. The
+     march is driven by the <world> attributes below:
+       marchAxis   travel axis: x/y (horizontal) or z (vertical)   default x
+       marchDir    1 (toward +axis) or -1                          default 1
+       marchSteps  number of forward steps to walk                 default 3
+       marchStride cells the window advances per step (overlap)    default 1 -->
+
+<world gridSize="22,8,5" windowSize="1800,900"
+       marchAxis="x" marchDir="1" marchSteps="10" marchStride="1">
+
+    <camera target="100,40,15" directionSpherical="-30,28,260" angle="40"/>
+    <spotlight target="100,40,10" directionSpherical="-30,50,250" angle="50"/>
+
+    <blockList color="200,200,200" blockSize="10,10,10">
+
+        <!-- Robot: 2x2x2 cube at the -x end -->
+        <block position="1,3,0"/>
+        <block position="2,3,0"/>
+        <block position="1,4,0"/>
+        <block position="2,4,0"/>
+        <block position="1,3,1"/>
+        <block position="2,3,1"/>
+        <block position="1,4,1"/>
+        <block position="2,4,1"/>
+
+        <!-- A small one-tall obstacle along the way -->
+        <block position="9,3,0" obstacle="true"/>
+        <block position="9,4,0" obstacle="true"/>
+
+    </blockList>
+
+</world>
