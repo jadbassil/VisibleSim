@@ -4,6 +4,7 @@
  *         (Fitch & Butler, IJRR 2008) for VisibleSim 3D catoms.
  */
 
+#include <cmath>
 #include <queue>
 #include <utility>
 
@@ -48,6 +49,15 @@ static Time g_lastMotionTime = 0;
 static int  g_trailMetric  = INT_MIN;
 static Time g_lastProgressT = 0;
 
+/// Simulation time of the most recent *actual* completed rotation (updated only
+/// in onMotionEnd -- unlike g_lastMotionTime it is never reset by a goal nudge).
+/// When no rotation has completed for DEADLOCK_WINDOW the structure is quiescent
+/// (goal reached, or genuinely stuck) and the run self-terminates.
+static Time g_lastRealMotion = 0;
+/// Once set, the periodic ticks stop rescheduling so the event queue drains and
+/// the simulation ends on its own instead of spinning to the -s deadline.
+static bool g_terminate = false;
+
 // --- Self-generated marching goal --------------------------------------------
 // Instead of hand-authored target boxes, the goal can be the robot's own
 // bounding box translated forward by one body length along a chosen axis. Each
@@ -65,6 +75,30 @@ static int  g_marchDir     = 1;       // +1 / -1
 static int  g_marchSteps   = 3;       // number of advances to walk
 static int  g_marchStride  = 1;       // cells the goal slides per advance
 static bool g_marchParsed  = false;
+
+// --- Clearance-adaptive goal box ---------------------------------------------
+// When enabled, the marching goal window is reshaped from the local free space
+// instead of keeping the robot's original bounding box. The two axes
+// perpendicular to the march direction are sized to the sensed passage width
+// (freeSpanAround, the APF clearance), and the length along the march axis is
+// set so the box still holds every module (volume ~= module count). Effect: in
+// open space the box becomes a wide, flat slab -- a broad moving front that
+// advances quickly; in a narrow passage it becomes a thin, elongated column
+// that threads through. The march/value-function machinery is otherwise
+// unchanged: the robot simply reforms into whatever box it is handed.
+static bool g_adaptiveBox  = false;
+static int  g_maxWidth     = 0;       // explicit cap on a perpendicular box width
+                                      // (0 = keep the robot's natural width: only
+                                      //  narrow to fit a passage, never widen)
+static int  g_moduleCount  = 0;       // N: robot modules captured at march start
+static int  g_prevWp = -1, g_prevWq = -1; // last box cross-section (gradual morph)
+static MarchMode g_mode = MarchMode::OPEN; // last inferred locomotion mode
+
+// APF repulsive margin: when set, modules keep one empty cell between themselves
+// and any obstacle (cells adjacent to terrain are forbidden, in the field, the
+// move selection and the adaptive box sizing). Off by default so the climb-over
+// demos, where the robot intentionally sits against an obstacle, are unchanged.
+static bool g_clearance = false;
 
 static Cell3DPosition g_originMin, g_originMax; // robot bbox captured at start
 static Cell3DPosition g_goalMin, g_goalMax;     // current goal window (inclusive)
@@ -119,6 +153,7 @@ void MillionModuleMarchCode::startup() {
     if (isMaster) {
         if (g_dynamicMode && !g_goalReady) initMarchGoal();
         g_lastMotionTime = getScheduler()->now();   // fair first quiescence window
+        g_lastRealMotion = getScheduler()->now();   // grace before deadlock check
         getScheduler()->schedule(
             new InterruptionEvent<int>(getScheduler()->now() + MASTER_PERIOD,
                                        module, TICK_MASTER));
@@ -129,6 +164,7 @@ void MillionModuleMarchCode::onMotionEnd() {
     moving = false;
     releaseClaims();                  // free our destination cell and pivot
     g_lastMotionTime = getScheduler()->now();
+    g_lastRealMotion = getScheduler()->now();   // genuine progress (never nudged)
     g_fieldDirty = true;              // the structure changed: refresh the field
     recomputeDistance();
     refreshColor();
@@ -139,13 +175,14 @@ void MillionModuleMarchCode::onInterruptionEvent(std::shared_ptr<Event> event) {
     int code = std::static_pointer_cast<InterruptionEvent<int>>(event)->data;
 
     if (code == TICK_MOVE) {
-        if (!isObstacle) attemptMove();
-        scheduleMoveTick();                 // keep the single periodic chain alive
+        if (!isObstacle && !g_terminate) attemptMove();
+        if (!g_terminate) scheduleMoveTick();   // stop the chain once quiescent
     } else if (code == TICK_MASTER) {
         masterCheckGoalCompletion();
-        getScheduler()->schedule(
-            new InterruptionEvent<int>(getScheduler()->now() + MASTER_PERIOD,
-                                       module, TICK_MASTER));
+        if (!g_terminate)                       // let the queue drain to end the run
+            getScheduler()->schedule(
+                new InterruptionEvent<int>(getScheduler()->now() + MASTER_PERIOD,
+                                           module, TICK_MASTER));
     }
 }
 
@@ -188,6 +225,22 @@ void MillionModuleMarchCode::parseUserElements(TiXmlDocument *config) {
     if (world->Attribute("marchDir", &v) != nullptr) g_marchDir = (v < 0) ? -1 : 1;
     if (world->Attribute("marchSteps", &v) != nullptr) g_marchSteps = v;
     if (world->Attribute("marchStride", &v) != nullptr) g_marchStride = (v < 1) ? 1 : v;
+
+    // Clearance-adaptive goal box: reshape the window to the local free space.
+    //   adaptiveBox="true"   maxWidth="<cells>"  (cap per perpendicular axis)
+    const char *ab = world->Attribute("adaptiveBox");
+    if (ab != nullptr) {
+        string s(ab);
+        g_adaptiveBox = (s == "true" || s == "1" || s == "yes");
+    }
+    if (world->Attribute("maxWidth", &v) != nullptr) g_maxWidth = (v < 1) ? 0 : v;
+
+    // APF repulsive margin: keep one empty cell between modules and obstacles.
+    const char *cl = world->Attribute("clearance");
+    if (cl != nullptr) {
+        string s(cl);
+        g_clearance = (s == "true" || s == "1" || s == "yes");
+    }
 }
 
 void MillionModuleMarchCode::onEndOfSimulation() {
@@ -259,15 +312,21 @@ bool MillionModuleMarchCode::robotBBox(Cell3DPosition &mn, Cell3DPosition &mx) {
 
 void MillionModuleMarchCode::initMarchGoal() {
     if (!robotBBox(g_originMin, g_originMax)) return;
+    // Capture the module count once; the adaptive box conserves this volume.
+    int n = 0;
+    for (auto &kv : Catoms3DWorld::getWorld()->getMap()) {
+        auto *bc = static_cast<MillionModuleMarchCode *>(kv.second->blockCode);
+        if (bc != nullptr && !bc->isObstacle) ++n;
+    }
+    g_moduleCount = n;
+    g_prevWp = -1; g_prevWq = -1;     // reset the gradual-morph cross-section
     // The goal is the robot's shape used as a window that slides forward by
     // g_marchStride cells per step. A small stride keeps each goal heavily
     // overlapping the current robot, so the robot flows forward continuously
     // (the paper's overlapping goal boxes) instead of having to teleport a
     // whole body length at once.
     g_progress = g_marchStride;
-    const int shift = g_marchDir * g_progress;
-    g_goalMin = shiftAxis(g_originMin, g_marchAxis, shift);
-    g_goalMax = shiftAxis(g_originMax, g_marchAxis, shift);
+    computeMarchBox(g_progress);
     g_stepIndex = 1;
     g_goalReady = true;
 }
@@ -276,13 +335,248 @@ bool MillionModuleMarchCode::advanceGoalRegion() {
     if (g_dynamicMode) {
         if (g_stepIndex >= g_marchSteps) return false;
         g_progress += g_marchStride;
-        const int shift = g_marchDir * g_progress;
-        g_goalMin = shiftAxis(g_originMin, g_marchAxis, shift);
-        g_goalMax = shiftAxis(g_originMax, g_marchAxis, shift);
+        computeMarchBox(g_progress);
         ++g_stepIndex;
         return true;
     }
     return loadNextTarget();
+}
+
+bool MillionModuleMarchCode::cellIsObstacle(const Cell3DPosition &c) {
+    Lattice *lat = Catoms3DWorld::getWorld()->lattice;
+    BuildingBlock *bb = lat->getBlock(c);
+    if (bb == nullptr) return false;
+    auto *bc = static_cast<MillionModuleMarchCode *>(bb->blockCode);
+    return bc != nullptr && bc->isObstacle;
+}
+
+bool MillionModuleMarchCode::cellAllowed(const Cell3DPosition &c) {
+    Lattice *lat = Catoms3DWorld::getWorld()->lattice;
+    if (!lat->isInGrid(c)) return false;
+    if (cellIsObstacle(c)) return false;
+    if (g_clearance) {
+        // One empty cell of margin: forbid any cell touching an obstacle.
+        for (const Cell3DPosition &nb : lat->getNeighborhood(c))
+            if (cellIsObstacle(nb)) return false;
+    }
+    return true;
+}
+
+int MillionModuleMarchCode::freeSpanAround(const Cell3DPosition &base, int axis) {
+    int span = cellAllowed(base) ? 1 : 0;
+    for (int dir : {1, -1}) {
+        Cell3DPosition c = base;
+        while (true) {
+            c = shiftAxis(c, axis, dir);
+            if (!cellAllowed(c)) break;   // wall, margin, or grid edge
+            ++span;
+        }
+    }
+    return span;
+}
+
+const char *MillionModuleMarchCode::modeName(MarchMode m) {
+    switch (m) {
+        case MarchMode::NARROW: return "narrow";
+        case MarchMode::LADDER: return "ladder";
+        case MarchMode::SPLIT:  return "split";
+        default:                return "open";
+    }
+}
+
+int MillionModuleMarchCode::forwardOpenings(int a, int aCoord, int p, int q,
+                                            int cp, int cq, int radius,
+                                            int &loP, int &hiP, int &loQ, int &hiQ) {
+    Lattice *lat = Catoms3DWorld::getWorld()->lattice;
+    const Cell3DPosition gs = lat->gridSize;
+    const int p0 = std::max(0, cp - radius), p1 = std::min((int)gs[p] - 1, cp + radius);
+    const int q0 = std::max(0, cq - radius), q1 = std::min((int)gs[q] - 1, cq + radius);
+    const int np = p1 - p0 + 1, nq = q1 - q0 + 1;
+    if (np <= 0 || nq <= 0) { loP = hiP = cp; loQ = hiQ = cq; return 0; }
+
+    auto cellAt = [&](int pp, int qq) {
+        int pos[3];
+        pos[a] = aCoord; pos[p] = pp; pos[q] = qq;
+        return Cell3DPosition(pos[0], pos[1], pos[2]);
+    };
+
+    // Flood-fill the cleared cells in the forward window into 4-connected
+    // components. A component of >= 2 cells is a genuine opening (singletons are
+    // treated as noise). Two or more openings in the window == a divider/pillar.
+    std::vector<char> seen(np * nq, 0);
+    int openings = 0;
+    loP = INT_MAX; hiP = INT_MIN; loQ = INT_MAX; hiQ = INT_MIN;
+    for (int pp = p0; pp <= p1; ++pp)
+        for (int qq = q0; qq <= q1; ++qq) {
+            const int idx = (pp - p0) * nq + (qq - q0);
+            if (seen[idx] || !cellAllowed(cellAt(pp, qq))) continue;
+            // BFS this component.
+            std::vector<std::pair<int,int>> comp;
+            std::queue<std::pair<int,int>> bfs;
+            seen[idx] = 1; bfs.push({pp, qq});
+            while (!bfs.empty()) {
+                auto [a0, b0] = bfs.front(); bfs.pop();
+                comp.push_back({a0, b0});
+                const int d4p[4] = {1, -1, 0, 0}, d4q[4] = {0, 0, 1, -1};
+                for (int k = 0; k < 4; ++k) {
+                    const int a1 = a0 + d4p[k], b1 = b0 + d4q[k];
+                    if (a1 < p0 || a1 > p1 || b1 < q0 || b1 > q1) continue;
+                    const int j = (a1 - p0) * nq + (b1 - q0);
+                    if (seen[j] || !cellAllowed(cellAt(a1, b1))) continue;
+                    seen[j] = 1; bfs.push({a1, b1});
+                }
+            }
+            if ((int)comp.size() >= 2) {
+                ++openings;
+                for (auto &cpp : comp) {
+                    loP = std::min(loP, cpp.first);  hiP = std::max(hiP, cpp.first);
+                    loQ = std::min(loQ, cpp.second); hiQ = std::max(hiQ, cpp.second);
+                }
+            }
+        }
+    if (openings == 0) { loP = hiP = cp; loQ = hiQ = cq; }
+    return openings;
+}
+
+void MillionModuleMarchCode::computeMarchBox(int progress) {
+    // Default behaviour: the origin bounding box, shifted forward unchanged.
+    if (!g_adaptiveBox) {
+        const int shift = g_marchDir * progress;
+        g_goalMin = shiftAxis(g_originMin, g_marchAxis, shift);
+        g_goalMax = shiftAxis(g_originMax, g_marchAxis, shift);
+        return;
+    }
+
+    Lattice *lat = Catoms3DWorld::getWorld()->lattice;
+    const Cell3DPosition gs = lat->gridSize;
+    const int a = g_marchAxis, p = (a + 1) % 3, q = (a + 2) % 3;
+
+    // Robot centroid in the two perpendicular axes, and the live leading edge
+    // along the march axis: the box tracks the body so it always overlaps (no
+    // module is left without a move) and senses the passage where the body is.
+    long sp = 0, sq = 0, n = 0;
+    int liveLead = (g_marchDir > 0) ? INT_MIN : INT_MAX;
+    for (auto &kv : Catoms3DWorld::getWorld()->getMap()) {
+        auto *bc = static_cast<MillionModuleMarchCode *>(kv.second->blockCode);
+        if (bc != nullptr && bc->isObstacle) continue;
+        const Cell3DPosition &pos = kv.second->position;
+        sp += pos[p]; sq += pos[q]; ++n;
+        liveLead = (g_marchDir > 0) ? std::max(liveLead, (int)pos[a])
+                                    : std::min(liveLead, (int)pos[a]);
+    }
+    if (n == 0) return;
+    const int cp = (int)llround((double)sp / n);
+    const int cq = (int)llround((double)sq / n);
+    const int N = (g_moduleCount > 0) ? g_moduleCount : (int)n;
+
+    // Sense the local passage width (the APF clearance) one cell ahead of the
+    // body's current leading edge, so the box starts narrowing before the front
+    // reaches a constriction rather than off an absolute step counter. Sample
+    // the free span over a small neighbourhood of the centroid and take the max,
+    // so a single off-centre ray (the centroid drifts as the body reshapes)
+    // cannot spuriously collapse an axis that actually has clearance.
+    const int fwdA = liveLead + g_marchDir;
+    const int ba = std::max(0, std::min((int)gs[a] - 1, fwdA));
+    auto sense = [&](int spanAxis, int otherAxis, int spanCtr, int otherCtr) {
+        int best = 1;
+        for (int d = -1; d <= 1; ++d) {
+            Cell3DPosition base;
+            base.pt[a] = ba;
+            base.pt[spanAxis]  = std::max(0, std::min((int)gs[spanAxis]  - 1, spanCtr));
+            base.pt[otherAxis] = std::max(0, std::min((int)gs[otherAxis] - 1, otherCtr + d));
+            best = std::max(best, freeSpanAround(base, spanAxis));
+        }
+        return best;
+    };
+    const int freeP = sense(p, q, cp, cq);
+    const int freeQ = sense(q, p, cq, cp);
+
+    // Width budget per perpendicular axis: the robot's natural width, unless an
+    // explicit maxWidth opts in to widening for a broader (faster) front in open
+    // space. The box is then the passage width capped by that budget -- so it
+    // only ever *narrows* to fit unless asked to widen.
+    const int naturalWp = g_originMax[p] - g_originMin[p] + 1;
+    const int naturalWq = g_originMax[q] - g_originMin[q] + 1;
+    const int capP = (g_maxWidth > 0) ? g_maxWidth : naturalWp;
+    const int capQ = (g_maxWidth > 0) ? g_maxWidth : naturalWq;
+
+    // --- Infer the locomotion mode from the forward APF clearance -------------
+    // OPEN: room in both axes. NARROW: one axis constricted (a slit). LADDER:
+    // both axes constricted (a tunnel -> thin column). SPLIT: two openings ahead
+    // (a divider/pillar -> span both and flow around it, staying connected).
+    int sLoP, sHiP, sLoQ, sHiQ;
+    const int senseR = std::max(naturalWp, naturalWq) + 1;
+    const int openings = forwardOpenings(a, ba, p, q, cp, cq, senseR,
+                                         sLoP, sHiP, sLoQ, sHiQ);
+    const bool narrowP = freeP < naturalWp;
+    const bool narrowQ = freeQ < naturalWq;
+    if (openings >= 2)           g_mode = MarchMode::SPLIT;
+    else if (narrowP && narrowQ) g_mode = MarchMode::LADDER;
+    else if (narrowP || narrowQ) g_mode = MarchMode::NARROW;
+    else                         g_mode = MarchMode::OPEN;
+
+    // --- Shape the cross-section per mode -------------------------------------
+    int centerP = cp, centerQ = cq;
+    int wp, wq;
+    if (g_mode == MarchMode::SPLIT) {
+        // Span both openings (and the divider between them). The divider cells
+        // inside the box are obstacles, never seeded, so the body fills around
+        // it as a connected ring -- no disconnection, MMM's invariant holds.
+        wp = std::min((int)gs[p], sHiP - sLoP + 1);
+        wq = std::min((int)gs[q], sHiQ - sLoQ + 1);
+        centerP = (sLoP + sHiP) / 2;
+        centerQ = (sLoQ + sHiQ) / 2;
+    } else {
+        // OPEN/NARROW/LADDER: as wide as the passage allows, capped by the budget
+        // (NARROW relaxes one axis, LADDER both; OPEN hits the cap).
+        wp = std::min(freeP, capP);
+        wq = std::min(freeQ, capQ);
+    }
+
+    // Morph gradually (<=1 cell/step) so the gradient stays smooth and no module
+    // is stranded by an abrupt reshape.
+    if (g_prevWp < 0) g_prevWp = naturalWp;
+    if (g_prevWq < 0) g_prevWq = naturalWq;
+    wp = std::max(g_prevWp - 1, std::min(wp, g_prevWp + 1));
+    wq = std::max(g_prevWq - 1, std::min(wq, g_prevWq + 1));
+    wp = std::max(1, std::min(wp, (int)gs[p]));
+    wq = std::max(1, std::min(wq, (int)gs[q]));
+    g_prevWp = wp; g_prevWq = wq;
+
+    // Length along the march axis. Normally it makes up the volume (a narrow
+    // cross-section elongates into a column, a wide one flattens into a slab).
+    // In SPLIT the box deliberately spans both openings AND the divider between
+    // them, so its cross-section over-counts (the divider cells are unfillable);
+    // there, keep the ring as deep as the body instead of collapsing to a fragile
+    // one-cell-thick wall.
+    const int naturalWa = g_originMax[a] - g_originMin[a] + 1;
+    const int length = (g_mode == MarchMode::SPLIT)
+        ? std::max(1, naturalWa)
+        : std::max(1, (int)std::ceil((double)N / std::max(1, wp * wq)));
+
+    // Assemble the box. Along the march axis the *leading* edge advances by
+    // `progress` from the origin leading edge -- always exactly one body-step
+    // ahead, the proven compact-march anchor -- and any extra length (from a
+    // narrowed cross-section) extends *backward* over the current body, not
+    // forward. Growing backward is what keeps the march compact: there is no
+    // long forward channel for front modules to race into and smear.
+    int lo[3], hi[3];
+    if (g_marchDir > 0) {
+        const int s = g_originMax[a] + progress; hi[a] = s; lo[a] = s - (length - 1);
+    } else {
+        const int s = g_originMin[a] - progress; lo[a] = s; hi[a] = s + (length - 1);
+    }
+    lo[p] = centerP - wp / 2; hi[p] = lo[p] + wp - 1;
+    lo[q] = centerQ - wq / 2; hi[q] = lo[q] + wq - 1;
+
+    // Keep the box inside the grid by shifting (not clipping), preserving volume.
+    for (int ax = 0; ax < 3; ++ax) {
+        if (lo[ax] < 0)          { hi[ax] -= lo[ax];                 lo[ax] = 0; }
+        if (hi[ax] > gs[ax] - 1) { lo[ax] -= hi[ax] - (gs[ax] - 1); hi[ax] = gs[ax] - 1; }
+        if (lo[ax] < 0)          { lo[ax] = 0; }
+    }
+    g_goalMin = Cell3DPosition(lo[0], lo[1], lo[2]);
+    g_goalMax = Cell3DPosition(hi[0], hi[1], hi[2]);
 }
 
 void MillionModuleMarchCode::computeField() {
@@ -296,15 +590,10 @@ void MillionModuleMarchCode::computeField() {
     Lattice *lat = Catoms3DWorld::getWorld()->lattice;
     const Cell3DPosition gs = lat->gridSize;
 
-    auto isObstacleCell = [&](const Cell3DPosition &c) {
-        BuildingBlock *bb = lat->getBlock(c);
-        if (bb == nullptr) return false;
-        auto *bc = static_cast<MillionModuleMarchCode *>(bb->blockCode);
-        return bc != nullptr && bc->isObstacle;
-    };
-
     // Multi-source BFS seeded at every goal cell (reward 0), propagating over
-    // the whole free+structure space with obstacle cells as barriers. This is
+    // the whole free+structure space. Obstacles -- and, when the clearance
+    // margin is on, the cells adjacent to them -- are barriers (cellAllowed), so
+    // the geodesic naturally routes keeping one empty cell from terrain. This is
     // the gridworld value function of the paper (Section 3.1); covering the full
     // bounded grid -- rather than only structure-adjacent cells -- lets the
     // robot follow the gradient toward a goal box that is not yet touching it
@@ -314,7 +603,7 @@ void MillionModuleMarchCode::computeField() {
         for (short y = 0; y < gs[1]; ++y)
             for (short z = 0; z < gs[2]; ++z) {
                 const Cell3DPosition c(x, y, z);
-                if (inGoal(c) && !isObstacleCell(c)) {
+                if (inGoal(c) && cellAllowed(c)) {
                     g_cellDist[c] = 0;
                     q.push(c);
                 }
@@ -324,7 +613,7 @@ void MillionModuleMarchCode::computeField() {
         q.pop();
         const int dc = g_cellDist[c];
         for (const Cell3DPosition &nb : lat->getNeighborhood(c)) {
-            if (!lat->isInGrid(nb) || isObstacleCell(nb)) continue;  // barrier
+            if (!cellAllowed(nb)) continue;                         // barrier / margin
             if (g_cellDist.find(nb) == g_cellDist.end()) {
                 g_cellDist[nb] = dc + 1;
                 q.push(nb);
@@ -371,35 +660,45 @@ bool MillionModuleMarchCode::selectBestMove(Cell3DPosition &bestDest,
     short bestZ = SHRT_MAX;
     double bestH = 1e18;
     bool found = false;
-    bool foundStrict = false;   //!< prefer a strictly-closer move over a lateral one
+    int  bestTier = INT_MAX;    //!< 0 strict, 1 lateral, 2 uphill-escape (lower wins)
 
     auto hdist = [](const Cell3DPosition &p) {
         const double dx = p[0] - g_goalCx, dy = p[1] - g_goalCy;
         return dx * dx + dy * dy;                      // horizontal dist^2 to goal box
     };
+    const bool constricted = (g_mode == MarchMode::LADDER || g_mode == MarchMode::SPLIT);
+    const double hSelf = hdist(module->position);
 
     for (const Cell3DPosition &c : Catoms3DMotionEngine::getAllReachablePositions(module)) {
         if (!lattice->isInGrid(c) || !lattice->isFree(c)) continue;
+        if (!cellAllowed(c)) continue;      // obstacle clearance (APF repulsive margin)
 
         const bool cInTarget = inGoal(c);
         int key;        //!< primary sort key (lower is better)
-        bool strict;    //!< true == strict progress toward the goal
+        int tier;       //!< 0 strict progress, 1 lateral flow, 2 uphill escape
 
         if (inTargetSelf) {
             // Already placed: only settle deeper into the goal -- fill holes and
             // hug the ground (the reward's height term, paper Section 6).
             if (!(cInTarget && c[2] < module->position[2])) continue;
             key = 0;
-            strict = true;
+            tier = 0;
         } else {
             int ed = estimatedDistanceOfCell(c);
             if (ed == INT_MAX || D == INT_MAX) continue;
+            const bool notRecent =
+                std::find(recentCells.begin(), recentCells.end(), c) == recentCells.end();
             if (ed < D) {
-                strict = true;                        // genuinely closer to the goal
-            } else if (ed == D &&
-                       std::find(recentCells.begin(), recentCells.end(), c)
-                           == recentCells.end()) {   // lateral surface flow (no loop)
-                strict = false;
+                tier = 0;                             // genuinely closer to the goal
+            } else if (ed == D && notRecent) {
+                tier = 1;                             // lateral surface flow (no loop)
+            } else if (ed == D + 1 && notRecent && constricted && hdist(c) < hSelf) {
+                // Uphill escape: a module trapped at a tight constriction with no
+                // forward move steps one cell *back* in distance but *toward* the
+                // goal opening, to slip out of the trap. The paper's MDP allows
+                // such non-greedy actions; pure greedy descent never would. Only
+                // in ladder/split, and only as a last resort (lowest tier).
+                tier = 2;
             } else {
                 continue;                             // away, revisiting, or drifting
             }
@@ -408,19 +707,22 @@ bool MillionModuleMarchCode::selectBestMove(Cell3DPosition &bestDest,
 
         Catoms3DBlock *piv = Catoms3DMotionEngine::findMotionPivot(module, c);
         if (piv == nullptr) continue;       // no valid catom rotation reaches c
+        // Never actuate against fixed terrain: an obstacle may not be a pivot.
+        auto *pbc = static_cast<MillionModuleMarchCode *>(piv->blockCode);
+        if (pbc != nullptr && pbc->isObstacle) continue;
 
-        // A strict-progress option always beats any lateral one.
-        if (strict && !foundStrict) {
-            foundStrict = true;
+        // A lower-tier option (strict > lateral > uphill) always wins.
+        if (tier < bestTier) {
+            bestTier = tier;
             found = false;
             bestKey = INT_MAX;
             bestH = 1e18;
             bestZ = SHRT_MAX;
         }
-        if (!strict && foundStrict) continue;
+        if (tier > bestTier) continue;
 
-        // Rank: closest to goal (key), then most goal-centroid-ward (compact),
-        // then lowest (ground preference / dynamic stability).
+        // Rank within the tier: closest to goal (key), then most goal-centroid-
+        // ward (compact), then lowest (ground preference / dynamic stability).
         const double hc = hdist(c);
         const bool better = !found || key < bestKey ||
             (key == bestKey && (hc < bestH ||
@@ -449,6 +751,29 @@ void MillionModuleMarchCode::attemptMove() {
     Cell3DPosition dest;
     Catoms3DBlock *pivot = nullptr;
     if (!selectBestMove(dest, pivot)) return;         // no beneficial move right now
+
+    // --- Surging metering at a constriction ----------------------------------
+    // In a tight mode (ladder/split) the body packs against the obstacle and
+    // gridlocks: too many modules rush the few throat cells at once and none can
+    // proceed. Meter them through front-first (the paper's surging order): yield
+    // to an adjacent module that is strictly closer to the goal and can itself
+    // move this round. The closest module goes, frees a throat cell, and the
+    // right-of-way propagates back through the body so it drains in order. The
+    // globally-closest movable module has no closer movable neighbour, so it
+    // always moves -- progress is guaranteed (no deadlock). Open/narrow marching
+    // keeps full parallelism (this only engages in ladder/split).
+    if (g_mode == MarchMode::LADDER || g_mode == MarchMode::SPLIT) {
+        for (const Cell3DPosition &n : lattice->getActiveNeighborCells(module->position)) {
+            BuildingBlock *bb = lattice->getBlock(n);
+            if (bb == nullptr) continue;
+            auto *bc = static_cast<MillionModuleMarchCode *>(bb->blockCode);
+            if (bc == nullptr || bc->isObstacle) continue;
+            if (bc->distanceToGoal >= distanceToGoal) continue;   // not closer: ignore
+            if (bc->moving) return;                               // closer one is going
+            Cell3DPosition d; Catoms3DBlock *pv = nullptr;
+            if (bc->selectBestMove(d, pv)) return;                // closer one can go: yield
+        }
+    }
 
     // Parallel-actuation safety: never move if it would disconnect the robot.
     if (!isMobileByConnectingCycle()) return;
@@ -558,8 +883,62 @@ void MillionModuleMarchCode::releaseClaims() {
 
 /// The robot is "settled" if no motion has completed for this many us.
 static const Time QUIESCENCE_WINDOW = 1500000;
+/// No rotation completing for this long means the structure is quiescent -- the
+/// goal was reached and the body settled, or it is genuinely stuck. Either way
+/// the run self-terminates. Larger than the nudge window so a legitimately
+/// slow-but-progressing march is never cut off.
+static const Time DEADLOCK_WINDOW = 4000000;
+
+void MillionModuleMarchCode::reportTermination(Time now) const {
+    const int axis = g_dynamicMode ? g_marchAxis : 0;
+    // Obstacle extent along the march axis (what the body has to get past).
+    int obsLo = INT_MAX, obsHi = INT_MIN;
+    for (auto &kv : Catoms3DWorld::getWorld()->getMap()) {
+        auto *bc = static_cast<MillionModuleMarchCode *>(kv.second->blockCode);
+        if (bc == nullptr || !bc->isObstacle) continue;
+        const int c = kv.second->position[axis];
+        obsLo = std::min(obsLo, c); obsHi = std::max(obsHi, c);
+    }
+    // Robot module distribution relative to the obstacle ("past" = beyond it in
+    // the travel direction).
+    int before = 0, at = 0, past = 0, nRobot = 0;
+    for (auto &kv : Catoms3DWorld::getWorld()->getMap()) {
+        auto *bc = static_cast<MillionModuleMarchCode *>(kv.second->blockCode);
+        if (bc == nullptr || bc->isObstacle) continue;
+        ++nRobot;
+        if (obsHi < obsLo) continue;
+        const int c = kv.second->position[axis];
+        if (c < obsLo)      ((g_marchDir > 0) ? before : past)++;
+        else if (c > obsHi) ((g_marchDir > 0) ? past : before)++;
+        else                ++at;
+    }
+    std::cout << "[MMM] *** TERMINATED at t=" << now
+              << " -- no further motion possible, goalFinished=" << finished << " ***\n";
+    if (obsHi >= obsLo) {
+        const char ax = (axis == 0) ? 'x' : (axis == 1) ? 'y' : 'z';
+        std::cout << "[MMM]     obstacle " << ax << "=[" << obsLo << "," << obsHi
+                  << "]  modules before=" << before << " at=" << at
+                  << " past=" << past << " (of " << nRobot << ")"
+                  << (past < nRobot ? "  --> body did NOT fully pass the obstacle"
+                                    : "  --> all modules passed")
+                  << std::endl;
+    }
+}
 
 void MillionModuleMarchCode::masterCheckGoalCompletion() {
+    if (g_terminate) return;
+    const Time now = getScheduler()->now();
+
+    // Self-terminate on quiescence: no rotation for DEADLOCK_WINDOW means no more
+    // motion is possible (goal reached & settled, or genuinely stuck). Stopping
+    // the ticks lets the event queue drain so the run ends instead of spinning to
+    // the -s deadline.
+    if ((now - g_lastRealMotion) > DEADLOCK_WINDOW) {
+        reportTermination(now);
+        g_terminate = true;
+        return;
+    }
+
     if (finished) return;
     if (g_dynamicMode) { if (!g_goalReady) return; }
     else if (target == nullptr) return;
@@ -573,7 +952,6 @@ void MillionModuleMarchCode::masterCheckGoalCompletion() {
         }
     }
 
-    const Time now = getScheduler()->now();
     const char *why = "filled";
     bool advance;
 
@@ -631,7 +1009,14 @@ void MillionModuleMarchCode::masterCheckGoalCompletion() {
         return;
     }
     std::cout << "[MMM] *** GOAL ADVANCED to next box at t=" << now
-              << " (" << why << ") ***\n";
+              << " (" << why << ")";
+    if (g_dynamicMode && g_adaptiveBox) {
+        std::cout << " box=" << (g_goalMax[0] - g_goalMin[0] + 1)
+                  << "x" << (g_goalMax[1] - g_goalMin[1] + 1)
+                  << "x" << (g_goalMax[2] - g_goalMin[2] + 1)
+                  << " mode=" << modeName(g_mode);
+    }
+    std::cout << " ***\n";
     g_lastMotionTime = getScheduler()->now();   // fresh quiescence window for the new box
 
     // Re-seed the value function against the new goal and restart every module.

@@ -53,6 +53,15 @@ using namespace Catoms3D;
 static const int TICK_MOVE   = 1; //!< periodic attempt-to-move tick (every module)
 static const int TICK_MASTER = 2; //!< periodic goal-completion check tick (master only)
 
+/// Locomotion mode inferred from the local artificial-potential-field clearance
+/// ahead of the body (drives how the adaptive goal box is shaped):
+///   OPEN   -- wide clearance in both perpendicular axes; natural/wide box.
+///   NARROW -- constricted in ONE perpendicular axis (a slit); narrow that axis.
+///   LADDER -- constricted in BOTH axes (a tunnel); a thin column, single-file.
+///   SPLIT  -- two separate openings ahead (a pillar/divider); the box spans both
+///             so the body flows around the divider as a connected ring.
+enum class MarchMode { OPEN, NARROW, LADDER, SPLIT };
+
 class MillionModuleMarchCode : public Catoms3DBlockCode {
 private:
     Catoms3DBlock *module = nullptr;
@@ -99,6 +108,30 @@ public:
     static void initMarchGoal();
     /// Advance the goal region one step; returns false when the march is done.
     static bool advanceGoalRegion();
+    /// True if lattice cell c is occupied by an obstacle module.
+    static bool cellIsObstacle(const Cell3DPosition &c);
+    /// True if a module may occupy/target cell c: in grid, not an obstacle, and
+    /// -- when the obstacle clearance is enabled -- not adjacent to any obstacle
+    /// (the APF repulsive margin that keeps one empty cell next to terrain).
+    static bool cellAllowed(const Cell3DPosition &c);
+    /// Number of contiguous free (in-grid, non-obstacle) cells along `axis`
+    /// through `base` (inclusive) -- the local passage width sensed by the
+    /// clearance-adaptive goal box (the APF "clearance" / repulsive distance).
+    static int  freeSpanAround(const Cell3DPosition &base, int axis);
+    /// Count the distinct cleared openings in the forward cross-section plane
+    /// (constant `aCoord` along march axis `a`, perpendicular axes p/q), within a
+    /// window of half-width `radius` around (cp,cq). Fills the union bounding box
+    /// of those openings in [loP,hiP]x[loQ,hiQ]. Used to detect the SPLIT mode.
+    static int  forwardOpenings(int a, int aCoord, int p, int q, int cp, int cq,
+                                int radius, int &loP, int &hiP, int &loQ, int &hiQ);
+    /// Human-readable name of a march mode (for the advance log).
+    static const char *modeName(MarchMode m);
+    /// Set the current goal window for the given march progress. With
+    /// adaptiveBox enabled the window is reshaped to the local free space
+    /// (narrow passage -> thin & elongated, open space -> wide & flat for a
+    /// broader moving front); otherwise it is the origin bounding box shifted
+    /// forward unchanged.
+    static void computeMarchBox(int progress);
     /// Rebuild the shared value function (BFS distance-to-goal of every relevant
     /// lattice cell) from the current world state. The converged DP result.
     static void computeField();
@@ -120,6 +153,10 @@ public:
     void refreshColor();
     /// Master only: advance the goal box once every robot module is placed.
     void masterCheckGoalCompletion();
+    /// Master only: print why the run stopped and how the robot modules are
+    /// distributed relative to the obstacle along the march axis (before / at /
+    /// past), so a stalled run shows the body did not clear the obstacle.
+    void reportTermination(Time now) const;
 
     static BlockCode *buildNewBlockCode(BuildingBlock *host) {
         return (new MillionModuleMarchCode((Catoms3DBlock *)host));
