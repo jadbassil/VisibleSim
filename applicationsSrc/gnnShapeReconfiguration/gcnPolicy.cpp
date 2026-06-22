@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstring>
 #include <fstream>
+#include <limits>
 #include <stdexcept>
 
 namespace GNNShapeReconfiguration {
@@ -135,6 +136,35 @@ void GCNWeights::loadFromFile(const std::string& path) {
 // Feature builders
 // ---------------------------------------------------------------------------
 
+float nearestUnfilledTarget(const Cell3DPosition& pos,
+                            Eigen::VectorXf& dirNorm,
+                            const std::vector<std::pair<Cell3DPosition,bool>>& targetCells) {
+    dirNorm = Eigen::VectorXf::Zero(3);
+
+    // Collect unfilled cells, then sort into canonical (x,y,z) order so the
+    // argmin tie-break below matches Python's sorted(unfilled_targets).
+    std::vector<Cell3DPosition> unfilled;
+    unfilled.reserve(targetCells.size());
+    for (const auto& tc : targetCells)
+        if (!tc.second) unfilled.push_back(tc.first);
+    if (unfilled.empty()) return 0.0f;
+    std::sort(unfilled.begin(), unfilled.end());  // Cell3DPosition::operator< is lexicographic (x,y,z)
+
+    int bestDist = std::numeric_limits<int>::max();
+    Cell3DPosition best;
+    for (const auto& c : unfilled) {
+        int d = std::abs(c[0] - pos[0]) + std::abs(c[1] - pos[1]) + std::abs(c[2] - pos[2]);
+        if (d < bestDist) { bestDist = d; best = c; }  // strict < keeps earliest on ties
+    }
+
+    Eigen::Vector3f dir(static_cast<float>(best[0] - pos[0]),
+                        static_cast<float>(best[1] - pos[1]),
+                        static_cast<float>(best[2] - pos[2]));
+    const float l1 = std::abs(dir[0]) + std::abs(dir[1]) + std::abs(dir[2]);
+    if (l1 > 0.0f) dirNorm = dir / l1;  // 0 only if on the target (can't happen for unfilled)
+    return static_cast<float>(bestDist);
+}
+
 Eigen::VectorXf edgeFeature(int direction) {
     Eigen::VectorXf e = Eigen::VectorXf::Zero(EDGE_DIM);
     if (direction >= 0 && direction < EDGE_DIM) e(direction) = 1.0f;
@@ -146,7 +176,9 @@ Eigen::VectorXf buildNodeFeature(const Cell3DPosition& gridSize,
                                  bool inTarget,
                                  uint8_t neighborMask6,
                                  int nMoves,
-                                 bool isAP) {
+                                 bool isAP,
+                                 float distToTarget,
+                                 const Eigen::VectorXf& dirNorm) {
     Eigen::VectorXf x(NODE_DIM);
     const float gx = static_cast<float>(std::max<int>(1, gridSize[0]));
     const float gy = static_cast<float>(std::max<int>(1, gridSize[1]));
@@ -160,6 +192,13 @@ Eigen::VectorXf buildNodeFeature(const Cell3DPosition& gridSize,
     int capped = std::min(nMoves, N_ACTIONS - 1);
     x(10) = static_cast<float>(capped) / static_cast<float>(N_ACTIONS - 1);
     x(11) = isAP ? 1.0f : 0.0f;
+    // Target-relative features (must mirror env.py obs_to_tensors):
+    //   x(12)   = L1 distance to nearest unfilled target, normalised by gx+gy+gz
+    //   x(13..) = L1-normalised direction (3-vector) to that target
+    x(12) = distToTarget / (gx + gy + gz);
+    x(13) = dirNorm.size() > 0 ? dirNorm(0) : 0.0f;
+    x(14) = dirNorm.size() > 1 ? dirNorm(1) : 0.0f;
+    x(15) = dirNorm.size() > 2 ? dirNorm(2) : 0.0f;
     return x;
 }
 

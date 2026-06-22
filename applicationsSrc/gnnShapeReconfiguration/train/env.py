@@ -19,7 +19,8 @@ import numpy as np
 import torch
 
 MAX_ACTIONS_PER_BLOCK = 13  # 0=stay + up to 12 moves
-NODE_FEAT_DIM = 12          # 3 pos + 1 in_target + 6 neighbor-presence bits + 1 n_moves + 1 is_ap
+NODE_FEAT_DIM = 16          # 3 pos + 1 in_target + 6 neighbor-presence bits + 1 n_moves + 1 is_ap
+                            # + 1 L1-dist to nearest unfilled target + 3 dir to nearest unfilled target
 
 
 class VisibleSimEnv:
@@ -113,8 +114,27 @@ class VisibleSimEnv:
 
         art_points = self._articulation_points(obs)
 
+        targets = {tuple(t) for t in obs.get("target", [])}
+        unfilled_targets = targets - {tuple(b["pos"]) for b in blocks if b["in_target"]}
+        # Sorted (canonical) order so argmin tie-breaking matches the C++
+        # deploy-side feature builder; otherwise direction vectors diverge.
+        target_arr = (np.array(sorted(unfilled_targets), dtype=np.float32)
+                      if unfilled_targets else None)
+        grid_l1 = float(sum(grid))  # distance normalizer; must match gcnPolicy.cpp
+
         node_feats = []
         for b in blocks:
+            L1_distance_to_nearest_unfilled_target = 0.0
+            direction_to_nearest_unfilled_target = [0.0, 0.0, 0.0]
+            if target_arr is not None:
+                pos = np.array(b["pos"], dtype=np.float32)
+                dists = np.abs(target_arr - pos).sum(axis=1)
+                L1_distance_to_nearest_unfilled_target = float(dists.min()) / grid_l1
+                direction = target_arr[dists.argmin()] - pos
+                norm = np.linalg.norm(direction, ord=1)
+                if norm > 0:  # 0 only if block sits on its nearest target (can't happen for unfilled, but guard for C++ parity)
+                    direction_to_nearest_unfilled_target = (direction / norm).tolist()
+
             feats = [
                 b["pos"][0] / max(grid[0], 1),
                 b["pos"][1] / max(grid[1], 1),
@@ -123,6 +143,8 @@ class VisibleSimEnv:
                 *[float(nb != -1) for nb in b["neighbors"]],   # 6 bits
                 min(len(b["moves"]), MAX_ACTIONS_PER_BLOCK - 1) / (MAX_ACTIONS_PER_BLOCK - 1),
                 float(b["id"] in art_points),
+                L1_distance_to_nearest_unfilled_target,
+                *direction_to_nearest_unfilled_target
             ]
             node_feats.append(feats)
 

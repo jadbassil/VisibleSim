@@ -10,7 +10,7 @@
 
 namespace GNNShapeReconfiguration {
 
-constexpr int NODE_DIM   = 12;
+constexpr int NODE_DIM   = 16;
 constexpr int EDGE_DIM   = 6;
 constexpr int HIDDEN     = 64;
 constexpr int N_ACTIONS  = 13;
@@ -34,17 +34,31 @@ struct GCNWeights {
     void loadFromFile(const std::string& path);  // throws on bad format
 };
 
+// L1 distance from `pos` to the nearest UNFILLED target cell, also writing the
+// L1-normalised direction (3-vector) towards it into `dirNorm`.
+//   targetCells: (cell, filled) pairs; filled==true means a block occupies it.
+// Returns 0 and dirNorm=(0,0,0) when there are no unfilled targets.
+// Unfilled cells are visited in sorted (x,y,z) order so the argmin tie-break
+// matches Python's sorted(unfilled_targets) (env.py).
+float nearestUnfilledTarget(const Cell3DPosition& pos,
+    Eigen::VectorXf& dirNorm,
+    const std::vector<std::pair<Cell3DPosition,bool>>& targetCells);
+
 // 6-d one-hot direction vector. `direction` is an SCLattice2::Direction index.
 Eigen::VectorXf edgeFeature(int direction);
 
-// Build the 12-d node feature vector for this module.
+// Build the 16-d node feature vector for this module.
 //   neighborMask6: bit d set iff direction d has a connected neighbour.
+//   distToTarget : raw L1 distance to nearest unfilled target (normalised here).
+//   dirNorm      : L1-normalised direction (3-vector) to that target.
 Eigen::VectorXf buildNodeFeature(const Cell3DPosition& gridSize,
                                  const Cell3DPosition& pos,
                                  bool inTarget,
                                  uint8_t neighborMask6,
                                  int nMoves,
-                                 bool isAP);
+                                 bool isAP,
+                                 float distToTarget,
+                                 const Eigen::VectorXf& dirNorm);
 
 // Compute the message a node sends to a neighbour given its hidden state and
 // the edge feature for that neighbour.

@@ -2,22 +2,22 @@
   "magic": "GCN1",
   "version": 1,
   "hidden": 64,
-  "node_dim": 12,
+  "node_dim": 16,
   "edge_dim": 6,
   "n_actions": 13,
   "n_layers": 3,
-  "crc32": 3744075128,
-  "size_bytes": 97108,
+  "crc32": 55806247,
+  "size_bytes": 99156,
   "shapes": [
     {
       "layer": 0,
       "msg_lin.weight": [
         64,
-        18
+        22
       ],
       "self_lin.weight": [
         64,
-        12
+        16
       ],
       "bias": [
         64

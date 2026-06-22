@@ -150,6 +150,12 @@ private:
     void emitTopo2();
     bool localIsArticulationPoint() const;
 
+    // Build this module's 16-d node feature, including the target-relative
+    // features (distance/direction to nearest unfilled target). Mirrors the
+    // Python feature builder in env.py obs_to_tensors.
+    Eigen::VectorXf buildSelfNodeFeature(uint8_t mask6, int nMoves,
+                                         bool isAP, bool inT);
+
     void emitLayerMessages(int layer);
     void onGnnLayerMsg(int layer,
                        std::shared_ptr<Message> m,

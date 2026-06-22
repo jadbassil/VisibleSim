@@ -27,7 +27,7 @@ import torch.nn.functional as F
 from typing import Literal, Optional
 
 MAX_ACTIONS = 13   # 0=stay + up to 12 moves
-NODE_DIM    = 12   # must match env.NODE_FEAT_DIM
+NODE_DIM    = 16   # must match env.NODE_FEAT_DIM
 EDGE_DIM    = 6    # one-hot connector direction
 HIDDEN      = 64
 

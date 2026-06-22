@@ -109,9 +109,7 @@ void GNNShapeReconfigurationCode::onInterruptionEvent(std::shared_ptr<Event> eve
                     bool isAP = localIsArticulationPoint();
                     bool inT  = (target != nullptr && target->isInTarget(module->position));
                     int nMoves = static_cast<int>(module->getAllMotions().size());
-                    h_self = buildNodeFeature(
-                        BaseSimulator::getWorld()->lattice->gridSize,
-                        module->position, inT, nb1mask, nMoves, isAP);
+                    h_self = buildSelfNodeFeature(nb1mask, nMoves, isAP, inT);
                     emitLayerMessages(0);
                 }
                 break;
@@ -353,6 +351,22 @@ std::vector<Cell3DPosition>& GNNShapeReconfigurationCode::getTargetCells() {
     return targetCells;
 }
 
+Eigen::VectorXf GNNShapeReconfigurationCode::buildSelfNodeFeature(
+        uint8_t mask6, int nMoves, bool isAP, bool inT) {
+    auto* latt = BaseSimulator::getWorld()->lattice;
+    // (cell, filled) pairs over the whole target shape; filled == occupied.
+    std::vector<std::pair<Cell3DPosition, bool>> occ;
+    const auto& cells = getTargetCells();
+    occ.reserve(cells.size());
+    for (const Cell3DPosition& c : cells)
+        occ.emplace_back(c, latt->cellHasBlock(c));
+
+    Eigen::VectorXf dirNorm = Eigen::VectorXf::Zero(3);
+    float dist = nearestUnfilledTarget(module->position, dirNorm, occ);
+    return buildNodeFeature(latt->gridSize, module->position, inT,
+                            mask6, nMoves, isAP, dist, dirNorm);
+}
+
 int GNNShapeReconfigurationCode::countBlocksInTarget() const {
     if (!target) return 0;
     int count = 0;
@@ -488,10 +502,8 @@ void GNNShapeReconfigurationCode::onDeployStepStart() {
 
     if (expectedNeighborCount() == 0) {
         bool inT = (target != nullptr && target->isInTarget(module->position));
-        h_self = buildNodeFeature(
-            BaseSimulator::getWorld()->lattice->gridSize,
-            module->position, inT, 0,
-            static_cast<int>(module->getAllMotions().size()), false);
+        h_self = buildSelfNodeFeature(
+            0, static_cast<int>(module->getAllMotions().size()), false, inT);
         for (int L = 0; L < N_LAYERS; L++)
             h_self = gcnLayerForward(GCNWeights::instance().layers[L], h_self, {});
         scheduler->schedule(new InterruptionEvent<int>(
@@ -560,9 +572,7 @@ void GNNShapeReconfigurationCode::maybeAdvanceFromTopo2() {
     bool isAP = localIsArticulationPoint();
     bool inT  = (target != nullptr && target->isInTarget(module->position));
     int nMoves = static_cast<int>(module->getAllMotions().size());
-    h_self = buildNodeFeature(
-        BaseSimulator::getWorld()->lattice->gridSize,
-        module->position, inT, nb1mask, nMoves, isAP);
+    h_self = buildSelfNodeFeature(nb1mask, nMoves, isAP, inT);
 
     emitLayerMessages(0);
 }
@@ -702,7 +712,9 @@ void GNNShapeReconfigurationCode::runActorAndMove() {
     if (!inT && !isAP)
         for (int i = 1; i <= nMoves; i++) mask[i] = true;
 
-    int action = argmaxMasked(logits, mask);
+    // Sample (not argmax) to match training: the gradient-following 16-d policy
+    // gets trapped in limit cycles under greedy argmax near the final gap.
+    int action = sampleMaskedSoftmax(logits, mask, rngState);
 
     if (posHistoryLen > 0 && action != 0 && action - 1 < static_cast<int>(motions.size())) {
         const Cell3DPosition dest = motions[action - 1].first;

@@ -56,7 +56,7 @@ endif
 
 CC = g++
 
-.PHONY: clean all test
+.PHONY: clean all test feature-parity
 
 .cpp.o:
 	$(CC) $(INCLUDES) $(CCFLAGS) -c $< -o $@
@@ -69,6 +69,10 @@ all: $(OUT)
 
 test:
 	@echo "No regression tests defined for gnnShapeReconfiguration"
+
+# Feature-construction parity dumper (see featureParity.cpp / test_feature_parity.py).
+feature-parity: $(SIMULATORLIB) gcnPolicy.o featureParity.cpp
+	$(CC) $(INCLUDES) $(CCFLAGS) featureParity.cpp gcnPolicy.o -o $(APPDIR)/featureParity $(LIBS)
 
 $(OUT): $(SIMULATORLIB) $(OBJS)
 	$(CC) -o $(OUT) $(OBJS) $(LIBS)
