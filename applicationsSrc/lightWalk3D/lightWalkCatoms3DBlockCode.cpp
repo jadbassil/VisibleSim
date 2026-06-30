@@ -2091,44 +2091,82 @@ bool LightWalkCatoms3DBlockCode::
 
     if (stationaryCount == 0)
         return true;
+    // The destination must re-attach to the rest of the body, otherwise the
+    // moved module strands itself even if leaving was locally safe.
     if (!targetTouchesStructure)
         return false;
     if (currentNeighborCount <= 1)
         return true;
 
-    std::set<Cell3DPosition> occupiedAfterMove;
-    for (const auto &entry : blocks)
-    {
-        auto *bb = static_cast<Catoms3DBlock *>(entry.second);
-        if (!bb)
-            continue;
+    // Paper's connectivity guarantee (Section 4): the module may leave iff its
+    // neighbours remain mutually connected without it -- a bounded *local*
+    // connecting-cycle search, instead of an O(N) flood over the whole body.
+    // Combined with targetTouchesStructure above, a safe departure plus a
+    // re-attaching arrival keeps the structure connected.
+    return isMobileByConnectingCycle();
+}
 
-        const Cell3DPosition pos =
-            bb->blockId == catom->blockId ? targetPos : bb->position;
-        if (!occupiedAfterMove.insert(pos).second)
-            return false;
-    }
+// Bounds for the local connecting-cycle search (paper, Section 4, Figure 6).
+// Dense lattices yield short cycles, so a small constant depth/expansion finds
+// them; the search is conservative (reports immobile) if the bound is hit,
+// which never breaks connectivity, only forgoes a legal move.
+static const int CC_MAX_DEPTH = 8;
+static const int CC_MAX_EXPAND = 80;
 
-    if (occupiedAfterMove.size() <= 1)
+bool LightWalkCatoms3DBlockCode::isMobileByConnectingCycle() const
+{
+    if (!lattice or !catom)
         return true;
 
-    std::set<Cell3DPosition> visited;
-    std::vector<Cell3DPosition> stack{*occupiedAfterMove.begin()};
-    visited.insert(stack.back());
-    while (!stack.empty())
+    // Robot neighbours = adjacent occupied cells (every block here is part of
+    // the robot; lightWalk3D has no terrain/obstacle modules).
+    std::vector<Cell3DPosition> robotNb;
+    for (const auto &n : lattice->getActiveNeighborCells(catom->position))
     {
-        const Cell3DPosition current = stack.back();
-        stack.pop_back();
-
-        for (const auto &neighbor : lattice->getNeighborhood(current))
-        {
-            if (occupiedAfterMove.count(neighbor)
-                and visited.insert(neighbor).second)
-                stack.push_back(neighbor);
-        }
+        if (lattice->getBlock(n) != nullptr)
+            robotNb.push_back(n);
     }
 
-    return visited.size() == occupiedAfterMove.size();
+    if (robotNb.size() <= 1)
+        return true; // a leaf is always mobile
+
+    // Bounded BFS for a connecting cycle joining all neighbours through other
+    // modules, forbidding our own cell. If every neighbour is reached, we are
+    // not an articulation point and may safely move.
+    const Cell3DPosition self = catom->position;
+    std::set<Cell3DPosition> targets(robotNb.begin() + 1, robotNb.end());
+    std::set<Cell3DPosition> visited;
+    std::queue<std::pair<Cell3DPosition, int>> q;
+
+    visited.insert(robotNb[0]);
+    targets.erase(robotNb[0]);
+    q.push({robotNb[0], 0});
+
+    int expand = 0;
+    while (!q.empty() and expand < CC_MAX_EXPAND)
+    {
+        const Cell3DPosition cell = q.front().first;
+        const int depth = q.front().second;
+        q.pop();
+        ++expand;
+        if (depth >= CC_MAX_DEPTH)
+            continue;
+
+        for (const auto &nb : lattice->getActiveNeighborCells(cell))
+        {
+            if (nb == self or visited.count(nb))
+                continue;
+            if (lattice->getBlock(nb) == nullptr)
+                continue;
+
+            visited.insert(nb);
+            targets.erase(nb);
+            if (targets.empty())
+                return true; // all neighbours reconnected
+            q.push({nb, depth + 1});
+        }
+    }
+    return targets.empty(); // conservative: immobile if the bound was hit
 }
 
 bool LightWalkCatoms3DBlockCode::hasUnfilledTargetCell() const

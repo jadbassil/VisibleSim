@@ -217,6 +217,13 @@ public:
     bool isTargetFilled(const Cell3DPosition& pos) const;
     bool shouldSettleAtTargetCell() const;
     bool configurationStaysConnectedAfterMove(const Cell3DPosition& targetPos) const;
+    /// Paper's parallel-actuation mobility test (Fitch & Butler 2008, Section 4):
+    /// a bounded local connecting-cycle search. Returns true if this module is not
+    /// an articulation point of the robot graph -- i.e. its neighbours stay
+    /// mutually connected through a short path that avoids this cell -- so it may
+    /// leave without disconnecting the structure. Constant-time in dense
+    /// configurations; conservative (returns false) if the search bound is hit.
+    bool isMobileByConnectingCycle() const;
     bool hasUnfilledTargetCell() const;
     bool targetHasSupport(const Cell3DPosition& pos) const;
     bool claimNextTargetCell();
