@@ -6,7 +6,7 @@ This application trains a Graph Neural Network (GNN) policy to drive a cluster o
 
 The C++ simulator (VisibleSim) acts as the physics engine and is controlled by a Python training loop over a TCP socket. After training, the same GCN weights can be deployed directly inside the simulator with no Python process — every module runs its own copy of the forward pass in C++ and elects a single mover per step.
 
-> **Relationship to `gnnLocomotion`**: both applications share the same distributed GNN infrastructure (gym protocol, GCN forward pass, PPO loop, ballot mechanism). They differ in objective (target shape vs. CoM translation), node feature x(3), action mask, and reward.
+> **Relationship to `gnnLocomotion`**: both applications share the same distributed GNN infrastructure (gym protocol, GCN forward pass, PPO loop, ballot mechanism). They differ in objective (target shape vs. CoM translation), node features (shape reconfiguration adds `in_target` x(3) plus the target-relative distance/direction features x(12–15), for a 16-d node vector vs. 12-d), action mask, and reward.
 
 ---
 
@@ -174,7 +174,7 @@ Per block, `N_ACTIONS = 13`:
 ### Architecture
 
 ```
-Input: node features [N, 12], edge features [E, 6]
+Input: node features [N, 16], edge features [E, 6]
   │
   ├── Encoder: 3 × GNN layer (GAT or GCN) → [N, 64]
   │
@@ -182,7 +182,7 @@ Input: node features [N, 12], edge features [E, 6]
   └── Critic head: global mean-pool → Linear(64,64) → ELU → Linear(64,1) → scalar
 ```
 
-### Node features (12 dims)
+### Node features (16 dims)
 
 | Index | Feature | Description |
 |---|---|---|
@@ -191,8 +191,14 @@ Input: node features [N, 12], edge features [E, 6]
 | 4–9 | Neighbour presence | One bit per direction (PlusX, MinusX, PlusY, MinusY, PlusZ, MinusZ) |
 | 10 | Normalised move count | `min(n_moves, 12) / 12` |
 | 11 | Articulation-point flag | `1.0` if removing this block disconnects the cluster |
+| 12 | **Distance to nearest unfilled target** | L1 distance from this block to the nearest *unfilled* target cell, normalised by `sum(grid_size)` (= `gx+gy+gz`). `0.0` when no targets remain unfilled. |
+| 13–15 | **Direction to nearest unfilled target** | L1-normalised direction vector (per axis) towards that nearest unfilled target cell. `(0,0,0)` when no targets remain unfilled. |
 
-Feature x(3) (`in_target`) tells the policy which blocks are already placed and should not move, and which still need to be redirected. This is the key feature that differentiates shape reconfiguration from locomotion (where x(3) is `directionalPos` instead).
+Feature x(3) (`in_target`) tells the policy which blocks are already placed and should not move, and which still need to be redirected.
+
+Features x(12) and x(13–15) are *target-relative*: they tell each block **how far and in which direction** the nearest gap in the target shape lies. An "unfilled" target cell is one not currently occupied by any block. Without them the policy can only perceive whether it is *on* a target cell (x(3)) and cannot distinguish one target shape from another at a fixed position — so it overfits to a single shape. The distance/direction features are what give the policy the capacity to be conditioned on an arbitrary target (a prerequisite for generalising across shapes via target randomisation during training). Together with x(3) these are the features that differentiate shape reconfiguration from locomotion (where x(3) is `directionalPos` and there are no target-relative features).
+
+> **Train/deploy parity.** These features are constructed twice — in Python (`env.py` `obs_to_tensors`) for training and in C++ (`gcnPolicy.cpp` `nearestUnfilledTarget` + `buildNodeFeature`) for deployment — and must match exactly. Unfilled cells are visited in sorted `(x,y,z)` order on both sides so the `argmin` tie-break agrees. `test_feature_parity.py` (against the `make feature-parity` dumper) guards this; `test_export_parity.py` only covers the forward-pass math, not feature construction.
 
 ### Edge features (6 dims)
 
@@ -259,9 +265,9 @@ Deploy mode runs the trained GCN policy directly inside the simulator with **no 
 
 ### Components
 
-- **`train/export_weights.py`** — exports the trained `GNNPolicy(backbone='gcn')` weights to a flat little-endian binary (CRC-32 verified). Header: magic `GCN1`, version, `hidden=64`, `node_dim=12`, `edge_dim=6`, `n_actions=13`, `n_layers=3`. Body: 3 layers × (`msg_lin.weight`, `self_lin.weight`, `bias`), then actor `fc1`/`fc2` weights and biases, then a CRC-32 trailer.
+- **`train/export_weights.py`** — exports the trained `GNNPolicy(backbone='gcn')` weights to a flat little-endian binary (CRC-32 verified). Header: magic `GCN1`, version, `hidden=64`, `node_dim=16`, `edge_dim=6`, `n_actions=13`, `n_layers=3`. Body: 3 layers × (`msg_lin.weight`, `self_lin.weight`, `bias`), then actor `fc1`/`fc2` weights and biases, then a CRC-32 trailer.
 - **`gcnPolicy.hpp` / `.cpp`** — pure C++ Eigen port of the GCN forward pass. Singleton `GCNWeights::instance()` loads once; all modules share the read-only copy. `buildNodeFeature` accepts `bool inTarget` to populate x(3).
-- **`gnnShapeReconfigurationBlockCode` (deploy path)** — activated by `<deploy>` element or `GNN_DEPLOY_WEIGHTS` env var. The `<targetList>` from the same XML is used to compute each module's `in_target` flag during node feature construction.
+- **`gnnShapeReconfigurationBlockCode` (deploy path)** — activated by `<deploy>` element or `GNN_DEPLOY_WEIGHTS` env var. The `<targetList>` from the same XML is used to compute each module's `in_target` flag and its target-relative features (distance/direction to the nearest unfilled target cell) during node feature construction. Target-cell occupancy is read from the lattice (`cellHasBlock`) so the "unfilled" set matches the Python training side exactly.
 
 ### Per-step protocol
 
@@ -273,7 +279,7 @@ DEPLOY_STEP_START  (interruption, fired simultaneously for all modules)
   ├─ Phase A round 2   MSG_TOPO_2HOP    broadcast neighbour ids → each node has 2-hop subgraph
   │                   ↳ compute is_ap locally via reachability over 2-hop induced subgraph
   │                   ↳ read inTarget from local target predicate
-  │                   ↳ build 12-d node feature h⁰
+  │                   ↳ build 16-d node feature h⁰ (incl. distance/direction to nearest unfilled target)
   ├─ Phase B round 1   MSG_GNN_LAYER1   send msg_lin([h⁰ ‖ e_ji]) to each neighbour → h¹
   ├─ Phase B round 2   MSG_GNN_LAYER2   → h²
   ├─ Phase B round 3   MSG_GNN_LAYER3   → h³
@@ -367,6 +373,8 @@ where `motionDuration = 1 100 000 µs` when a move was issued, else `0`.
 |---|---|---|
 | **Objective** | Fill a target shape | Translate CoM along a direction |
 | **Node feature x(3)** | `in_target` (bool) | `directionalPos` = `dot(pos,dir)/extent` |
+| **Target-relative feats x(12–15)** | Distance + direction to nearest unfilled target | _(none)_ |
+| **Node feature dim** | 16 | 12 |
 | **Action mask** | AP + in-target lock | AP only |
 | **Reward (C++)** | `Δin_target − 0.01 + 10·done` | `0` (connectivity penalty only) |
 | **Reward (Python)** | `R_sim + 0.1 × ΔΦ_shape` | `R_sim + ΔΦ_locomotion` |

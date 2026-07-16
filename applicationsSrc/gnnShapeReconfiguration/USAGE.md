@@ -256,8 +256,10 @@ policy = GNNPolicy(backbone="gcn")
 policy.load_state_dict(torch.load("checkpoints/policy_final.pt")["model_state"])
 policy.eval()
 
-# x, edge_index, edge_attr built from local neighbourhood only
-# x[:, 3] = in_target  (1.0 if the block occupies a target cell)
+# x, edge_index, edge_attr built from local neighbourhood only  (16-d node features)
+# x[:, 3]     = in_target  (1.0 if the block occupies a target cell)
+# x[:, 12]    = L1 distance to nearest unfilled target cell (normalised by sum(grid_size))
+# x[:, 13:16] = L1-normalised direction to nearest unfilled target cell
 probs = policy.distributed_act(x, edge_index, edge_attr, action_masks)
 action = probs.argmax(dim=-1)
 ```
@@ -349,8 +351,8 @@ Each step, every module runs the following local sequence — no leader, no shar
    - Round 1 (`MSG_TOPO_1HOP`): broadcast own id + neighbour bitmask to all 6 face neighbours.
    - Round 2 (`MSG_TOPO_2HOP`): broadcast collected 1-hop info. After this round every module knows its 2-hop induced subgraph.
    - Locally compute `is_ap` (articulation point) via BFS over the 2-hop subgraph excluding self.
-   - Read `in_target` from the local target predicate.
-   - Construct the 12-dim node feature `h⁰`.
+   - Read `in_target` from the local target predicate, and compute the distance/direction to the nearest unfilled target cell.
+   - Construct the 16-dim node feature `h⁰`.
 
 2. **GNN message-passing phase (3 rounds, one per GCN layer)**
    - For layer `L ∈ {1, 2, 3}`: send `msg_lin([h^{L-1} ‖ e_ji])` to each neighbour over its physical interface.

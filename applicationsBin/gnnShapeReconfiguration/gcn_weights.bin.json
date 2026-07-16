@@ -6,7 +6,7 @@
   "edge_dim": 6,
   "n_actions": 13,
   "n_layers": 3,
-  "crc32": 55806247,
+  "crc32": 4161796951,
   "size_bytes": 99156,
   "shapes": [
     {
