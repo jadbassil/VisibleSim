@@ -1,0 +1,3 @@
+size,basis,score,exclusive,axis_contacts,has_center,feasible,feasible_pairs,transfer,disassembly,assembly,total_moves,cells
+6,"ortho-3-3-2",-280,1,3,1,1,18,25,128,127,280,"0 0 0;1 0 0;1 0 1;1 1 1;1 2 0;2 0 1"
+7,"ortho-3-3-2",-207,1,3,1,1,18,12,106,89,207,"0 0 1;1 0 0;1 2 0;2 0 0;2 0 1;2 1 1;2 2 0"

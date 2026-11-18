@@ -1,0 +1,19 @@
+{
+  "search": "enum",
+  "min_size": 4,
+  "max_size": 10,
+  "radius": 4,
+  "max_extent": 9,
+  "seed": 42,
+  "ga_population": 120,
+  "ga_generations": 200,
+  "mapelites_iters": 20000,
+  "mapelites_init": 500,
+  "mapelites_batch": 64,
+  "threads": 0,
+  "tiles": 2,
+  "bases": [
+    {"label": "ortho-3-3-2", "X": [3,0,0], "Y": [0,3,0], "Z": [0,0,2]}
+  ],
+  "designs_saved": 10
+}

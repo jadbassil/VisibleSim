@@ -137,3 +137,8 @@ applicationsSrc/TEN-MaxFlow-Reconfiguration
 utilities/VisibleSimConfigGenerator
 .cache/
 .cache
+.cache
+
+applicationsSrc/gnnShapeReconfiguration/train/checkpoints/*.pt
+applicationsSrc/gnnShapeReconfiguration/train/wandb/
+applicationsSrc/gnnShapeReconfiguration/train/__pycache__/*
