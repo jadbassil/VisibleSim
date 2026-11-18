@@ -1,0 +1,57 @@
+<?xml version="1.0" standalone="no" ?>
+
+<!-- Million Module March - small demo.
+     A 2x2x2 cube (8 catoms) marches over a one-tall obstacle, fills goal box 1,
+     the goal advances, the robot crosses the obstacle and fills goal box 2.
+     Runs end-to-end (ALL GOAL BOXES REACHED).
+
+     Note: do NOT put XML comments inside <targetList> - the core parser does
+     not skip them. -->
+
+<world gridSize="12,6,4" windowSize="1800,900">
+
+    <camera target="55,30,15" directionSpherical="-30,28,150" angle="40"/>
+    <spotlight target="55,30,10" directionSpherical="-30,50,140" angle="50"/>
+
+    <blockList color="200,200,200" blockSize="10,10,10">
+
+        <!-- Robot: 2x2x2 cube at the -x end -->
+        <block position="1,2,0"/>
+        <block position="2,2,0"/>
+        <block position="1,3,0"/>
+        <block position="2,3,0"/>
+        <block position="1,2,1"/>
+        <block position="2,2,1"/>
+        <block position="1,3,1"/>
+        <block position="2,3,1"/>
+
+        <!-- One-tall obstacle wall to march over -->
+        <block position="6,2,0" obstacle="true"/>
+        <block position="6,3,0" obstacle="true"/>
+
+    </blockList>
+
+    <targetList>
+        <target format="grid">
+            <cell position="4,2,0"/>
+            <cell position="5,2,0"/>
+            <cell position="4,3,0"/>
+            <cell position="5,3,0"/>
+            <cell position="4,2,1"/>
+            <cell position="5,2,1"/>
+            <cell position="4,3,1"/>
+            <cell position="5,3,1"/>
+        </target>
+        <target format="grid">
+            <cell position="8,2,0"/>
+            <cell position="9,2,0"/>
+            <cell position="8,3,0"/>
+            <cell position="9,3,0"/>
+            <cell position="8,2,1"/>
+            <cell position="9,2,1"/>
+            <cell position="8,3,1"/>
+            <cell position="9,3,1"/>
+        </target>
+    </targetList>
+
+</world>

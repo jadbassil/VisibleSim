@@ -1,0 +1,57 @@
+<?xml version="1.0" standalone="no" ?>
+
+<!-- Million Module March - obstacle clearance + adaptive box.
+     Obstacles are never used as rotation pivots, and the APF keeps one empty
+     cell between the modules and any obstacle (clearance="1"). A 2x4x2 block
+     (16 catoms) marches +x through a 5-wide vertical slit: the 1-cell margin
+     leaves 3 usable cells, so the goal box narrows to a 3-wide column, threads
+     the slit without ever touching the wall, then widens back. -->
+
+<world gridSize="22,9,4" windowSize="1800,900"
+       marchAxis="x" marchDir="1" marchSteps="20" marchStride="1"
+       adaptiveBox="true" clearance="1">
+
+    <camera target="110,45,15" directionSpherical="-30,28,270" angle="40"/>
+    <spotlight target="110,45,10" directionSpherical="-30,50,260" angle="50"/>
+
+    <blockList color="200,200,200" blockSize="10,10,10">
+
+        <!-- Robot: 2(x) x 4(y) x 2(z) block at the -x end, centred on the slit -->
+        <block position="1,3,0"/>
+        <block position="1,3,1"/>
+        <block position="1,4,0"/>
+        <block position="1,4,1"/>
+        <block position="1,5,0"/>
+        <block position="1,5,1"/>
+        <block position="1,6,0"/>
+        <block position="1,6,1"/>
+        <block position="2,3,0"/>
+        <block position="2,3,1"/>
+        <block position="2,4,0"/>
+        <block position="2,4,1"/>
+        <block position="2,5,0"/>
+        <block position="2,5,1"/>
+        <block position="2,6,0"/>
+        <block position="2,6,1"/>
+
+        <!-- Wall at x=10 with a 5-wide vertical slit (y in {2..6}, full z) -->
+        <block position="10,0,0" obstacle="true"/>
+        <block position="10,0,1" obstacle="true"/>
+        <block position="10,0,2" obstacle="true"/>
+        <block position="10,0,3" obstacle="true"/>
+        <block position="10,1,0" obstacle="true"/>
+        <block position="10,1,1" obstacle="true"/>
+        <block position="10,1,2" obstacle="true"/>
+        <block position="10,1,3" obstacle="true"/>
+        <block position="10,7,0" obstacle="true"/>
+        <block position="10,7,1" obstacle="true"/>
+        <block position="10,7,2" obstacle="true"/>
+        <block position="10,7,3" obstacle="true"/>
+        <block position="10,8,0" obstacle="true"/>
+        <block position="10,8,1" obstacle="true"/>
+        <block position="10,8,2" obstacle="true"/>
+        <block position="10,8,3" obstacle="true"/>
+
+    </blockList>
+
+</world>
