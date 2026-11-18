@@ -89,9 +89,10 @@ doc/html/
 **/latex/*.ps
 **/latex/*.xdv
 
-# Configuration files (must be added manually)
-applicationsBin/*/*.xml
-!applicationsBin/MillionModuleMarch/*.xml
+# Configuration files are tracked; ignore only simulator-generated XML
+# (.confCheck.xml from -g regression runs, export*_<timestamp>.xml from -e)
+applicationsBin/**/.confCheck.xml
+applicationsBin/**/export*.xml
 
 # Screenshot and video exports
 applicationsBin/*/*.ppm
@@ -107,7 +108,6 @@ applicationsBin/*/*.pdf
 applicationsBin/*/animation_*/
 applicationsBin/*/Screenshots/
 applicationsBin/ShapeRecognition3D/
-applicationsBin/*/*/*.xml
 
 # User-generated files
 applicationsBin/*/*.m

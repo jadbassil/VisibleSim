@@ -1,0 +1,10 @@
+<?xml version="1.0" standalone="no" ?>
+<world gridSize="50,50,50" defaultBlockSize="10.0,10.0,10.0">
+  <camera target="300,-500,450" thetaPhiDist="0,10,60" fov="65"/>
+  <blockList format="csg">
+    <csg offset="false" boundingBox="false" content="
+      union() {
+        color([1,1,1]) translate([12,12,12]) sphere(3.0);
+      }" />
+  </blockList>
+</world>

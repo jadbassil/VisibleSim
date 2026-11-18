@@ -1,0 +1,17 @@
+<?xml version="1.0" standalone="no" ?>
+<world gridSize="50,50,50" defaultBlockSize="10.0,10.0,10.0">
+  <camera target="300,-500,450" thetaPhiDist="0,10,60" fov="65"/>
+  <blockList format="csg">
+    <csg offset="false" boundingBox="false" content="
+union() {
+    color([1.0, 0.5, 0.0]) {
+        translate([8, 8, 8]) cube([12, 4, 1.2], true);
+    }
+    color([0.5, 0.5, 0.5]) {
+        translate([3, 8, 4]) cube([1.2, 4, 8], true);
+        translate([13, 8, 4]) cube([1.2, 4, 8], true);
+    }
+}
+" />
+  </blockList>
+</world>

@@ -1,0 +1,10 @@
+<?xml version="1.0" standalone="no" ?>
+<world gridSize="16,16,16" defaultBlockSize="10.0,10.0,10.0">
+  <camera target="300,-500,450" thetaPhiDist="0,10,60" fov="65"/>
+  <blockList format="csg">
+    <csg offset="false" boundingBox="false" content="
+      union() {
+        color([1,1,1]) translate([-1,7.5,8]) rotate([0,0,0]) cylinder(16, 3, 3, false);
+      }" />
+  </blockList>
+</world>

@@ -1,0 +1,39 @@
+<?xml version="1.0" standalone="no" ?>
+
+<!-- 2x5 sliding-cubes assembly (5 columns along x, 2 rows along y, one layer). -->
+<world gridSize="10,10,10" windowSize="1800,900">
+    <camera target="50,50,20" directionSpherical="-30,30,150" angle="45"/>
+    <spotlight target="50,50,20" directionSpherical="-30,50,120" angle="50"/>
+
+    <blockList color="128,128,255" blockSize="10.0,10.0,10.0">
+        <block position="3,4,0"/>
+        <block position="4,4,0"/>
+        <block position="5,4,0"/>
+        <block position="6,4,0"/>
+        <block position="7,4,0"/>
+        <block position="3,5,0"/>
+        <block position="4,5,0"/>
+        <block position="5,5,0"/>
+        <block position="6,5,0"/>
+        <block position="7,5,0"/>
+    </blockList>
+
+    <!-- Target: the same 2x5 block rotated to vertical (2 along x, 5 along y). -->
+<targetList>
+    <target format="grid" color="0,255,0">
+        <cell position="4,2,0"/>
+        <cell position="5,2,0"/>
+        <cell position="4,3,0"/>
+        <cell position="5,3,0"/>
+        <cell position="4,4,0"/>
+        <cell position="5,4,0"/>
+        <cell position="4,5,0"/>
+        <cell position="5,5,0"/>
+        <cell position="4,6,0"/>
+        <cell position="5,6,0"/>
+    </target>
+</targetList>
+
+</world>
+
+
