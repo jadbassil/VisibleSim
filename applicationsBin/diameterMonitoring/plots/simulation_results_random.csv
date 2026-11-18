@@ -1,0 +1,7 @@
+config_file,diameter,num_messages,num_robots,simulator_time_us,size
+random1000.xml,25,32546,1000,391474,1000
+random125.xml,14,3247,125,213283,125
+random27.xml,7,539,27,118876,27
+random3375.xml,36,120733,3375,548313,3375
+random343.xml,20,10533,343,287691,343
+random8000.xml,49,294147,8000,799921,8000

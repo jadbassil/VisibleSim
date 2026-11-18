@@ -1,6 +1,8 @@
 #include <climits>
 
 #include "lattice.h"
+#include <set>
+#include <queue>
 #include "../utils/utils.h"
 #include "../utils/trace.h"
 
@@ -122,7 +124,30 @@ bool Lattice::isInGrid(const Cell3DPosition &p) const {
 
 unsigned int
 Lattice::getCellDistance(const Cell3DPosition &p1, const Cell3DPosition &p2) const {
-    throw NotImplementedException("distance function for current lattice type");
+    // get CellDistance using BFS
+    queue<Cell3DPosition> toVisit;
+    map<Cell3DPosition, unsigned int> distances;
+    toVisit.push(p1);
+    distances[p1] = 0;
+    
+    while (!toVisit.empty()) {
+        Cell3DPosition current = toVisit.front();
+        toVisit.pop();
+        unsigned int currentDistance = distances[current];
+        
+        if (current == p2) {
+            return currentDistance;
+        }
+     
+        for (const Cell3DPosition &neighbor : getActiveNeighborCells(current)) {
+            if (distances.find(neighbor) == distances.end() && cellHasBlock(neighbor) && isInGrid(neighbor)) {
+                distances[neighbor] = currentDistance + 1;
+                toVisit.push(neighbor);
+            }
+        }
+    }
+    return 0; // Return 0 if p2 is not reachable from p1
+    // throw NotImplementedException("distance function for current lattice type");
 }
 
 vector<Cell3DPosition> Lattice::getActiveNeighborCells(const Cell3DPosition &pos) const {

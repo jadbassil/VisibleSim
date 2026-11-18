@@ -1,0 +1,7 @@
+config_file,diameter,num_messages,num_robots,simulator_time_us,size
+cube10.xml,27,36278,1000,431048,10
+cube15.xml,42,127694,3375,664032,15
+cube20.xml,57,308965,8000,920005,20
+cube3.xml,6,697,27,111300,3
+cube5.xml,12,3961,125,193461,5
+cube7.xml,18,11764,343,289415,7

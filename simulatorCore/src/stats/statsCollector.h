@@ -75,7 +75,7 @@ public:
         };
     inline void setEndEventsQueueSize(uint64_t endSize)
         {  endEventsQueueSize = endSize; };
-
+    inline int getNbProcessedMessages() const { return messagesProcessed; } //!< Getter for messagesProcessed
     //!< Prints collected statistics to an ouput stream
     friend std::ostream& operator<<(std::ostream& out,const StatsCollector &sc);
 };                              // class StatsCollector

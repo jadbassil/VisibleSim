@@ -1,0 +1,8 @@
+config_file,diameter,num_messages,num_robots,simulator_time_us,size
+ball10.xml,20,53458,1561,341486,10
+ball15.xml,30,181635,4991,504550,15
+ball20.xml,40,432112,11521,647627,20
+ball3.xml,6,1406,63,106778,3
+ball5.xml,10,6576,231,169211,5
+ball7.xml,14,18192,575,217899,7
+    

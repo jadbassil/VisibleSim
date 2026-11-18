@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distributed Double-BFS Diameter Search</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Space+Grotesk:wght@300;500;700&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --panel: #0f1525;
+    --border: #1e2d4a;
+    --bfs1: #00d4ff;
+    --bfs2: #ff6b35;
+    --frontier: #7fff7f;
+    --visited1: #003d5c;
+    --visited2: #5c2000;
+    --node-default: #1a2540;
+    --node-border: #2a3f6a;
+    --text: #c8d8f0;
+    --dim: #4a6080;
+    --gold: #ffd700;
+    --white: #e8f0ff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .header {
+    padding: 2rem 3rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .title-block h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.02em;
+  }
+
+  .title-block p {
+    font-size: 0.7rem;
+    color: var(--dim);
+    margin-top: 0.3rem;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .phase-indicator {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .phase-pill {
+    padding: 0.25rem 0.75rem;
+    border-radius: 2px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.3;
+    border: 1px solid;
+    transition: all 0.3s ease;
+  }
+
+  .phase-pill.active { opacity: 1; }
+  .phase-pill.bfs1 { border-color: var(--bfs1); color: var(--bfs1); }
+  .phase-pill.bfs2 { border-color: var(--bfs2); color: var(--bfs2); }
+  .phase-pill.result { border-color: var(--gold); color: var(--gold); }
+
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 0;
+    height: calc(100vh - 120px);
+    min-height: 560px;
+  }
+
+  .canvas-area {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .grid-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  canvas {
+    display: block;
+    border: 1px solid var(--border);
+    background: var(--panel);
+  }
+
+  .controls {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  button {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.5rem 1.2rem;
+    border: 1px solid;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  #btnPlay {
+    border-color: var(--bfs1);
+    color: var(--bfs1);
+  }
+  #btnPlay:hover { background: rgba(0,212,255,0.1); }
+  #btnPlay.playing { border-color: var(--frontier); color: var(--frontier); }
+
+  #btnReset {
+    border-color: var(--dim);
+    color: var(--dim);
+  }
+  #btnReset:hover { border-color: var(--text); color: var(--text); }
+
+  #btnStep {
+    border-color: var(--bfs2);
+    color: var(--bfs2);
+  }
+  #btnStep:hover { background: rgba(255,107,53,0.1); }
+
+  .speed-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.65rem;
+    color: var(--dim);
+    margin-left: auto;
+  }
+
+  input[type=range] {
+    width: 80px;
+    accent-color: var(--bfs1);
+  }
+
+  .sidebar {
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-section h3 {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 1rem;
+    font-weight: 400;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.6rem;
+    font-size: 0.72rem;
+  }
+
+  .stat-label { color: var(--dim); }
+  .stat-value { font-weight: 600; color: var(--white); }
+  .stat-value.cyan { color: var(--bfs1); }
+  .stat-value.orange { color: var(--bfs2); }
+  .stat-value.gold { color: var(--gold); }
+
+  .algo-steps {
+    font-size: 0.68rem;
+    line-height: 1.8;
+    color: var(--dim);
+  }
+
+  .algo-steps .step {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.3rem 0;
+    transition: all 0.3s ease;
+    border-left: 2px solid transparent;
+    padding-left: 0.5rem;
+  }
+
+  .algo-steps .step.active-step {
+    color: var(--white);
+    border-left-color: var(--frontier);
+  }
+
+  .step-num {
+    color: var(--bfs1);
+    min-width: 1.2rem;
+    font-weight: 600;
+  }
+
+  .legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.62rem;
+    color: var(--dim);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .log {
+    font-size: 0.63rem;
+    line-height: 1.7;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  .log-entry {
+    padding: 0.15rem 0;
+    color: var(--dim);
+    border-bottom: 1px solid rgba(30,45,74,0.5);
+  }
+
+  .log-entry.info { color: var(--text); }
+  .log-entry.bfs1 { color: var(--bfs1); }
+  .log-entry.bfs2 { color: var(--bfs2); }
+  .log-entry.result { color: var(--gold); font-weight: 600; }
+
+  .diameter-display {
+    text-align: center;
+    padding: 1rem;
+    background: rgba(255,215,0,0.05);
+    border: 1px solid rgba(255,215,0,0.2);
+    margin-top: 0.5rem;
+  }
+
+  .diameter-display .big-num {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--gold);
+    font-family: 'Space Grotesk', sans-serif;
+    line-height: 1;
+  }
+
+  .diameter-display .big-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-top: 0.3rem;
+  }
+
+  .path-highlight {
+    animation: pathPulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes pathPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--panel); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="title-block">
+    <h1>Distributed Double-BFS · Diameter Search</h1>
+    <p>Unweighted Grid Graph · 2-Phase Approximation Algorithm</p>
+  </div>
+  <div class="phase-indicator">
+    <div class="phase-pill bfs1" id="pill1">BFS Phase 1</div>
+    <div style="color:var(--dim);font-size:0.8rem">→</div>
+    <div class="phase-pill bfs2" id="pill2">BFS Phase 2</div>
+    <div style="color:var(--dim);font-size:0.8rem">→</div>
+    <div class="phase-pill result" id="pill3">Diameter</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="canvas-area">
+    <div class="grid-container">
+      <canvas id="gridCanvas"></canvas>
+    </div>
+    <div class="controls">
+      <button id="btnPlay">▶ Play</button>
+      <button id="btnStep">Step →</button>
+      <button id="btnReset">↺ Reset</button>
+      <label style="font-size:0.65rem;color:var(--dim);margin-left:0.5rem">
+        Grid:
+        <select id="gridSize" style="background:var(--panel);color:var(--text);border:1px solid var(--border);font-family:inherit;font-size:0.65rem;margin-left:0.3rem;padding:0.2rem">
+          <option value="8">8×8</option>
+          <option value="10" selected>10×10</option>
+          <option value="12">12×12</option>
+        </select>
+      </label>
+      <div class="speed-control">
+        Speed
+        <input type="range" id="speed" min="1" max="10" value="5">
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <h3>Algorithm State</h3>
+      <div class="stat-row">
+        <span class="stat-label">Phase</span>
+        <span class="stat-value" id="statPhase">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">BFS-1 source</span>
+        <span class="stat-value cyan" id="statSrc1">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">BFS-1 farthest</span>
+        <span class="stat-value cyan" id="statFar1">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">BFS-2 source</span>
+        <span class="stat-value orange" id="statSrc2">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Current depth</span>
+        <span class="stat-value" id="statDepth">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Frontier size</span>
+        <span class="stat-value" id="statFrontier">—</span>
+      </div>
+      <div id="diamBox" class="diameter-display" style="display:none">
+        <div class="big-num" id="diamNum">—</div>
+        <div class="big-label">Graph Diameter</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Steps</h3>
+      <div class="algo-steps" id="algoSteps">
+        <div class="step" id="s1"><span class="step-num">1</span><span>Pick arbitrary source node s</span></div>
+        <div class="step" id="s2"><span class="step-num">2</span><span>BFS-1 from s → find farthest node u</span></div>
+        <div class="step" id="s3"><span class="step-num">3</span><span>BFS-2 from u → find farthest node v</span></div>
+        <div class="step" id="s4"><span class="step-num">4</span><span>dist(u,v) = diameter estimate</span></div>
+        <div class="step" id="s5"><span class="step-num">5</span><span>Highlight diameter path u→v</span></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Legend</h3>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#00d4ff"></div>BFS-1 visited</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff6b35"></div>BFS-2 visited</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#7fff7f"></div>Active frontier</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ffd700"></div>Diameter path</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div>BFS-1 source</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#00ff88"></div>BFS-2 source/end</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section" style="flex:1">
+      <h3>Event Log</h3>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gridCanvas');
+const ctx = canvas.getContext('2d');
+
+let GRID = 10;
+let CELL, PAD;
+let grid = [];
+let dist1 = [], dist2 = [], parent2 = [];
+let source1, source2, farthest1, farthest2;
+let phase = 0; // 0=idle, 1=bfs1, 2=bfs2, 3=done
+let bfsQueue = [];
+let currentDepthNodes = [];
+let nextDepthNodes = [];
+let currentDepth = 0;
+let visited1 = new Set(), visited2 = new Set();
+let frontier = new Set();
+let diameterPath = [];
+let playing = false;
+let timer = null;
+let activeStep = 0;
+
+function initGrid() {
+  GRID = parseInt(document.getElementById('gridSize').value);
+  const container = document.querySelector('.grid-container');
+  const maxSize = Math.min(container.clientWidth - 40, container.clientHeight - 40, 520);
+  CELL = Math.floor(maxSize / GRID);
+  PAD = 20;
+  canvas.width = GRID * CELL + PAD * 2;
+  canvas.height = GRID * CELL + PAD * 2;
+
+  grid = [];
+  for (let r = 0; r < GRID; r++) {
+    grid[r] = [];
+    for (let c = 0; c < GRID; c++) {
+      // Sparse grid: randomly remove ~15% of nodes to make it interesting
+      grid[r][c] = (r === 0 && c === 0) ? 1 : (Math.random() > 0.12 ? 1 : 0);
+    }
+  }
+
+  dist1 = Array.from({length: GRID}, () => Array(GRID).fill(-1));
+  dist2 = Array.from({length: GRID}, () => Array(GRID).fill(-1));
+  parent2 = Array.from({length: GRID}, () => Array(GRID).fill(null));
+  visited1 = new Set();
+  visited2 = new Set();
+  frontier = new Set();
+  diameterPath = [];
+  phase = 0;
+  activeStep = 0;
+
+  // Pick source: top-left-ish
+  source1 = {r: 0, c: 0};
+  source2 = null;
+  farthest1 = null;
+  farthest2 = null;
+
+  updateStats();
+  updateStepHighlight(0);
+  draw();
+  clearLog();
+  log('System initialized. Grid: ' + GRID + '×' + GRID, 'info');
+  log('Source node: (0,0)', 'bfs1');
+  document.getElementById('diamBox').style.display = 'none';
+  updatePills(0);
+}
+
+function key(r, c) { return r * GRID + c; }
+function fromKey(k) { return { r: Math.floor(k / GRID), c: k % GRID }; }
+
+function neighbors(r, c) {
+  const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+  return dirs.map(([dr,dc]) => [r+dr, c+dc])
+    .filter(([nr,nc]) => nr>=0 && nr<GRID && nc>=0 && nc<GRID && grid[nr][nc]);
+}
+
+function startBFS1() {
+  phase = 1;
+  dist1[source1.r][source1.c] = 0;
+  visited1.add(key(source1.r, source1.c));
+  frontier = new Set([key(source1.r, source1.c)]);
+  currentDepthNodes = [source1];
+  nextDepthNodes = [];
+  currentDepth = 0;
+  updateStepHighlight(2);
+  updatePills(1);
+  log('BFS-1 started from ('+source1.r+','+source1.c+')', 'bfs1');
+}
+
+function stepBFS1() {
+  if (currentDepthNodes.length === 0) {
+    // Find farthest
+    let maxDist = -1;
+    for (let r = 0; r < GRID; r++)
+      for (let c = 0; c < GRID; c++)
+        if (dist1[r][c] > maxDist) { maxDist = dist1[r][c]; farthest1 = {r,c}; }
+    frontier = new Set([key(farthest1.r, farthest1.c)]);
+    log('BFS-1 complete. Farthest: ('+farthest1.r+','+farthest1.c+') dist='+maxDist, 'bfs1');
+    phase = 1.5; // transition
+    updateStepHighlight(3);
+    return;
+  }
+
+  frontier = new Set();
+  for (const node of currentDepthNodes) {
+    for (const [nr, nc] of neighbors(node.r, node.c)) {
+      const k = key(nr, nc);
+      if (!visited1.has(k)) {
+        visited1.add(k);
+        dist1[nr][nc] = currentDepth + 1;
+        nextDepthNodes.push({r:nr, c:nc});
+        frontier.add(k);
+      }
+    }
+  }
+  currentDepthNodes = nextDepthNodes;
+  nextDepthNodes = [];
+  currentDepth++;
+  updateStats();
+}
+
+function startBFS2() {
+  phase = 2;
+  source2 = farthest1;
+  dist2[source2.r][source2.c] = 0;
+  visited2.add(key(source2.r, source2.c));
+  frontier = new Set([key(source2.r, source2.c)]);
+  currentDepthNodes = [source2];
+  nextDepthNodes = [];
+  currentDepth = 0;
+  updateStepHighlight(3);
+  updatePills(2);
+  log('BFS-2 started from ('+source2.r+','+source2.c+')', 'bfs2');
+}
+
+function stepBFS2() {
+  if (currentDepthNodes.length === 0) {
+    let maxDist = -1;
+    for (let r = 0; r < GRID; r++)
+      for (let c = 0; c < GRID; c++)
+        if (dist2[r][c] > maxDist) { maxDist = dist2[r][c]; farthest2 = {r,c}; }
+    frontier = new Set([key(farthest2.r, farthest2.c)]);
+    log('BFS-2 complete. Diameter ≈ '+maxDist, 'result');
+    log('Path endpoint: ('+farthest2.r+','+farthest2.c+')', 'bfs2');
+    buildDiameterPath();
+    phase = 3;
+    document.getElementById('diamBox').style.display = 'block';
+    document.getElementById('diamNum').textContent = maxDist;
+    updateStepHighlight(4);
+    updatePills(3);
+    if (playing) { stopPlay(); }
+    return;
+  }
+
+  frontier = new Set();
+  for (const node of currentDepthNodes) {
+    for (const [nr, nc] of neighbors(node.r, node.c)) {
+      const k = key(nr, nc);
+      if (!visited2.has(k)) {
+        visited2.add(k);
+        dist2[nr][nc] = currentDepth + 1;
+        parent2[nr][nc] = {r: node.r, c: node.c};
+        nextDepthNodes.push({r:nr, c:nc});
+        frontier.add(k);
+      }
+    }
+  }
+  currentDepthNodes = nextDepthNodes;
+  nextDepthNodes = [];
+  currentDepth++;
+  updateStats();
+}
+
+function buildDiameterPath() {
+  diameterPath = [];
+  let cur = farthest2;
+  while (cur) {
+    diameterPath.push(cur);
+    const p = parent2[cur.r][cur.c];
+    cur = p;
+  }
+  updateStepHighlight(5);
+}
+
+function step() {
+  if (phase === 0) { startBFS1(); }
+  else if (phase === 1) { stepBFS1(); }
+  else if (phase === 1.5) { startBFS2(); }
+  else if (phase === 2) { stepBFS2(); }
+  draw();
+}
+
+let playFrame = null;
+function startPlay() {
+  playing = true;
+  document.getElementById('btnPlay').textContent = '⏸ Pause';
+  document.getElementById('btnPlay').classList.add('playing');
+  scheduleNext();
+}
+
+function stopPlay() {
+  playing = false;
+  document.getElementById('btnPlay').textContent = '▶ Play';
+  document.getElementById('btnPlay').classList.remove('playing');
+  if (playFrame) { clearTimeout(playFrame); playFrame = null; }
+}
+
+function scheduleNext() {
+  if (!playing || phase === 3) { stopPlay(); return; }
+  const spd = parseInt(document.getElementById('speed').value);
+  const delay = Math.round(700 / spd);
+  playFrame = setTimeout(() => {
+    step();
+    if (phase !== 3) scheduleNext();
+  }, delay);
+}
+
+// ── Drawing ────────────────────────────────────────────────────
+function nodeX(c) { return PAD + c * CELL + CELL/2; }
+function nodeY(r) { return PAD + r * CELL + CELL/2; }
+const R = 0; // corner radius for cells
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw edges
+  ctx.strokeStyle = '#1a2540';
+  ctx.lineWidth = 1;
+  for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      if (!grid[r][c]) continue;
+      for (const [nr,nc] of neighbors(r,c)) {
+        if (nr > r || (nr === r && nc > c)) {
+          ctx.beginPath();
+          ctx.moveTo(nodeX(c), nodeY(r));
+          ctx.lineTo(nodeX(nc), nodeY(nr));
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  // Draw diameter path edges
+  if (diameterPath.length > 1) {
+    ctx.strokeStyle = 'rgba(255,215,0,0.6)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(nodeX(diameterPath[0].c), nodeY(diameterPath[0].r));
+    for (let i = 1; i < diameterPath.length; i++) {
+      ctx.lineTo(nodeX(diameterPath[i].c), nodeY(diameterPath[i].r));
+    }
+    ctx.stroke();
+    ctx.lineWidth = 1;
+  }
+
+  // Draw BFS wavefronts (subtle gradient rings)
+  if (phase >= 1 && phase < 1.5) {
+    drawWavefront(dist1, '#00d4ff', 0.06);
+  }
+  if (phase >= 2 || phase === 3) {
+    drawWavefront(dist2, '#ff6b35', 0.06);
+  }
+
+  // Draw nodes
+  for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      if (!grid[r][c]) continue;
+      const x = nodeX(c), y = nodeY(r);
+      const sz = Math.max(3, CELL * 0.32);
+      const k = key(r, c);
+      const isDiamPath = diameterPath.some(n => n.r===r && n.c===c);
+
+      let fill = '#1a2540';
+      let stroke = '#2a3f6a';
+      let strokeW = 1;
+
+      if (isDiamPath) {
+        fill = 'rgba(255,215,0,0.25)';
+        stroke = '#ffd700';
+        strokeW = 2;
+      } else if (phase >= 2 && visited2.has(k)) {
+        fill = 'rgba(255,107,53,0.25)';
+        stroke = '#ff6b35';
+      } else if (visited1.has(k)) {
+        fill = 'rgba(0,212,255,0.2)';
+        stroke = '#00d4ff';
+      }
+
+      if (frontier.has(k) && phase !== 3) {
+        fill = 'rgba(127,255,127,0.3)';
+        stroke = '#7fff7f';
+        strokeW = 2;
+      }
+
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = strokeW;
+      ctx.beginPath();
+      ctx.rect(x - sz/2, y - sz/2, sz, sz);
+      ctx.fill();
+      ctx.stroke();
+
+      // Special nodes
+      if (source1 && r===source1.r && c===source1.c) {
+        drawSpecialNode(x, y, sz, '#a855f7', 's');
+      }
+      if (farthest1 && r===farthest1.r && c===farthest1.c) {
+        drawSpecialNode(x, y, sz, '#00ff88', 'u');
+      }
+      if (farthest2 && r===farthest2.r && c===farthest2.c) {
+        drawSpecialNode(x, y, sz, '#ffaa00', 'v');
+      }
+    }
+  }
+
+  // Removed walls overlay — kept grid clean
+
+  updateStats();
+}
+
+function drawWavefront(dist, color, alpha) {
+  let maxD = 0;
+  for (let r=0;r<GRID;r++) for(let c=0;c<GRID;c++) if(dist[r][c]>maxD) maxD=dist[r][c];
+  if (maxD === 0) return;
+  for (let r=0;r<GRID;r++) {
+    for(let c=0;c<GRID;c++) {
+      if(dist[r][c] < 0) continue;
+      const t = dist[r][c]/maxD;
+      ctx.fillStyle = color + Math.round(t*30).toString(16).padStart(2,'0');
+      ctx.fillRect(PAD+c*CELL, PAD+r*CELL, CELL, CELL);
+    }
+  }
+}
+
+function drawSpecialNode(x, y, sz, color, label) {
+  const r = sz * 0.75;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#000';
+  ctx.font = `bold ${Math.max(7, sz*0.6)}px JetBrains Mono`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, x, y);
+}
+
+function updateStats() {
+  const phaseNames = ['Idle', 'BFS-1 running', 'BFS-2 running', 'Complete'];
+  document.getElementById('statPhase').textContent = phaseNames[Math.min(3, Math.floor(phase))] || '—';
+  document.getElementById('statSrc1').textContent = source1 ? `(${source1.r},${source1.c})` : '—';
+  document.getElementById('statFar1').textContent = farthest1 ? `(${farthest1.r},${farthest1.c})` : '—';
+  document.getElementById('statSrc2').textContent = source2 ? `(${source2.r},${source2.c})` : '—';
+  document.getElementById('statDepth').textContent = phase > 0 ? currentDepth : '—';
+  document.getElementById('statFrontier').textContent = frontier.size || '—';
+}
+
+function updateStepHighlight(n) {
+  for (let i=1;i<=5;i++) {
+    document.getElementById('s'+i).classList.toggle('active-step', i===n);
+  }
+  activeStep = n;
+}
+
+function updatePills(p) {
+  document.getElementById('pill1').classList.toggle('active', p>=1);
+  document.getElementById('pill2').classList.toggle('active', p>=2);
+  document.getElementById('pill3').classList.toggle('active', p>=3);
+}
+
+function log(msg, type='') {
+  const el = document.getElementById('log');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry ' + type;
+  entry.textContent = '› ' + msg;
+  el.appendChild(entry);
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('log').innerHTML = '';
+}
+
+// ── Events ────────────────────────────────────────────────────
+document.getElementById('btnPlay').addEventListener('click', () => {
+  if (playing) stopPlay();
+  else { if (phase === 3) { initGrid(); setTimeout(startPlay, 100); } else startPlay(); }
+});
+
+document.getElementById('btnStep').addEventListener('click', () => {
+  stopPlay();
+  step();
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  stopPlay();
+  initGrid();
+});
+
+document.getElementById('gridSize').addEventListener('change', () => {
+  stopPlay();
+  initGrid();
+});
+
+window.addEventListener('resize', () => {
+  const s = phase;
+  initGrid();
+  // Can't restore state easily, so just reset
+});
+
+// Init
+initGrid();
+updateStepHighlight(1);
+</script>
+</body>
+</html>

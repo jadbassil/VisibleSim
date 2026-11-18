@@ -107,6 +107,7 @@ applicationsBin/*/*.pdf
 applicationsBin/*/animation_*/
 applicationsBin/*/Screenshots/
 applicationsBin/ShapeRecognition3D/
+applicationsBin/*/*/*.xml
 
 # User-generated files
 applicationsBin/*/*.m
@@ -132,4 +133,5 @@ applicationsSrc/gnnShapeReconfiguration/train/__pycache__/*
 .cache/
 applicationsSrc/TEN-MaxFlow-Reconfiguration
 applicationsSrc/AI4PM3D/latex/GeorgesChaiban-2026
+applicationsSrc/TEN-MaxFlow-Reconfiguration
 utilities/VisibleSimConfigGenerator
