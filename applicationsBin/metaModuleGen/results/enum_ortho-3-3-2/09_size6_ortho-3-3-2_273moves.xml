@@ -1,0 +1,54 @@
+<?xml version="1.0" standalone="no" ?>
+<world gridSize="22,22,20" windowSize="1280,720">
+  <blockList color="128,128,128" blockSize="10,10,10">
+    <block position="8,8,8" orientation="0" color="200,200,100"/>
+    <block position="8,9,8" orientation="0" color="200,200,100"/>
+    <block position="8,9,9" orientation="0" color="200,200,100"/>
+    <block position="8,10,9" orientation="0" color="200,200,100"/>
+    <block position="9,9,9" orientation="0" color="200,200,100"/>
+    <block position="10,9,8" orientation="0" color="200,200,100"/>
+    <block position="8,8,10" orientation="0" color="120,180,220"/>
+    <block position="8,9,10" orientation="0" color="120,180,220"/>
+    <block position="8,9,11" orientation="0" color="120,180,220"/>
+    <block position="8,10,11" orientation="0" color="120,180,220"/>
+    <block position="9,9,11" orientation="0" color="120,180,220"/>
+    <block position="10,9,10" orientation="0" color="120,180,220"/>
+    <block position="8,11,8" orientation="0" color="120,180,220"/>
+    <block position="8,12,8" orientation="0" color="120,180,220"/>
+    <block position="8,12,9" orientation="0" color="120,180,220"/>
+    <block position="8,13,9" orientation="0" color="120,180,220"/>
+    <block position="9,12,9" orientation="0" color="120,180,220"/>
+    <block position="10,12,8" orientation="0" color="120,180,220"/>
+    <block position="8,11,10" orientation="0" color="180,140,200"/>
+    <block position="8,12,10" orientation="0" color="180,140,200"/>
+    <block position="8,12,11" orientation="0" color="180,140,200"/>
+    <block position="8,13,11" orientation="0" color="180,140,200"/>
+    <block position="9,12,11" orientation="0" color="180,140,200"/>
+    <block position="10,12,10" orientation="0" color="180,140,200"/>
+    <block position="11,8,8" orientation="0" color="120,180,220"/>
+    <block position="11,9,8" orientation="0" color="120,180,220"/>
+    <block position="11,9,9" orientation="0" color="120,180,220"/>
+    <block position="11,10,9" orientation="0" color="120,180,220"/>
+    <block position="12,9,9" orientation="0" color="120,180,220"/>
+    <block position="13,9,8" orientation="0" color="120,180,220"/>
+    <block position="11,8,10" orientation="0" color="180,140,200"/>
+    <block position="11,9,10" orientation="0" color="180,140,200"/>
+    <block position="11,9,11" orientation="0" color="180,140,200"/>
+    <block position="11,10,11" orientation="0" color="180,140,200"/>
+    <block position="12,9,11" orientation="0" color="180,140,200"/>
+    <block position="13,9,10" orientation="0" color="180,140,200"/>
+    <block position="11,11,8" orientation="0" color="180,140,200"/>
+    <block position="11,12,8" orientation="0" color="180,140,200"/>
+    <block position="11,12,9" orientation="0" color="180,140,200"/>
+    <block position="11,13,9" orientation="0" color="180,140,200"/>
+    <block position="12,12,9" orientation="0" color="180,140,200"/>
+    <block position="13,12,8" orientation="0" color="180,140,200"/>
+    <block position="11,11,10" orientation="0" color="150,210,150"/>
+    <block position="11,12,10" orientation="0" color="150,210,150"/>
+    <block position="11,12,11" orientation="0" color="150,210,150"/>
+    <block position="11,13,11" orientation="0" color="150,210,150"/>
+    <block position="12,12,11" orientation="0" color="150,210,150"/>
+    <block position="13,12,10" orientation="0" color="150,210,150"/>
+  </blockList>
+  <metaModuleInfo X="3,0,0" Y="0,3,0" Z="0,0,2" center="7,7,7" nA="2" nB="2" nC="2" cells="8,8,8;8,9,8;8,9,9;8,10,9;9,9,9;10,9,8"/>
+</world>

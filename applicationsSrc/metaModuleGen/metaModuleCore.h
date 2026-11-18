@@ -6,6 +6,7 @@
 #include <iosfwd>
 #include <optional>
 #include <set>
+#include <string>
 #include <vector>
 
 #include "math/cell3DPosition.h"
@@ -168,11 +169,22 @@ struct CandidateBasis {
     std::string label;
 };
 
+// One feasible meta-module kept by a search.
+struct FoundDesign {
+    MetaModule mm;
+    AllDirectionsCost cost{};
+    std::string basisLabel;
+};
+
 struct GenerationResult {
     bool found{false};
     MetaModule best;
     AllDirectionsCost cost{};
     std::string basisLabel;
+    // Every feasible design the search kept, sorted by size then total moves.
+    // enum: all feasible shapes it evaluated. mapelites: the feasible elites.
+    // The GA leaves it empty (it only keeps `best`).
+    std::vector<FoundDesign> designs;
 };
 
 // Run the GA: tries successively larger module counts, starting with the

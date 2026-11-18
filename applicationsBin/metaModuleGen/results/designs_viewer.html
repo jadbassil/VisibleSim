@@ -1,0 +1,623 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catom Meta-Module Designs</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lab-bench viewer. A large 3D stage beside a spec sheet, then the design index and the search map. */
+:root {
+  --bg: #EDF0F4;
+  --panel: #FFFFFF;
+  --ink: #151A21;
+  --muted: #586271;
+  --line: #D3D9E2;
+  --catom: #2E55D6;
+  --neighbor: #9AA6B5;
+  --center: #C8327A;
+  --cost-t: #2E55D6;
+  --cost-d: #B8641E;
+  --cost-a: #2F8F68;
+  --ax-x: #C8414F;
+  --ax-y: #2F8F68;
+  --ax-z: #2E55D6;
+  --stage: #F7F9FB;
+  --chip: #E3E8F0;
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1217; --panel: #161C24; --ink: #E7ECF2; --muted: #9AA5B4; --line: #29313C;
+    --catom: #7090FF; --neighbor: #5D6979; --center: #FF6FA8;
+    --cost-t: #7090FF; --cost-d: #E39352; --cost-a: #5CC497;
+    --ax-x: #FF7A8A; --ax-y: #5CC497; --ax-z: #7090FF;
+    --stage: #10151C; --chip: #222A35;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1217; --panel: #161C24; --ink: #E7ECF2; --muted: #9AA5B4; --line: #29313C;
+  --catom: #7090FF; --neighbor: #5D6979; --center: #FF6FA8;
+  --cost-t: #7090FF; --cost-d: #E39352; --cost-a: #5CC497;
+  --ax-x: #FF7A8A; --ax-y: #5CC497; --ax-z: #7090FF;
+  --stage: #10151C; --chip: #222A35;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 48px;
+  display: grid;
+  gap: 28px;
+}
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; }
+h2 { font-size: 19px; font-weight: 600; }
+h3 { font-size: 15px; font-weight: 600; }
+p { margin: 0; }
+.eyebrow {
+  font-family: var(--font-data); font-size: 12px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted);
+}
+.mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+
+header { display: grid; gap: 12px; }
+.lede { max-width: 68ch; color: var(--muted); font-size: 16px; }
+
+.facts { display: flex; flex-wrap: wrap; gap: 10px 32px; padding-top: 4px; }
+.fact { display: grid; gap: 2px; }
+.fact b { font-family: var(--font-data); font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.fact span { font-size: 13px; color: var(--muted); }
+
+/* Viewer + spec sheet */
+.bench {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.stage-col { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; border-right: 1px solid var(--line); }
+.toolbar {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
+  padding: 10px 12px; border-bottom: 1px solid var(--line);
+}
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.seg button {
+  font: inherit; font-size: 13px; padding: 6px 10px; border: 0; background: transparent;
+  color: var(--muted); cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--chip); color: var(--ink); font-weight: 600; }
+.toggle { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); cursor: pointer; }
+button:focus-visible, .toggle input:focus-visible, .design:focus-visible {
+  outline: 2px solid var(--catom); outline-offset: 2px;
+}
+#stage {
+  position: relative; background: var(--stage); min-height: 380px; aspect-ratio: 4 / 3;
+  max-width: 100%; touch-action: none;
+}
+#stage canvas { display: block; width: 100%; height: 100%; }
+.stage-msg {
+  position: absolute; inset: 0; display: grid; place-items: center; padding: 24px;
+  color: var(--muted); text-align: center; font-size: 14px;
+}
+.legend {
+  display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 12px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--muted);
+}
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.legend .ring { background: transparent; border: 2px solid var(--center); }
+
+.spec { padding: 18px; display: grid; gap: 16px; align-content: start; min-width: 0; }
+.spec-head { display: grid; gap: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-family: var(--font-data); font-size: 11.5px; padding: 2px 8px; border-radius: 99px;
+  background: var(--chip); color: var(--ink);
+}
+.note { font-size: 13.5px; color: var(--muted); }
+.costs { width: 100%; border-collapse: collapse; font-size: 14px; }
+.costs td { padding: 5px 0; border-bottom: 1px solid var(--line); }
+.costs td:last-child { text-align: right; font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.costs tr.total td { font-weight: 600; border-bottom: 0; }
+.sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 8px; }
+.bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--chip); }
+.bar span { display: block; height: 100%; }
+.kv { display: grid; gap: 4px; font-size: 13px; }
+.kv .mono { font-size: 12.5px; color: var(--ink); overflow-wrap: anywhere; }
+.kv .k { color: var(--muted); }
+
+/* Index */
+.index { display: grid; gap: 22px; }
+.group { display: grid; gap: 10px; }
+.group-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.group-head p { color: var(--muted); font-size: 13.5px; }
+.list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.design {
+  font: inherit; text-align: left; cursor: pointer; color: var(--ink);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 12px; display: grid; gap: 7px;
+}
+.design:hover { border-color: var(--muted); }
+.design[aria-current="true"] { border-color: var(--catom); box-shadow: inset 0 0 0 1px var(--catom); }
+.design .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.design .name { font-weight: 600; font-size: 14px; }
+.design .moves { font-family: var(--font-data); font-size: 14px; font-variant-numeric: tabular-nums; }
+.design .sub { font-size: 12px; color: var(--muted); }
+
+/* Map */
+.map-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+.map { border-collapse: collapse; font-family: var(--font-data); font-size: 13px; min-width: 520px; width: 100%; }
+.map th, .map td { padding: 9px 12px; text-align: center; border-bottom: 1px solid var(--line); }
+.map th { font-weight: 500; color: var(--muted); font-family: var(--font-body); font-size: 12.5px; }
+.map tr:last-child td { border-bottom: 0; }
+.map td.size { color: var(--muted); text-align: left; }
+.map td.ok { color: var(--ink); font-weight: 500; }
+.map td.ok span { display: inline-block; padding: 1px 8px; border-radius: 5px; background: color-mix(in srgb, var(--cost-a) 18%, transparent); }
+.map td.part { color: var(--muted); }
+.map td.none { color: var(--muted); opacity: 0.7; }
+.map td.proven { color: var(--muted); font-size: 11.5px; }
+.map-key { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--muted); padding-top: 8px; }
+
+footer { font-size: 13px; color: var(--muted); max-width: 80ch; display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 16px; }
+
+@media (max-width: 820px) {
+  .bench { grid-template-columns: minmax(0, 1fr); }
+  .stage-col { border-right: 0; border-bottom: 1px solid var(--line); }
+  #stage { min-height: 300px; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">metaModuleGen · FCC lattice · 3D Catoms</div>
+    <h1>Meta-module designs found by exhaustive search and MAP-Elites</h1>
+    <p class="lede">Exhaustive enumeration checked every shape of 4 and 5 modules on the ortho-3-3-2 basis and found none that passes all 18 operations. At 6 modules it found exactly 10 that do. MAP-Elites mapped larger sizes and found the cheapest design overall, at 7 modules.</p>
+    <div class="facts">
+      <div class="fact"><b>6</b><span>smallest feasible size (sizes 4–5 proven infeasible)</span></div>
+      <div class="fact"><b>10</b><span>feasible 6-module shapes</span></div>
+      <div class="fact"><b>212</b><span>fewest moves at 6 modules</span></div>
+      <div class="fact"><b>207</b><span>fewest moves overall (7 modules)</span></div>
+    </div>
+  </header>
+
+  <section class="bench" aria-label="Design viewer">
+    <div class="stage-col">
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="Show neighbors">
+          <button id="mode-solo" type="button" aria-pressed="true" data-mode="solo">Module</button>
+          <button id="mode-axes" type="button" aria-pressed="false" data-mode="axes">± neighbors</button>
+          <button id="mode-tile" type="button" aria-pressed="false" data-mode="tile">3×3×3 tiling</button>
+        </div>
+        <label class="toggle"><input id="opt-spin" type="checkbox" checked> Auto-rotate</label>
+      </div>
+      <div id="stage">
+        <div class="stage-msg" id="stage-msg">Loading 3D viewer…</div>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--catom)"></i>meta-module</span>
+        <span><i style="background:var(--neighbor)"></i>neighbor copies</span>
+        <span><i class="ring"></i>center (staging cell)</span>
+        <span><i style="background:var(--ax-x)"></i>X</span>
+        <span><i style="background:var(--ax-y)"></i>Y</span>
+        <span><i style="background:var(--ax-z)"></i>Z basis vector</span>
+        <span>Drag to rotate, scroll or pinch to zoom.</span>
+      </div>
+    </div>
+    <div class="spec" id="spec" aria-live="polite"></div>
+  </section>
+
+  <section class="index" aria-label="All designs">
+    <div class="group">
+      <div class="group-head">
+        <h2>6 modules: every feasible shape</h2>
+        <p>Exhaustive enumeration, ortho-3-3-2, sorted by total moves.</p>
+      </div>
+      <div class="list" id="list-enum"></div>
+    </div>
+    <div class="group">
+      <div class="group-head">
+        <h2>Larger designs</h2>
+        <p>MAP-Elites elites, best per size and basis.</p>
+      </div>
+      <div class="list" id="list-me"></div>
+    </div>
+  </section>
+
+  <section class="group" aria-label="MAP-Elites map">
+    <div class="group-head">
+      <h2>MAP-Elites archive</h2>
+      <p>20,000 children, sizes 4–9, four bases. Each cell is that niche's best shape.</p>
+    </div>
+    <div class="map-wrap">
+      <table class="map" id="map"></table>
+    </div>
+    <div class="map-key">
+      <span>number = total moves of a feasible elite</span>
+      <span>N/18 = geometry valid, only N operations feasible</span>
+      <span>— = geometry invalid</span>
+      <span>none (proven) = exhaustive search found no feasible shape</span>
+    </div>
+  </section>
+
+  <footer>
+    <p>Total moves are summed over the six directions ±X, ±Y, ±Z: transfer of one module, plus full disassembly and assembly of the meta-module.</p>
+    <p>"Proven" is relative to metaModuleGen's planners (greedy disassembly and assembly order, heuristic bridges) and a bounding box of 9 cells per axis. A complete planner could accept shapes these planners reject.</p>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var BASES = [
+    { label: "ortho-3-3-2", X: [3, 0, 0], Y: [0, 3, 0], Z: [0, 0, 2] },
+    { label: "ortho-4-4-2", X: [4, 0, 0], Y: [0, 4, 0], Z: [0, 0, 2] },
+    { label: "cubic-4",     X: [4, 0, 0], Y: [0, 4, 0], Z: [0, 0, 4] },
+    { label: "ortho-5-5-4", X: [5, 0, 0], Y: [0, 5, 0], Z: [0, 0, 4] }
+  ];
+
+  var DESIGNS = [
+    { id: "s6-212a", group: "enum", size: 6, basis: 0, T: 27, D: 106, A: 79, center: [-1, 0, 1],
+      cells: [[0,0,1],[0,1,1],[0,2,0],[0,3,0],[1,1,1],[2,2,0]],
+      note: "Cheapest 6-module design." },
+    { id: "s6-212b", group: "enum", size: 6, basis: 0, T: 27, D: 106, A: 79, center: [-1, 0, 1],
+      cells: [[0,0,1],[0,1,1],[0,2,2],[0,3,2],[1,1,1],[2,2,2]],
+      note: "Same tiling as the 212-move design above: three of its cells are shifted by Z, so the structure it builds is identical." },
+    { id: "s6-219", group: "enum", size: 6, basis: 0, T: 30, D: 98, A: 91, center: [-1, -1, -1],
+      cells: [[0,0,0],[1,-2,-1],[1,-1,0],[1,0,-1],[1,0,0],[2,0,-1]],
+      note: "Same cost split as the GA result in the README (30 / 98 / 91)." },
+    { id: "s6-222", group: "enum", size: 6, basis: 0, T: 30, D: 98, A: 94, center: [-1, 0, -1],
+      cells: [[0,0,0],[1,-1,-1],[1,0,0],[1,1,-1],[1,1,0],[2,-1,-1]] },
+    { id: "s6-234", group: "enum", size: 6, basis: 0, T: 25, D: 119, A: 90, center: [-1, -1, -1],
+      cells: [[0,0,0],[1,-2,1],[1,-1,0],[1,0,0],[1,0,1],[2,0,1]] },
+    { id: "s6-237", group: "enum", size: 6, basis: 0, T: 25, D: 119, A: 93, center: [-1, 0, -1],
+      cells: [[0,0,0],[1,-1,1],[1,0,0],[1,1,0],[1,1,1],[2,-1,1]] },
+    { id: "s6-259", group: "enum", size: 6, basis: 0, T: 29, D: 113, A: 117, center: [-1, -1, -1],
+      cells: [[0,0,0],[0,1,-1],[0,1,0],[0,2,-1],[1,1,-1],[2,1,0]] },
+    { id: "s6-266", group: "enum", size: 6, basis: 0, T: 29, D: 113, A: 124, center: [-1, -1, -1],
+      cells: [[0,0,0],[1,0,-1],[1,0,0],[1,1,-1],[1,2,0],[2,0,-1]] },
+    { id: "s6-273", group: "enum", size: 6, basis: 0, T: 25, D: 128, A: 120, center: [-1, -1, -1],
+      cells: [[0,0,0],[0,1,0],[0,1,1],[0,2,1],[1,1,1],[2,1,0]] },
+    { id: "s6-280", group: "enum", size: 6, basis: 0, T: 25, D: 128, A: 127, center: [-1, -1, -1],
+      cells: [[0,0,0],[1,0,0],[1,0,1],[1,1,1],[1,2,0],[2,0,1]], alsoME: true,
+      note: "MAP-Elites found this one for the 6-module niche. Exhaustive search shows nine cheaper shapes exist." },
+    { id: "s7-207", group: "me", size: 7, basis: 0, T: 12, D: 106, A: 89, center: [0, -1, -1],
+      cells: [[0,0,1],[1,0,0],[1,2,0],[2,0,0],[2,0,1],[2,1,1],[2,2,0]],
+      note: "Cheapest design found overall. One extra module cuts transfer cost from 27 to 12." },
+    { id: "s8-249", group: "me", size: 8, basis: 0, T: 14, D: 126, A: 109, center: [0, -1, -1],
+      cells: [[0,0,1],[1,0,0],[1,1,1],[1,2,0],[2,0,0],[2,0,1],[2,1,1],[2,2,2]] },
+    { id: "s9-324", group: "me", size: 9, basis: 1, T: 18, D: 173, A: 133, center: [-1, -1, -1],
+      cells: [[0,0,0],[1,0,0],[1,1,0],[2,-1,1],[2,0,1],[2,1,0],[2,2,0],[2,3,0],[3,0,1]],
+      note: "First feasible design on the sparser ortho-4-4-2 basis." }
+  ];
+  DESIGNS.forEach(function (d) { d.total = d.T + d.D + d.A; });
+  var MAX_TOTAL = Math.max.apply(null, DESIGNS.map(function (d) { return d.total; }));
+
+  // MAP-Elites archive after 20,000 children. Rows: size 4..9. Columns: bases 0..3.
+  // number = feasible moves, "p13" = 13/18 pairs, "x" = geometry invalid, "proven" = exhaustive found none.
+  var MAP = {
+    4: ["proven", "x", "x", "x"],
+    5: ["proven", "x", "x", "x"],
+    6: [280, "x", "x", "x"],
+    7: [207, "x", "x", "x"],
+    8: [249, "p13", "x", "x"],
+    9: ["p13", 324, "x", "x"]
+  };
+
+  var current = DESIGNS[0];
+  var mode = "solo";
+
+  // ---------------------------------------------------------------- index
+  function designName(d) {
+    return d.size + " modules · " + BASES[d.basis].label;
+  }
+  function costBar(d, scale) {
+    var w = function (v) { return (100 * v / scale).toFixed(2) + "%"; };
+    return '<div class="bar" aria-hidden="true">' +
+      '<span style="width:' + w(d.T) + ';background:var(--cost-t)"></span>' +
+      '<span style="width:' + w(d.D) + ';background:var(--cost-d)"></span>' +
+      '<span style="width:' + w(d.A) + ';background:var(--cost-a)"></span></div>';
+  }
+  function renderList() {
+    var enumEl = document.getElementById("list-enum");
+    var meEl = document.getElementById("list-me");
+    enumEl.innerHTML = ""; meEl.innerHTML = "";
+    DESIGNS.forEach(function (d) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "design";
+      b.id = "pick-" + d.id;
+      b.setAttribute("aria-current", d === current ? "true" : "false");
+      b.innerHTML =
+        '<div class="row"><span class="name">' + d.size + ' modules</span>' +
+        '<span class="moves">' + d.total + ' moves</span></div>' +
+        costBar(d, MAX_TOTAL) +
+        '<div class="sub">' + BASES[d.basis].label +
+        (d.alsoME ? " · also MAP-Elites" : "") + '</div>';
+      b.addEventListener("click", function () { select(d); });
+      (d.group === "enum" ? enumEl : meEl).appendChild(b);
+    });
+  }
+
+  function renderSpec() {
+    var d = current, B = BASES[d.basis];
+    var src = d.group === "enum" ? ["Exhaustive"] : ["MAP-Elites"];
+    if (d.alsoME) src.push("MAP-Elites");
+    var vec = function (v) { return "(" + v.join(", ") + ")"; };
+    document.getElementById("spec").innerHTML =
+      '<div class="spec-head">' +
+        '<div class="eyebrow">Selected design</div>' +
+        '<h2>' + designName(d) + '</h2>' +
+        '<div class="chips">' + src.map(function (s) { return '<span class="chip">' + s + '</span>'; }).join("") + '</div>' +
+        (d.note ? '<p class="note">' + d.note + '</p>' : '') +
+      '</div>' +
+      '<div style="display:grid;gap:8px">' +
+        '<h3>Moves over all six directions</h3>' +
+        costBar(d, d.total) +
+        '<table class="costs"><tbody>' +
+          '<tr><td><span class="sw" style="background:var(--cost-t)"></span>Transfer (1 module)</td><td>' + d.T + '</td></tr>' +
+          '<tr><td><span class="sw" style="background:var(--cost-d)"></span>Disassembly</td><td>' + d.D + '</td></tr>' +
+          '<tr><td><span class="sw" style="background:var(--cost-a)"></span>Assembly</td><td>' + d.A + '</td></tr>' +
+          '<tr class="total"><td>Total</td><td>' + d.total + '</td></tr>' +
+        '</tbody></table>' +
+      '</div>' +
+      '<div class="kv">' +
+        '<span class="k">Basis</span>' +
+        '<span class="mono">X ' + vec(B.X) + '  Y ' + vec(B.Y) + '  Z ' + vec(B.Z) + '</span>' +
+        '<span class="k">Center (staging cell)</span>' +
+        '<span class="mono">' + vec(d.center) + '</span>' +
+        '<span class="k">Cells (grid coordinates)</span>' +
+        '<span class="mono">' + d.cells.map(vec).join(" ") + '</span>' +
+      '</div>';
+  }
+
+  function renderMap() {
+    var html = '<thead><tr><th style="text-align:left">|M|</th>' +
+      BASES.map(function (b) { return '<th>' + b.label + '</th>'; }).join("") + '</tr></thead><tbody>';
+    for (var s = 4; s <= 9; s++) {
+      html += '<tr><td class="size">' + s + '</td>';
+      MAP[s].forEach(function (v) {
+        if (typeof v === "number") html += '<td class="ok"><span>' + v + '</span></td>';
+        else if (v === "proven") html += '<td class="proven">none (proven)</td>';
+        else if (v.charAt(0) === "p") html += '<td class="part">' + v.slice(1) + '/18</td>';
+        else html += '<td class="none">—</td>';
+      });
+      html += '</tr>';
+    }
+    document.getElementById("map").innerHTML = html + '</tbody>';
+  }
+
+  // ---------------------------------------------------------------- 3D
+  var stage = document.getElementById("stage");
+  var msg = document.getElementById("stage-msg");
+  var three = null;
+
+  function token(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#888888";
+  }
+  // VisibleSim FCC grid: odd z layers are offset by half a cell in x and y,
+  // layers are 1/sqrt(2) apart, so FCC neighbors sit at distance 1.
+  function world(c) {
+    var odd = Math.abs(c[2]) % 2 === 1;
+    return [c[0] + (odd ? 0.5 : 0), c[1] + (odd ? 0.5 : 0), c[2] * Math.SQRT1_2];
+  }
+  function shift(c, B, a, b, k) {
+    return [c[0] + a * B.X[0] + b * B.Y[0] + k * B.Z[0],
+            c[1] + a * B.X[1] + b * B.Y[1] + k * B.Z[1],
+            c[2] + a * B.X[2] + b * B.Y[2] + k * B.Z[2]];
+  }
+  function basisWorld(v) {  // basis vectors keep z parity, so they are pure translations
+    return [v[0], v[1], v[2] * Math.SQRT1_2];
+  }
+
+  function initThree() {
+    if (!window.THREE || !THREE.OrbitControls) {
+      msg.textContent = "The 3D viewer could not load. The cost tables below still list every design.";
+      return;
+    }
+    var renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+    } catch (e) {
+      msg.textContent = "This browser has WebGL turned off, so the 3D viewer is unavailable.";
+      return;
+    }
+    msg.hidden = true;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    stage.appendChild(renderer.domElement);
+
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(40, 4 / 3, 0.1, 500);
+    camera.up.set(0, 0, 1);
+    var controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+
+    var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var spin = document.getElementById("opt-spin");
+    if (reduced) spin.checked = false;
+    controls.autoRotate = spin.checked;
+    controls.autoRotateSpeed = 1.2;
+    spin.addEventListener("change", function () { controls.autoRotate = spin.checked; });
+    controls.addEventListener("start", function () {
+      if (controls.autoRotate) { controls.autoRotate = false; spin.checked = false; }
+    });
+
+    var hemi = new THREE.HemisphereLight(0xffffff, 0x445566, 0.75);
+    hemi.position.set(0, 0, 1);
+    scene.add(hemi);
+    var key = new THREE.DirectionalLight(0xffffff, 0.75);
+    key.position.set(4, -6, 9);
+    scene.add(key);
+
+    var sphereGeo = new THREE.SphereGeometry(0.47, 40, 20);
+    var group = new THREE.Group();
+    scene.add(group);
+
+    var mats = {};
+    function makeMaterials() {
+      mats.catom = new THREE.MeshStandardMaterial({ color: token("--catom"), roughness: 0.42, metalness: 0.08 });
+      mats.neighbor = new THREE.MeshStandardMaterial({ color: token("--neighbor"), roughness: 0.6,
+        transparent: true, opacity: 0.32, depthWrite: false });
+      mats.center = new THREE.MeshBasicMaterial({ color: token("--center"), wireframe: true });
+      mats.bond = new THREE.LineBasicMaterial({ color: token("--catom") });
+    }
+    makeMaterials();
+
+    function build() {
+      while (group.children.length) {
+        var o = group.children.pop();
+        if (o.geometry && o.geometry !== sphereGeo) o.geometry.dispose();
+      }
+      var d = current, B = BASES[d.basis];
+      var pts = d.cells.map(world);
+
+      // Neighbor copies of the meta-module.
+      var shifts = [];
+      if (mode === "axes") {
+        shifts = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+      } else if (mode === "tile") {
+        for (var a = -1; a <= 1; a++) for (var b = -1; b <= 1; b++) for (var k = -1; k <= 1; k++)
+          if (a || b || k) shifts.push([a, b, k]);
+      }
+      var all = pts.slice();
+      shifts.forEach(function (s) {
+        d.cells.forEach(function (c) {
+          var p = world(shift(c, B, s[0], s[1], s[2]));
+          var m = new THREE.Mesh(sphereGeo, mats.neighbor);
+          m.position.set(p[0], p[1], p[2]);
+          m.renderOrder = 1;
+          group.add(m);
+          all.push(p);
+        });
+      });
+
+      // The meta-module itself, with bonds between FCC neighbors.
+      pts.forEach(function (p) {
+        var m = new THREE.Mesh(sphereGeo, mats.catom);
+        m.position.set(p[0], p[1], p[2]);
+        group.add(m);
+      });
+      var seg = [];
+      for (var i = 0; i < pts.length; i++) for (var j = i + 1; j < pts.length; j++) {
+        var dx = pts[i][0] - pts[j][0], dy = pts[i][1] - pts[j][1], dz = pts[i][2] - pts[j][2];
+        if (Math.abs(Math.sqrt(dx * dx + dy * dy + dz * dz) - 1) < 1e-3) seg.push(pts[i], pts[j]);
+      }
+      if (seg.length) {
+        var g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute([].concat.apply([], seg), 3));
+        group.add(new THREE.LineSegments(g, mats.bond));
+      }
+
+      // Center (staging cell).
+      var cp = world(d.center);
+      var cm = new THREE.Mesh(new THREE.SphereGeometry(0.3, 14, 8), mats.center);
+      cm.position.set(cp[0], cp[1], cp[2]);
+      group.add(cm);
+      all.push(cp);
+
+      // Centroid of the meta-module, used for the camera target and the basis arrows.
+      var cx = 0, cy = 0, cz = 0;
+      pts.forEach(function (p) { cx += p[0]; cy += p[1]; cz += p[2]; });
+      cx /= pts.length; cy /= pts.length; cz /= pts.length;
+      var origin = new THREE.Vector3(cx, cy, cz);
+      [["X", "--ax-x"], ["Y", "--ax-y"], ["Z", "--ax-z"]].forEach(function (ax) {
+        var v = basisWorld(B[ax[0]]);
+        var dir = new THREE.Vector3(v[0], v[1], v[2]);
+        var len = dir.length();
+        group.add(new THREE.ArrowHelper(dir.normalize(), origin, len, token(ax[1]), 0.35, 0.2));
+      });
+
+      // Frame everything shown.
+      var r = 0;
+      all.forEach(function (p) {
+        var ex = p[0] - cx, ey = p[1] - cy, ez = p[2] - cz;
+        r = Math.max(r, Math.sqrt(ex * ex + ey * ey + ez * ez));
+      });
+      r += 1.2;
+      var dist = r / Math.sin((camera.fov * Math.PI / 180) / 2) * 0.9;
+      controls.target.copy(origin);
+      var dirCam = new THREE.Vector3(1.0, -1.35, 0.85).normalize();
+      camera.position.copy(origin).addScaledVector(dirCam, dist);
+      camera.near = Math.max(0.05, dist / 100);
+      camera.far = dist * 10;
+      camera.updateProjectionMatrix();
+      controls.update();
+    }
+
+    function applyTheme() {
+      renderer.setClearColor(token("--stage"), 1);
+      makeMaterials();
+      build();
+    }
+
+    function resize() {
+      var w = stage.clientWidth, h = stage.clientHeight;
+      if (!w || !h) return;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
+    window.addEventListener("resize", resize);
+
+    var mq = window.matchMedia("(prefers-color-scheme: dark)");
+    if (mq.addEventListener) mq.addEventListener("change", applyTheme);
+    new MutationObserver(applyTheme).observe(document.documentElement,
+      { attributes: true, attributeFilter: ["data-theme"] });
+
+    (function loop() {
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(loop);
+    })();
+
+    three = { build: build };
+    applyTheme();
+    resize();
+  }
+
+  // ---------------------------------------------------------------- wiring
+  function select(d) {
+    current = d;
+    renderList();
+    renderSpec();
+    if (three) three.build();
+  }
+  ["solo", "axes", "tile"].forEach(function (m) {
+    document.getElementById("mode-" + m).addEventListener("click", function () {
+      mode = m;
+      ["solo", "axes", "tile"].forEach(function (n) {
+        document.getElementById("mode-" + n).setAttribute("aria-pressed", n === m ? "true" : "false");
+      });
+      if (three) three.build();
+    });
+  });
+
+  renderList();
+  renderSpec();
+  renderMap();
+  initThree();
+})();
+</script>

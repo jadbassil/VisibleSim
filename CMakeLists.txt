@@ -208,7 +208,8 @@ set_target_properties(demoReconfC3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_
 add_executable(metaModuleGen
     applicationsSrc/metaModuleGen/metaModuleGen.cpp
     applicationsSrc/metaModuleGen/metaModuleGenBlockCode.cpp
-    applicationsSrc/metaModuleGen/metaModuleCore.cpp)
+    applicationsSrc/metaModuleGen/metaModuleCore.cpp
+    applicationsSrc/metaModuleGen/metaModuleSearch.cpp)
 target_link_libraries(metaModuleGen Catoms3D)
 set_target_properties(metaModuleGen PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/metaModuleGen)
 

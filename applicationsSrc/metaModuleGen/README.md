@@ -6,9 +6,11 @@ meta-module satisfying the formal framework of Lamiroy, Bassil & Piranda
 Programmable Matter*). A meta-module is valid only if it admits all three
 relocation operations — **Disassembly**, **Transfer** (the flow to a
 neighbor) and **Assembly** — in **each of the six ±-directions**, and the
-search minimizes the total motion cost of those operations. The search
-runs a genetic algorithm; the underlying motion predicate is implemented
-for the FCC lattice used by 3D Catoms.
+search minimizes the total motion cost of those operations. Three searches
+are available: a genetic algorithm (default), an exhaustive enumeration that
+proves the smallest feasible size, and MAP-Elites, which maps feasibility and
+cost across every (size, basis) pair. The underlying motion predicate is
+implemented for the FCC lattice used by 3D Catoms.
 
 The generator is fully decoupled from the live VisibleSim runtime so a
 single fitness evaluation does not require booting the GLUT viewer or
@@ -21,7 +23,8 @@ Catoms3D viewer for inspection.
 | File | Role |
 |---|---|
 | [metaModuleCore.h](metaModuleCore.h) / [metaModuleCore.cpp](metaModuleCore.cpp) | Standalone FCC neighbor + `canMove` predicate, MetaModule type, geometric validators, bridge router, Transfer / Disassembly / Assembly planners, evaluator, GA |
-| [metaModuleGen.cpp](metaModuleGen.cpp) | `main()`: CLI parsing, GA driver, XML export, optional viewer boot |
+| [metaModuleSearch.h](metaModuleSearch.h) / [metaModuleSearch.cpp](metaModuleSearch.cpp) | Shared shape scorer, canonical form, Redelmeier enumerator, exhaustive search, MAP-Elites |
+| [metaModuleGen.cpp](metaModuleGen.cpp) | `main()`: CLI parsing, search driver, XML export, optional viewer boot |
 | [metaModuleGenBlockCode.h](metaModuleGenBlockCode.h) / [.cpp](metaModuleGenBlockCode.cpp) | Interactive `Catoms3DBlockCode`: parses `<metaModuleInfo>`, lets you click-select a meta-module and animate Dismantle / Transfer / Assemble in any direction |
 | [Makefile](Makefile) / `CMakeLists.txt` target | Two interchangeable build paths |
 
@@ -56,6 +59,12 @@ cd applicationsBin/metaModuleGen
 
 # quick replay of a cached result
 ./metaModuleGen --min-size=7 --max-size=7 --pop=4 --gens=1
+
+# exhaustive search: proves the smallest feasible size (bases 0..3 only)
+./metaModuleGen --no-sim --search=enum --bases=0,1,2,3 --max-size=10
+
+# MAP-Elites over sizes 4..14 and all bases, 50k children
+./metaModuleGen --no-sim --search=mapelites --max-size=14 --iters=50000 --save-dir=results/me50k
 ```
 
 ### CLI flags
@@ -72,6 +81,18 @@ cd applicationsBin/metaModuleGen
 | `--seed=N` | 42 | RNG seed |
 | `--tiles=N` | 2 | Export an `N×N×N` block of meta-modules in the structure XML (the visualized tiling) |
 | `--out-xml=PATH` | `metaModule_result.xml` | Where to write the exported VisibleSim config |
+| `--search=NAME` | `ga` | `ga`, `enum` (exhaustive) or `mapelites` |
+| `--bases=LIST` | all | Comma-separated indices into the basis table below, e.g. `0,2` |
+| `--threads=N` | all cores | Worker threads for `enum` and `mapelites` |
+| `--iters=N` | 20000 | MAP-Elites: children generated after seeding |
+| `--init=N` | 500 | MAP-Elites: random shapes used to seed the archive |
+| `--batch=N` | 64 | MAP-Elites: children evaluated in parallel per step |
+| `--archive-csv=PATH` | `mapElites_archive.csv` | MAP-Elites: final archive, one row per niche |
+| `--enum-csv=PATH` | `enum_feasible.csv` | Exhaustive: every feasible shape found |
+| `--save-dir=DIR` | — | Save every feasible design: one structure XML each (openable with `--view=`), `designs.csv` (costs, center, cells) and `run.json` (settings and basis vectors). `enum` saves all feasible shapes it evaluated, `mapelites` its feasible elites, `ga` its best design. |
+
+`--pop` and `--gens` only apply to `ga`. `--radius=R` bounds every search
+the same way: a shape's bounding box may span at most `2R+1` cells per axis.
 
 > **Build with optimization for usable GA speed.** Evaluating all 18
 > `(operation, direction)` pairs with the bridge DFS is BFS-heavy; an
@@ -294,10 +315,70 @@ a fixed `(size, basis)`, the GA runs:
 - **Termination** — the GA exits as soon as any feasible individual
   appears (size-first search).
 
+### 5b. Exhaustive enumeration (`--search=enum`)
+
+For each size, every connected shape is generated exactly once with
+Redelmeier's algorithm and evaluated against each basis. A shape is
+generated from its smallest cell (x, y, z order). Translations are
+restricted to `(dx, dy, even dz)` because FCC neighborhoods depend on z
+parity, so shapes starting on an even and on an odd layer are enumerated
+separately. Rotations and reflections are not merged, because the basis is
+not symmetric under them in general.
+
+Two prunings cut whole subtrees, because adding cells can never undo them:
+
+- **Exclusivity** — a new cell may not sit one lattice shift
+  (`aX⃗ + bY⃗ + cZ⃗`, `a,b,c ∈ {-1,0,1}`) away from an existing one.
+  This bounds `|M|` by the fundamental domain of the basis.
+- **Bounding box** — at most `2R+1` cells per axis.
+
+Evaluation runs on all cores in batches. The search stops after the first
+size that has a feasible shape, after evaluating every shape of that size,
+so it returns the cheapest shape of the smallest size and writes every
+feasible shape of that size to `--enum-csv`.
+
+**What it proves:** no shape smaller than the reported size passes the
+validators and the planners in this file, within the bounding box. It is
+exact relative to that model. The greedy disassembly/assembly order and
+the bridge heuristic (see Known limitations) can still reject shapes that
+a complete planner would accept.
+
+**Cost:** the shape count grows about tenfold per extra module before
+pruning (87,994 shapes at size 6 with no pruning and a 4-cell box). Small
+bases prune hard; `scaffold-flat` and `hexagonal` barely prune at all.
+Restrict large runs with `--bases`.
+
+### 5c. MAP-Elites (`--search=mapelites`)
+
+The archive has one niche per `(|M|, basis)` pair, and each niche keeps its
+best shape. One run therefore covers every size and basis, replacing the
+outer size/basis loop of the GA.
+
+- **Seeding** — `--init` random connected shapes of random size and basis.
+- **Parent selection** — half the time a uniformly random filled niche,
+  half the time the better of two random niches. Pure uniform selection
+  wasted most of the budget on niches whose geometry is invalid.
+- **Variation** — copy the parent elite and apply 1–4
+  operators: add a frontier cell, remove a non-articulation cell, move a
+  cell (remove + add), or switch basis (10%). Changing size or basis moves
+  the child into another niche, so feasible shapes act as stepping stones
+  between sizes.
+- **Score** (shared with `enum`, higher is better) — graded so infeasible
+  shapes still get a signal: exclusivity fails < fewer axis contacts <
+  no center < number of feasible (operation, direction) pairs < feasible,
+  ranked by fewer total moves. Ties replace the incumbent so the archive
+  can drift across plateaus.
+- **Cache** — every `(canonical shape, basis)` is evaluated once.
+- **Output** — a terminal map (rows = sizes, columns = bases), the archive
+  CSV, and the smallest feasible elite (cheapest on ties), which is
+  exported and viewed like the GA result.
+
 ### 6. Candidate bases
 
 `defaultCandidateBases()` tries six bases by default, ordered roughly
 by increasing fundamental-domain volume:
+
+Indices (for `--bases`) follow table order, starting at 0.
 
 | Label | `X⃗` | `Y⃗` | `Z⃗` | Notes |
 |---|---|---|---|---|
@@ -349,5 +430,4 @@ To experiment with different bases, edit
   shapes (cost grows roughly with `(2R+1)³`).
 - The motion predicate covers the OctaFace blocking rule only; HexaFace
   exceptions for special pivots are not modeled.
-- Search is single-threaded. For larger sweeps consider running
-  multiple seeds in parallel via shell job control.
+- The GA is single-threaded. `enum` and `mapelites` use all cores.

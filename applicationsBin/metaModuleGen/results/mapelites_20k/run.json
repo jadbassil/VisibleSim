@@ -1,0 +1,22 @@
+{
+  "search": "mapelites",
+  "min_size": 4,
+  "max_size": 9,
+  "radius": 4,
+  "max_extent": 9,
+  "seed": 42,
+  "ga_population": 120,
+  "ga_generations": 200,
+  "mapelites_iters": 20000,
+  "mapelites_init": 500,
+  "mapelites_batch": 64,
+  "threads": 0,
+  "tiles": 2,
+  "bases": [
+    {"label": "ortho-3-3-2", "X": [3,0,0], "Y": [0,3,0], "Z": [0,0,2]},
+    {"label": "ortho-4-4-2", "X": [4,0,0], "Y": [0,4,0], "Z": [0,0,2]},
+    {"label": "cubic-4", "X": [4,0,0], "Y": [0,4,0], "Z": [0,0,4]},
+    {"label": "ortho-5-5-4", "X": [5,0,0], "Y": [0,5,0], "Z": [0,0,4]}
+  ],
+  "designs_saved": 4
+}

@@ -2,7 +2,7 @@ mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 current_dir := $(notdir $(patsubst %/,%,$(dir $(mkfile_path))))
 APPDIR = ../../applicationsBin/$(current_dir)
 
-SRCS = metaModuleGen.cpp metaModuleGenBlockCode.cpp metaModuleCore.cpp
+SRCS = metaModuleGen.cpp metaModuleGenBlockCode.cpp metaModuleCore.cpp metaModuleSearch.cpp
 OUT = $(APPDIR)/metaModuleGen
 MODULELIB = -lsimCatoms3D
 TESTS =

@@ -1,22 +1,30 @@
 // Meta-module generator for 3D-catom modular robots.
 //
-// Runs a genetic algorithm to discover the smallest meta-module shape
-// satisfying the framework of Lamiroy, Bassil & Piranda
-// (Connectivity, Exclusivity, Axis-contacts, Center existence) and
-// admitting a Transfer operation in every ±basis direction. Then it
-// boots the standard Catoms3D simulator so the shape can be visualised.
+// Searches for the smallest meta-module shape satisfying the framework of
+// Lamiroy, Bassil & Piranda (Connectivity, Exclusivity, Axis-contacts, Center
+// existence) and admitting Disassembly, Transfer and Assembly in every
+// ±basis direction. Three searches are available (--search=):
+//   ga         genetic algorithm (default)
+//   enum       exhaustive enumeration, proves the smallest feasible size
+//   mapelites  MAP-Elites over a (size x basis) archive
+// Then it boots the standard Catoms3D simulator so the shape can be visualised.
 
+#include <cctype>
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
+#include <vector>
 
 #include "robots/catoms3D/catoms3DSimulator.h"
 
 #include "metaModuleCore.h"
+#include "metaModuleSearch.h"
 #include "metaModuleGenBlockCode.h"
 
 using namespace Catoms3D;
@@ -125,6 +133,23 @@ struct CliArgs {
     int tiles{2};          // N: export an NxNxN block of meta-modules
     std::string outXml{"metaModule_result.xml"};
     std::string viewXml;   // if set: skip the search, just view this structure
+    std::string search{"ga"};  // ga | enum | mapelites
+    int threads{0};            // 0 = all hardware threads
+    long iters{20000};         // MAP-Elites children
+    int initSamples{500};      // MAP-Elites random seeds
+    int batch{64};             // MAP-Elites children per parallel step
+    std::string archiveCsv{"mapElites_archive.csv"};
+    std::string enumCsv{"enum_feasible.csv"};
+    std::string bases;         // comma-separated basis indices (empty = all)
+    std::string saveDir;       // if set: one XML per feasible design + index
+};
+
+// Flags handled here; they are stripped before argv reaches the simulator.
+const char* const kOwnFlags[] = {
+    "--no-sim", "--min-size=", "--max-size=", "--radius=", "--pop=",
+    "--gens=", "--seed=", "--out-xml=", "--tiles=", "--view=", "--search=",
+    "--threads=", "--iters=", "--init=", "--batch=", "--archive-csv=",
+    "--enum-csv=", "--bases=", "--save-dir=",
 };
 
 CliArgs parseExtra(int argc, char** argv) {
@@ -146,8 +171,129 @@ CliArgs parseExtra(int argc, char** argv) {
         else if (auto v = eat("--out-xml="))  a.outXml = v;
         else if (auto v = eat("--tiles="))    a.tiles = std::max(1, std::atoi(v));
         else if (auto v = eat("--view="))     a.viewXml = v;
+        else if (auto v = eat("--search="))   a.search = v;
+        else if (auto v = eat("--threads="))  a.threads = std::max(0, std::atoi(v));
+        else if (auto v = eat("--iters="))    a.iters = std::max(0L, std::atol(v));
+        else if (auto v = eat("--init="))     a.initSamples = std::max(1, std::atoi(v));
+        else if (auto v = eat("--batch="))    a.batch = std::max(1, std::atoi(v));
+        else if (auto v = eat("--archive-csv=")) a.archiveCsv = v;
+        else if (auto v = eat("--enum-csv="))    a.enumCsv = v;
+        else if (auto v = eat("--bases="))    a.bases = v;
+        else if (auto v = eat("--save-dir=")) a.saveDir = v;
     }
     return a;
+}
+
+// Keep only the default bases whose indices appear in `spec` ("0,2,3").
+// An empty spec keeps them all.
+bool selectBases(const std::string& spec, std::vector<CandidateBasis>& out) {
+    auto all = defaultCandidateBases();
+    if (spec.empty()) { out = all; return true; }
+    std::stringstream ss(spec);
+    std::string tok;
+    while (std::getline(ss, tok, ',')) {
+        char* end = nullptr;
+        long i = std::strtol(tok.c_str(), &end, 10);
+        if (tok.empty() || *end != '\0' || i < 0 || i >= (long)all.size()) {
+            std::cerr << "Bad --bases entry '" << tok << "'. Valid indices:\n";
+            for (size_t k = 0; k < all.size(); ++k)
+                std::cerr << "  " << k << " = " << all[k].label << "\n";
+            return false;
+        }
+        out.push_back(all[i]);
+    }
+    return !out.empty();
+}
+
+std::string vec3(const Cell3DPosition& v, const char* sep = ",") {
+    return std::to_string(v[0]) + sep + std::to_string(v[1]) + sep
+         + std::to_string(v[2]);
+}
+
+// Basis labels may contain spaces or brackets; keep file names portable.
+std::string fileSafe(const std::string& s) {
+    std::string out;
+    for (char c : s) {
+        if (std::isalnum(static_cast<unsigned char>(c)) || c == '-' || c == '_')
+            out.push_back(c);
+        else if (!out.empty() && out.back() != '-')
+            out.push_back('-');
+    }
+    while (!out.empty() && out.back() == '-') out.pop_back();
+    return out;
+}
+
+// Write every feasible design as its own structure XML, plus designs.csv (an
+// index with costs, centers and cells) and run.json (the settings used).
+bool saveDesigns(const CliArgs& cli, const std::vector<CandidateBasis>& bases,
+                 const GenerationResult& result) {
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    fs::create_directories(cli.saveDir, ec);
+    if (ec) {
+        std::cerr << "Cannot create --save-dir " << cli.saveDir << ": "
+                  << ec.message() << "\n";
+        return false;
+    }
+    std::vector<FoundDesign> designs = result.designs;
+    if (designs.empty() && result.found)
+        designs.push_back({result.best, result.cost, result.basisLabel});
+
+    const fs::path dir(cli.saveDir);
+    std::ofstream index(dir / "designs.csv");
+    index << "file,size,basis,total_moves,transfer,disassembly,assembly,center,cells\n";
+    const int width = designs.size() >= 100 ? 3 : 2;
+    bool ok = static_cast<bool>(index);
+    for (size_t i = 0; i < designs.size(); ++i) {
+        const FoundDesign& d = designs[i];
+        std::string rank = std::to_string(i + 1);
+        rank.insert(0, width - std::min<int>(width, rank.size()), '0');
+        const std::string name = rank + "_size" + std::to_string(d.mm.size()) + "_"
+            + fileSafe(d.basisLabel) + "_" + std::to_string(d.cost.totalMoves)
+            + "moves.xml";
+        ok &= writeStructureXml((dir / name).string(), d.mm, cli.tiles);
+        std::string cells;
+        for (const auto& c : d.mm.cells) {
+            if (!cells.empty()) cells += ";";
+            cells += vec3(c, " ");
+        }
+        index << name << "," << d.mm.size() << ",\"" << d.basisLabel << "\","
+              << d.cost.totalMoves << "," << d.cost.totalTransferMoves << ","
+              << d.cost.totalDisassemblyMoves << "," << d.cost.totalAssemblyMoves
+              << ",\"" << vec3(d.mm.center, " ") << "\",\"" << cells << "\"\n";
+    }
+
+    std::ofstream run(dir / "run.json");
+    run << "{\n"
+        << "  \"search\": \"" << cli.search << "\",\n"
+        << "  \"min_size\": " << cli.minSize << ",\n"
+        << "  \"max_size\": " << cli.maxSize << ",\n"
+        << "  \"radius\": " << cli.boundingRadius << ",\n"
+        << "  \"max_extent\": " << (2 * cli.boundingRadius + 1) << ",\n"
+        << "  \"seed\": " << cli.seed << ",\n"
+        << "  \"ga_population\": " << cli.population << ",\n"
+        << "  \"ga_generations\": " << cli.generations << ",\n"
+        << "  \"mapelites_iters\": " << cli.iters << ",\n"
+        << "  \"mapelites_init\": " << cli.initSamples << ",\n"
+        << "  \"mapelites_batch\": " << cli.batch << ",\n"
+        << "  \"threads\": " << cli.threads << ",\n"
+        << "  \"tiles\": " << cli.tiles << ",\n"
+        << "  \"bases\": [\n";
+    for (size_t i = 0; i < bases.size(); ++i) {
+        const Basis& b = bases[i].basis;
+        run << "    {\"label\": \"" << bases[i].label << "\", \"X\": [" << vec3(b.X)
+            << "], \"Y\": [" << vec3(b.Y) << "], \"Z\": [" << vec3(b.Z) << "]}"
+            << (i + 1 < bases.size() ? "," : "") << "\n";
+    }
+    run << "  ],\n"
+        << "  \"designs_saved\": " << designs.size() << "\n"
+        << "}\n";
+    ok &= static_cast<bool>(index) && static_cast<bool>(run);
+
+    std::cout << (ok ? "saved " : "FAILED to save all of ") << designs.size()
+              << " design(s) to " << cli.saveDir << "/ (XML per design,"
+              << " designs.csv, run.json)\n";
+    return ok;
 }
 
 // Boot the Catoms3D viewer on an existing structure XML. Strips our custom
@@ -161,11 +307,10 @@ void bootViewer(int argc, char** argv, const std::string& xmlPath) {
     bool hasSchedFlag = false;   // -r/-R/-t all select a scheduler mode
     for (int i = 1; i < argc; ++i) {
         std::string s = argv[i];
-        if (s.rfind("--no-sim", 0) == 0 || s.rfind("--min-size=", 0) == 0
-            || s.rfind("--max-size=", 0) == 0 || s.rfind("--radius=", 0) == 0
-            || s.rfind("--pop=", 0) == 0 || s.rfind("--gens=", 0) == 0
-            || s.rfind("--seed=", 0) == 0 || s.rfind("--out-xml=", 0) == 0
-            || s.rfind("--view=", 0) == 0) continue;
+        bool own = false;
+        for (const char* f : kOwnFlags)
+            if (s.rfind(f, 0) == 0) { own = true; break; }
+        if (own) continue;
         if (s == "-r" || s == "-R" || s == "-t") hasSchedFlag = true;
         kept.push_back(s);
     }
@@ -200,16 +345,47 @@ int main(int argc, char** argv) {
               << "MetaModuleGen — searching for the smallest valid 3D-catom meta-module"
               << "\033[0m\n";
 
-    GAConfig cfg;
-    cfg.minSize         = cli.minSize;
-    cfg.maxSize         = cli.maxSize;
-    cfg.boundingRadius  = cli.boundingRadius;
-    cfg.populationSize  = cli.population;
-    cfg.generations     = cli.generations;
-    cfg.seed            = cli.seed;
+    std::vector<CandidateBasis> bases;
+    if (!selectBases(cli.bases, bases)) return 2;
+    const int maxExtent = 2 * cli.boundingRadius + 1;
 
-    auto bases = defaultCandidateBases();
-    GenerationResult result = runGenerator(bases, cfg);
+    GenerationResult result;
+    if (cli.search == "ga") {
+        GAConfig cfg;
+        cfg.minSize         = cli.minSize;
+        cfg.maxSize         = cli.maxSize;
+        cfg.boundingRadius  = cli.boundingRadius;
+        cfg.populationSize  = cli.population;
+        cfg.generations     = cli.generations;
+        cfg.seed            = cli.seed;
+        result = runGenerator(bases, cfg);
+    } else if (cli.search == "enum") {
+        EnumConfig cfg;
+        cfg.minSize   = cli.minSize;
+        cfg.maxSize   = cli.maxSize;
+        cfg.maxExtent = maxExtent;
+        cfg.threads   = cli.threads;
+        cfg.csvPath   = cli.enumCsv;
+        result = runEnumeration(bases, cfg);
+        if (!cli.enumCsv.empty())
+            std::cout << "feasible shapes CSV written to: " << cli.enumCsv << "\n";
+    } else if (cli.search == "mapelites") {
+        MapElitesConfig cfg;
+        cfg.minSize     = cli.minSize;
+        cfg.maxSize     = cli.maxSize;
+        cfg.maxExtent   = maxExtent;
+        cfg.initSamples = cli.initSamples;
+        cfg.iterations  = cli.iters;
+        cfg.batchSize   = cli.batch;
+        cfg.threads     = cli.threads;
+        cfg.seed        = cli.seed;
+        cfg.archiveCsv  = cli.archiveCsv;
+        result = runMapElites(bases, cfg);
+    } else {
+        std::cerr << "Unknown --search=" << cli.search
+                  << " (expected ga, enum or mapelites)\n";
+        return 2;
+    }
 
     if (!result.found) {
         std::cout << "\nNo valid meta-module was found in the search budget.\n";
@@ -240,6 +416,8 @@ int main(int argc, char** argv) {
     bool wrote = writeStructureXml(cli.outXml, result.best, cli.tiles);
     std::cout << (wrote ? "result XML written to: " : "FAILED to write XML at: ")
               << cli.outXml << "\n";
+
+    if (!cli.saveDir.empty()) saveDesigns(cli, bases, result);
 
     if (cli.runSim)
         bootViewer(argc, argv, cli.outXml);
