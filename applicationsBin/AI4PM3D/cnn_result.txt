@@ -1,10 +1,10 @@
-Predicted: Humanoid (94.2%)
-Blocks aggregated: 4203
-Total messages: 81724
-Total bandwidth: 4837158 bytes
-Cube: 0.00%
+Predicted: Cube (100.0%)
+Blocks aggregated: 64
+Total messages: 1026
+Total bandwidth: 62658 bytes
+Cube: 100.00%
 Sphere: 0.00%
-Cylinder: 5.77%
+Cylinder: 0.00%
 Chair: 0.00%
 Bridge: 0.00%
-Humanoid: 94.23%
+Humanoid: 0.00%

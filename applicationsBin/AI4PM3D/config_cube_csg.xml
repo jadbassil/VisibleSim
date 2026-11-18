@@ -4,7 +4,7 @@
   <blockList format="csg">
     <csg offset="false" boundingBox="false" content="
       union() {
-        color([1,1,1]) translate([12,12,12]) sphere(3.0);
+        color([1,1,1]) translate([12,12,12]) cube(3.0);
       }" />
   </blockList>
 </world>
