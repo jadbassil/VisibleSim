@@ -242,7 +242,19 @@ set_target_properties(demoReconfC3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_
 add_executable(gnnLocomotion
     applicationsSrc/gnnLocomotion/gnnLocomotion.cpp
     applicationsSrc/gnnLocomotion/gnnLocomotionBlockCode.cpp
-    applicationsSrc/gnnLocomotion/gymServer.cpp)
+    applicationsSrc/gnnLocomotion/gymServer.cpp
+    applicationsSrc/gnnLocomotion/gcnPolicy.cpp)
+target_include_directories(gnnLocomotion PRIVATE simulatorCore/src/deps)
 target_link_libraries(gnnLocomotion SlidingCubes)
 set_target_properties(gnnLocomotion PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/gnnLocomotion)
+
+    add_executable(gnnShapeReconfiguration
+    applicationsSrc/gnnShapeReconfiguration/gnnShapeReconfiguration.cpp
+    applicationsSrc/gnnShapeReconfiguration/gnnShapeReconfigurationBlockCode.cpp
+    applicationsSrc/gnnShapeReconfiguration/gymServer.cpp
+    applicationsSrc/gnnShapeReconfiguration/gcnPolicy.cpp)
+target_include_directories(gnnShapeReconfiguration PRIVATE simulatorCore/src/deps)
+target_link_libraries(gnnShapeReconfiguration SlidingCubes)
+set_target_properties(gnnShapeReconfiguration PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/gnnShapeReconfiguration)

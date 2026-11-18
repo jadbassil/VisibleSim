@@ -136,3 +136,4 @@ applicationsSrc/AI4PM3D/latex/GeorgesChaiban-2026
 applicationsSrc/TEN-MaxFlow-Reconfiguration
 utilities/VisibleSimConfigGenerator
 .cache/
+.cache

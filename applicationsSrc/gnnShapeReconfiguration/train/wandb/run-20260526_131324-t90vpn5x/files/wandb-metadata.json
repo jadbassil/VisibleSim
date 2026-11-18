@@ -1,0 +1,48 @@
+{
+  "os":  "macOS-26.5-arm64-arm-64bit-Mach-O",
+  "python":  "CPython 3.14.0",
+  "startedAt":  "2026-05-26T11:13:24.145449Z",
+  "args":  [
+    "--backbone",
+    "gcn",
+    "--episodes",
+    "2000",
+    "--wandb",
+    "--wandb-project",
+    "marl",
+    "--wandb-run-name",
+    "sliding-cube-single-motion-8"
+  ],
+  "program":  "/Users/jbassil/Projects/VisibleSim/applicationsSrc/gnnShapeReconfiguration/train/train.py",
+  "codePath":  "applicationsSrc/gnnShapeReconfiguration/train/train.py",
+  "codePathLocal":  "train.py",
+  "git":  {
+    "remote":  "https://github.com/ProgrammableMatterProject/VisibleSim.git",
+    "commit":  "1582aa93818dab7519991244f9d6ea8346d41dcd"
+  },
+  "email":  "jadbassil1@gmail.com",
+  "root":  "/Users/jbassil/Projects/VisibleSim/applicationsSrc/gnnShapeReconfiguration/train",
+  "host":  "906-m4pro-jbassil-1.local",
+  "executable":  "/Users/jbassil/Projects/VisibleSim/applicationsSrc/gnnShapeReconfiguration/train/.venv/bin/python3",
+  "cpu_count":  14,
+  "cpu_count_logical":  14,
+  "disk":  {
+    "/":  {
+      "total":  "494384795648",
+      "used":  "450774704128"
+    }
+  },
+  "memory":  {
+    "total":  "25769803776"
+  },
+  "apple":  {
+    "name":  "Apple M4 Pro",
+    "ecpuCores":  4,
+    "pcpuCores":  10,
+    "gpuCores":  20,
+    "memoryGb":  24,
+    "ramTotalBytes":  "25769803776",
+    "macModel":  "Mac16,8"
+  },
+  "writerId":  "ebkmauhyvelvo7o93j3489i83r8fcbgy"
+}

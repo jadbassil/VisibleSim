@@ -6,6 +6,10 @@ Protocol (newline-delimited JSON over TCP):
   Python → C++:  {"type":"step","actions":{"<blockId>": <actionIdx>, ...}}
 
 Action index 0 = stay; 1..N = index into getAllMotions() for that block.
+
+Locomotion objective: maximise displacement of the swarm's center of mass
+along a fixed direction vector.  Reward = Φ(s') − Φ(s) where
+Φ(s) = dot(CoM, direction).  There is no terminal shape condition.
 """
 import json
 import os
@@ -19,18 +23,17 @@ import numpy as np
 import torch
 
 MAX_ACTIONS_PER_BLOCK = 13  # 0=stay + up to 12 moves
-NODE_FEAT_DIM = 12          # 3 pos + 1 in_target + 6 neighbor-presence bits + 1 n_moves + 1 is_ap
+NODE_FEAT_DIM = 12          # 3 pos + 1 directional_pos + 6 neighbor bits + 1 n_moves + 1 is_ap
 
 
 class VisibleSimEnv:
     """
     Single-process Gym-style environment backed by a VisibleSim subprocess.
 
-    reset() launches the binary and returns the initial observation dict.
-    step(actions_dict) sends actions and returns (obs, reward, done, info).
-    close() kills the subprocess and closes the socket.
-
-    Graph tensors for the GNN are produced by obs_to_tensors(obs).
+    Parameters
+    ----------
+    direction : (3,) array-like
+        Locomotion direction unit vector. Defaults to +X = [1, 0, 0].
     """
 
     def __init__(
@@ -42,6 +45,7 @@ class VisibleSimEnv:
         realtime: bool = True,
         connect_timeout: float = 20.0,
         step_timeout: float = 30.0,
+        direction: Tuple[float, float, float] = (1.0, 0.0, 0.0),
     ):
         self.binary_path = os.path.abspath(binary_path)
         self.config_path = os.path.abspath(config_path)
@@ -51,9 +55,13 @@ class VisibleSimEnv:
         self.connect_timeout = connect_timeout
         self.step_timeout = step_timeout
 
+        d = np.array(direction, dtype=np.float32)
+        norm = np.linalg.norm(d)
+        self.direction = d / norm if norm > 1e-6 else np.array([1.0, 0.0, 0.0], dtype=np.float32)
+
         self.proc: Optional[subprocess.Popen] = None
         self.sock: Optional[socket.socket] = None
-        self.block_ids: List[int] = []  # ordered block IDs from last obs
+        self.block_ids: List[int] = []
         self._prev_potential: float = 0.0
 
     # ------------------------------------------------------------------
@@ -78,14 +86,14 @@ class VisibleSimEnv:
         obs = self._recv_obs()
         self.block_ids = [b["id"] for b in obs["blocks"]]
 
-        # Potential-based shaping: F = γ·Φ(s') − Φ(s).  Using γ=1 (no discount).
-        # Φ(s) = −(mean min-distance from each non-target block to nearest target cell)
-        # This gives +reward when blocks move closer to target cells.
+        # Locomotion reward: ΔCoM · direction (potential shaping, γ=1).
+        # obs["reward"] carries the connectivity penalty (-10) if applicable;
+        # otherwise it is 0.
         new_potential = self._potential(obs)
         shaping = new_potential - self._prev_potential
         self._prev_potential = new_potential
 
-        reward = obs["reward"] + 0.1 * shaping
+        reward = obs["reward"] + shaping
         return obs, reward, obs["done"], {"step": obs["step"]}
 
     def close(self):
@@ -99,32 +107,33 @@ class VisibleSimEnv:
         """
         Returns (x, edge_index, edge_attr, action_masks) as torch tensors.
 
-        x            : [N, NODE_FEAT_DIM]  node features
-        edge_index   : [2, E]              directed edges (both directions)
-        edge_attr    : [E, 6]              one-hot direction per edge
-        action_masks : [N, MAX_ACTIONS]    bool; True = action is valid
-
-        Articulation-point constraint: blocks whose removal would disconnect
-        the cluster have all non-stay actions masked out.
+        x(3) = directional_pos = dot(pos, direction) / grid_max_extent
+               replaces the in_target flag from shape reconfiguration.
         """
         blocks = obs["blocks"]
         grid   = obs["grid_size"]
 
         id_to_idx = {b["id"]: i for i, b in enumerate(blocks)}
-
-        # Compute articulation points once; used for both features and masks.
         art_points = self._articulation_points(obs)
+
+        # Grid extent along the travel direction for normalisation.
+        grid_arr = np.array(grid, dtype=np.float32)
+        extent = float(np.dot(self.direction, grid_arr))
+        if extent < 1.0:
+            extent = 1.0
 
         node_feats = []
         for b in blocks:
+            pos = np.array(b["pos"], dtype=np.float32)
+            directional_pos = float(np.dot(self.direction, pos)) / extent
             feats = [
                 b["pos"][0] / max(grid[0], 1),
                 b["pos"][1] / max(grid[1], 1),
                 b["pos"][2] / max(grid[2], 1),
-                float(b["in_target"]),
-                *[float(nb != -1) for nb in b["neighbors"]],   # 6 bits
+                directional_pos,                                            # replaces in_target
+                *[float(nb != -1) for nb in b["neighbors"]],               # 6 bits
                 min(len(b["moves"]), MAX_ACTIONS_PER_BLOCK - 1) / (MAX_ACTIONS_PER_BLOCK - 1),
-                float(b["id"] in art_points),                  # is_ap flag
+                float(b["id"] in art_points),
             ]
             node_feats.append(feats)
 
@@ -139,11 +148,11 @@ class VisibleSimEnv:
                     one_hot[d] = 1.0
                     edge_attr.append(one_hot)
 
-        # Action mask: action 0 (stay) always valid; actions 1..len(moves) valid.
-        # Articulation points and already-placed blocks are forced to stay.
+        # Locomotion mask: only articulation points are forced to stay.
+        # There are no in_target locked blocks.
         masks = []
         for b in blocks:
-            if b["id"] in art_points or b["in_target"]:
+            if b["id"] in art_points:
                 mask = [True] + [False] * (MAX_ACTIONS_PER_BLOCK - 1)
             else:
                 n_moves = min(len(b["moves"]), MAX_ACTIONS_PER_BLOCK - 1)
@@ -168,17 +177,11 @@ class VisibleSimEnv:
     # ------------------------------------------------------------------
 
     def _articulation_points(self, obs: dict) -> set:
-        """
-        Return the set of block IDs that are articulation points (cut vertices):
-        removing them would disconnect the remaining cluster.
-        Uses a simple BFS reachability check for each candidate block.
-        """
         blocks  = obs["blocks"]
         all_ids = {b["id"] for b in blocks}
         if len(all_ids) <= 2:
-            return set()  # trivially connected regardless
+            return set()
 
-        # Adjacency list from the observation neighbor data
         adj: Dict[int, List[int]] = {
             b["id"]: [nb for nb in b["neighbors"] if nb != -1 and nb in all_ids]
             for b in blocks
@@ -203,26 +206,13 @@ class VisibleSimEnv:
 
     def _potential(self, obs: dict) -> float:
         """
-        Φ(s) = −mean over non-target blocks of the L1 distance to the
-               nearest target cell.  More negative = farther from goal.
-        Shaping reward F = Φ(s') − Φ(s) is positive when blocks move closer.
+        Φ(s) = dot(CoM, direction).
+        Shaping reward F = Φ(s') − Φ(s) = dot(ΔCoM, direction):
+        positive when the swarm moves along the travel axis.
         """
-        targets = obs.get("target", [])
-        if not targets:
-            return 0.0
-        target_arr = np.array([[t[0], t[1], t[2]] for t in targets], dtype=np.float32)
-
-        non_target_blocks = [b for b in obs["blocks"] if not b["in_target"]]
-        if not non_target_blocks:
-            return 0.0
-
-        total = 0.0
-        for b in non_target_blocks:
-            pos = np.array(b["pos"], dtype=np.float32)
-            dists = np.abs(target_arr - pos).sum(axis=1)
-            total += float(dists.min())
-
-        return -(total / len(non_target_blocks))
+        positions = np.array([b["pos"] for b in obs["blocks"]], dtype=np.float32)
+        com = positions.mean(axis=0)
+        return float(np.dot(self.direction, com))
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -232,13 +222,8 @@ class VisibleSimEnv:
         sim_cwd = os.path.dirname(self.binary_path)
         cmd = [self.binary_path, "-c", self.config_path]
         if self.render:
-            # In GUI mode, choose realtime for visible animation or fastest
-            # for best throughput.
             cmd.append("-r" if self.realtime else "-R")
         else:
-            # Use -t (terminal/headless mode) to skip GLUT initialisation.
-            # -t implies -R (fastest scheduler); gym-tick events keep the
-            # event queue non-empty so the scheduler never exits prematurely.
             cmd.append("-t")
 
         self.proc = subprocess.Popen(
@@ -246,11 +231,10 @@ class VisibleSimEnv:
             cwd=sim_cwd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            preexec_fn=os.setsid,   # create new process group for clean kill
+            preexec_fn=os.setsid,
         )
         deadline = time.time() + self.connect_timeout
         while time.time() < deadline:
-            # Check if the process crashed before we connected
             if self.proc.poll() is not None:
                 out = self.proc.stdout.read().decode(errors="replace")
                 raise RuntimeError(
@@ -258,8 +242,6 @@ class VisibleSimEnv:
                     f"before accepting connections:\n{out}"
                 )
             try:
-                # Create a fresh socket each attempt — on macOS a failed
-                # connect() leaves the socket unusable for reconnection.
                 self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.sock.connect(("127.0.0.1", self.port))
                 self.sock.settimeout(self.step_timeout)
@@ -271,7 +253,6 @@ class VisibleSimEnv:
                     pass
                 self.sock = None
                 time.sleep(0.05)
-        # Collect any output to help diagnose the failure
         self.proc.terminate()
         out = self.proc.stdout.read().decode(errors="replace")
         raise TimeoutError(
