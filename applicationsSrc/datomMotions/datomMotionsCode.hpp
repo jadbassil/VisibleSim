@@ -1,6 +1,8 @@
 #ifndef datomMotionsCode_H_
 #define datomMotionsCode_H_
 
+#include <string_view>
+#include <vector>
 #include "robots/datoms/datomsSimulator.h"
 #include "robots/datoms/datomsBlockCode.h"
 
@@ -10,6 +12,8 @@ class DatomMotionsCode : public DatomsBlockCode {
 private:
     DatomsBlock *module = nullptr;
     bool isLeader = false;
+    std::vector<Cell3DPosition> path;  // cells to visit, from the "path" XML attribute
+    size_t currentPathStep = 0;
 
 public:
     DatomMotionsCode(DatomsBlock *host);

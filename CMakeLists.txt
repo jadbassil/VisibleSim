@@ -261,6 +261,10 @@ target_include_directories(csgCatoms3D PRIVATE ${CMAKE_SOURCE_DIR}/${CSG_DIR})
 target_link_libraries(csgCatoms3D Catoms3D)
 set_target_properties(csgCatoms3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/csgCatoms3D)
 
+add_executable(catomsCombination applicationsSrc/catomsCombination/catomsCombination.cpp applicationsSrc/catomsCombination/catomsCombinationCode.cpp)
+target_link_libraries(catomsCombination Catoms3D)
+set_target_properties(catomsCombination PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/catomsCombination)
+
 add_executable(gnnLocomotion
     applicationsSrc/gnnLocomotion/gnnLocomotion.cpp
     applicationsSrc/gnnLocomotion/gnnLocomotionBlockCode.cpp

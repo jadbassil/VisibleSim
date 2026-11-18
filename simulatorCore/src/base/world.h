@@ -229,6 +229,8 @@ namespace BaseSimulator {
          */
         void deleteBlock(BuildingBlock *blc);
 
+        void deleteAllBlocks();
+
         /**
          * @brief Connects the interfaces of a block to all of its neighbors and notifiy them
          * @param blc : a pointer to the block to connect to its neighborhood
@@ -452,6 +454,11 @@ namespace BaseSimulator {
         virtual void onEndOfSimulation() {
             buildingBlocksMap.begin()->second->blockCode->onEndOfSimulation();
         }
+
+        /**
+         * @brief check if the set of modules are connected
+         */
+         bool isSetConnected();
     };
 
 /**

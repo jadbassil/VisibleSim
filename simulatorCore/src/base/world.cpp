@@ -6,6 +6,7 @@
  */
 
 #include <cstdlib>
+#include <stack>
 
 #include "world.h"
 #include "../utils/trace.h"
@@ -140,15 +141,14 @@ void World::linkBlocks() {
     const Cell3DPosition& ub = lattice->getGridUpperBounds();
     Cell3DPosition p;
 
-    OUTPUT << "Link blocks..." << lb << "/" << ub << endl;
+//    OUTPUT << "Link blocks..." << lb << "/" << ub << endl;
     for (p.pt[2] = lb.pt[2]; p[2] <= ub.pt[2]; p.pt[2]++) { // z
         for (p.pt[1] = lb.pt[1]; p[1] <= ub.pt[1]; p.pt[1]++) { // y
             for (p.pt[0] = lb.pt[0]; p[0] <= ub.pt[0]; p.pt[0]++) { // x
                 if (lattice->cellHasBlock(p)) {
-                    // cerr << "l.cellHasBlock(" << p << "/"
-                    //   << lattice->getIndex(p) << ")  = true ; id: "
-                    //	 << lattice->getBlock(p)->blockId << endl;
-
+/*                     OUTPUT << "l.cellHasBlock(" << p << "/"
+                     << lattice->getIndex(p) << ")  = true ; id: "
+                     << lattice->getBlock(p)->blockId << endl;*/
                     linkBlock(p);
                 }
             }
@@ -167,7 +167,7 @@ void World::linkNeighbors(const Cell3DPosition &pos) {
 
 void World::connectBlock(BuildingBlock *block, bool count) {
     Cell3DPosition pos = block->position;
-    //OUTPUT << "Connect Block " << block->blockId << " pos = " << pos << endl;
+    OUTPUT << "Connect Block " << block->blockId << " pos = " << pos << endl;
     lattice->insert(block, pos, count);
     linkBlock(pos);
     linkNeighbors(pos);
@@ -223,6 +223,19 @@ void World::deleteBlock(BuildingBlock *bb) {
     unlock();
 
     delete bb->ptrGlBlock;
+}
+
+void World::deleteAllBlocks() {
+    lock();
+    for (auto& glBlock:mapGlBlocks) {
+        delete glBlock.second;
+    }
+    mapGlBlocks.clear();
+    unlock();
+    for (auto& BB:buildingBlocksMap) {
+        delete BB.second;
+        lattice->remove(BB.second->position, true);
+    }
 }
 
 void World::stopSimulation() {
@@ -329,6 +342,36 @@ void World::getBoundingBox(float &xmin,float &ymin,float &zmin,float &xmax,float
         if (zmax<pos[2]) zmax=pos[2];
     }
     unlock();
+}
+
+bool World::isSetConnected() {
+    map<bID, bool> isConnected;
+    stack<bID> st;
+    // mark the first module as connected
+    // and other to not connected
+    auto it_bb = buildingBlocksMap.begin();
+    isConnected[it_bb->first] = true;
+    st.push(it_bb->first);
+    it_bb++;
+    while (it_bb != buildingBlocksMap.end()) {
+        isConnected[it_bb->first] = false;
+        it_bb++;
+    }
+    // treats stack
+    int nbConnected=1;
+    while (!st.empty()) {
+        auto bb = buildingBlocksMap[st.top()];
+        st.pop();
+        auto neighbors = bb->getNeighbors();
+        for (auto &neighor : neighbors) {
+            if (!isConnected[neighor->blockId]) {
+                isConnected[neighor->blockId]=true;
+                st.push(neighor->blockId);
+                nbConnected++;
+            }
+        }
+    }
+    return nbConnected==buildingBlocksMap.size();
 }
 
 } // BaseSimulator namespace

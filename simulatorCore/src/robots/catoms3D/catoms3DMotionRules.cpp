@@ -457,10 +457,10 @@ getMobileModuleLinkMatchingPivotLink(const Catoms3DMotionRulesLink* pivLink,
                                                              pivLink->getConFromID(),
                                                              conFrom, pivLink->getConToID());
 
-        // cout << "Conconv: #" << pivot->blockId << " l: " << *pivLink <<endl;
-        // cout << pivLink->getConFromID() << " === " << conFrom << endl;
-        // cout << pivLink->getConToID() << " === " << conTo << endl;
-
+         /*cout << "Conconv: #" << pivot->blockId << " l: " << *pivLink <<endl;
+         cout << pivLink->getConFromID() << " === " << conFrom << endl;
+         cout << pivLink->getConToID() << " === " << conTo << endl;
+*/
         vector<Catoms3DMotionRulesLink*> motionRulesLinksFrom;
         getValidMotionList(m, conFrom, motionRulesLinksFrom);
 
@@ -536,7 +536,7 @@ Catoms3DRotation Catoms3DMotionRulesLink::getRotations(const Catoms3DBlock* mobi
     return Catoms3DRotation(mobile,pivot,radius,axis1,angle,axis2,angle);
 }
 
-vector<Cell3DPosition> Catoms3DMotionRulesLink::getBlockingCellsList(const Catoms3DBlock *c3d) {
+vector<Cell3DPosition> Catoms3DMotionRulesLink::getBlockingCellsList(const Catoms3DBlock *c3d) const {
     vector<int>::const_iterator ci = tabBlockingIDs.begin();
     vector<Cell3DPosition> tabPos;
     Cell3DPosition pos;

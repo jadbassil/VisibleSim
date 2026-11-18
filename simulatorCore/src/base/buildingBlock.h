@@ -213,13 +213,13 @@ namespace BaseSimulator {
          * @param ni : pointer to the interface that was just connected
          * @param target : pointer to the BuildingBlock connected to interface ni
          */
-        virtual void addNeighbor(P2PNetworkInterface *ni, BuildingBlock *target) {};
+        virtual void addNeighbor(P2PNetworkInterface *ni, BuildingBlock *target)=0;
 
         /**
          * @brief Schedules a RemoveNeighborEvent
          * @param ni : pointer to the disconnected interface
          */
-        virtual void removeNeighbor(P2PNetworkInterface *ni) {};
+        virtual void removeNeighbor(P2PNetworkInterface *ni)=0;
 
         /**
          * @brief Returns the number of interfaces for this block
@@ -346,6 +346,10 @@ namespace BaseSimulator {
         */
         virtual bool hasNeighbor(int dir);
 
+        /**
+         * @return the number of possible motion for the current module from its current position
+         */
+        virtual int nbPossibleMotions() const { return 0; };
         /**
          * @param dest destination of the candidate motion
          * @return true if the module can move to cell dest

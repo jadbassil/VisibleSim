@@ -477,7 +477,7 @@ add_library(Datoms STATIC
         src/robots/datoms/deformationEvents.cpp
         src/robots/datoms/deformationEvents.h
         src/robots/datoms/datomsMotionRules.h
-        src/robots/datoms/datomsMotionRules.cpp
+        src/robots/datoms/datomsUtils.h
         )
 target_link_libraries(Datoms src)
 
