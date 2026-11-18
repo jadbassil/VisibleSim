@@ -187,7 +187,6 @@ add_executable(simpleColorBB applicationsSrc/simpleColorBB/simpleColorBB.cpp app
 target_link_libraries(simpleColorBB BlinkyBlocks )
 set_target_properties(simpleColorBB PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/simpleColorBB)
 
-
 add_executable(reconf2D applicationsSrc/reconf2D/reconf2D.cpp applicationsSrc/reconf2D/reconf2DBlockCode.cpp)
 target_link_libraries(reconf2D Hexanodes)
 set_target_properties(reconf2D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/reconf2D)
@@ -225,11 +224,6 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/applicationsSrc/visibleSimLocomotion/joseph1.cpp) 
     set_target_properties(VisibleSimLocomotion PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/VisibleSimLocomotion)
 endif()
 
-if(EXISTS ${CMAKE_SOURCE_DIR}/applicationsSrc/bfsMotionReachability/bfsMotionReachability.cpp)  # optional submodule
-    add_executable(TEN-MaxFlow-Reconfiguration applicationsSrc/bfsMotionReachability/bfsMotionReachabilityCode.cpp applicationsSrc/bfsMotionReachability/bfsMotionReachability.cpp)
-    target_link_libraries(TEN-MaxFlow-Reconfiguration Catoms3D)
-    set_target_properties(TEN-MaxFlow-Reconfiguration PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/bfsMotionReachbility)
-endif()
 add_executable(shapeDecomposition applicationsSrc/shapeDecomposition/shapeDecomposition.cpp applicationsSrc/shapeDecomposition/shapeDecompositionBlockCode.cpp applicationsSrc/shapeDecomposition/polygon.cpp)
 target_link_libraries(shapeDecomposition BlinkyBlocks)
 set_target_properties(shapeDecomposition PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/shapeDecomposition)
@@ -247,9 +241,6 @@ add_executable(metaModuleGen
 target_link_libraries(metaModuleGen Catoms3D)
 set_target_properties(metaModuleGen PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/metaModuleGen)
 
-# add_executable(slidingCubesExample applicationsSrc/slidingCubesExample/slidingCubesExample.cpp applicationsSrc/slidingCubesExample/slidingCubesExampleBlockCode.cpp)
-# target_link_libraries(slidingCubesExample SlidingCubes)
-# set_target_properties(slidingCubesExample PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/slidingCubesExample)
 
 add_executable(gnnLocomotion
     applicationsSrc/gnnLocomotion/gnnLocomotion.cpp
