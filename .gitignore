@@ -65,6 +65,28 @@ utilities/meld-compiler/dists/quicklisp/software/
 doc/xml/
 doc/html/
 
+# LaTeX compiled files
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.nav
+*.out
+*.run.xml
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+**/latex/*.dvi
+**/latex/*.pdf
+**/latex/*.ps
+**/latex/*.xdv
+
 # Configuration files (must be added manually)
 applicationsBin/*/*.xml
 
@@ -94,3 +116,6 @@ lib/
 
 .vscode/
 .cache/
+applicationsSrc/TEN-MaxFlow-Reconfiguration
+applicationsSrc/AI4PM3D/latex/GeorgesChaiban-2026
+utilities/VisibleSimConfigGenerator
