@@ -11,8 +11,6 @@ int main(int argc, char **argv)
         createSimulator(argc, argv, AI4PMCode_CNN_3D::buildNewBlockCode);
         getSimulator()->printInfo();
         BaseSimulator::getWorld()->printInfo();
-        BaseSimulator::getScheduler()->start(SCHEDULER_MODE_FASTEST);
-        BaseSimulator::getScheduler()->waitForSchedulerEnd();
 
         deleteSimulator();
     }
