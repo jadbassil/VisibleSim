@@ -1,0 +1,13 @@
+Model,True \ Predicted,Cube,Sphere,Cylinder,Chair,Bridge,Humanoid
+FP32,Cube,423,52,23,0,1,1
+FP32,Sphere,0,474,10,0,14,2
+FP32,Cylinder,27,1,444,4,6,18
+FP32,Chair,0,0,0,364,89,47
+FP32,Bridge,0,0,1,43,407,49
+FP32,Humanoid,0,0,4,2,0,494
+INT8,Cube,426,0,20,0,53,1
+INT8,Sphere,0,468,10,0,20,2
+INT8,Cylinder,31,1,441,4,6,17
+INT8,Chair,0,0,0,357,95,48
+INT8,Bridge,0,0,1,40,412,47
+INT8,Humanoid,0,0,3,2,0,495

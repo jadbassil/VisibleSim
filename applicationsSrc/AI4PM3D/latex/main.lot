@@ -1,0 +1,16 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {4.1}{\ignorespaces Stage 1 (quantized 2D ANN) VisibleSim results.}}{15}{table.caption.9}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Stage 2 (3D-extended flat ANN) VisibleSim results.}}{17}{table.caption.15}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces Stage 3 (2D CNN) VisibleSim results, 256 robots throughout.}}{19}{table.caption.21}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces Stage 4 (height-map 3D CNN) VisibleSim results.}}{21}{table.caption.27}%
+\contentsline {table}{\numberline {4.5}{\ignorespaces Stage 5 (Embedded 3D CNN) VisibleSim results.}}{23}{table.caption.33}%
+\contentsline {table}{\numberline {4.6}{\ignorespaces Stage 6 model size before/after int8 quantization.}}{28}{table.caption.37}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {5.1}{\ignorespaces Comparative summary across all six architectural stages.}}{31}{table.caption.38}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces VisibleSim simulation results for the quantized Stage 6 model, one instance per class.}}{32}{table.caption.39}%
+\contentsline {table}{\numberline {5.3}{\ignorespaces Real BlinkyBlocks hardware classification accuracy by shape, Stage 6 model.}}{33}{table.caption.41}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }

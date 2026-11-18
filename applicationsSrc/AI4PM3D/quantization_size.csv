@@ -1,0 +1,3 @@
+Model,Weights (B),Scales (B),Biases (B),Total (B),Total (KB)
+FP32,68096,0,600,68696,67.1
+INT8,17024,600,600,18224,17.8

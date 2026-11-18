@@ -1,0 +1,16 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Stage 1 VisibleSim results. Left to right: Square, Disk, Triangle, and the ambiguous out-of-distribution test shape.}}{16}{figure.caption.10}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Stage 2 VisibleSim results. Left to right: Sphere, Cube, Cylinder.}}{17}{figure.caption.16}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Stage 3 VisibleSim results. Left to right: Cube (square silhouette), Cylinder (disk silhouette), Triangle, and the out-of-distribution question-mark shape.}}{19}{figure.caption.22}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces Stage 4 VisibleSim results. Left to right: Cylinder, Sphere, Cube. The colored base-layer pattern beneath each shape is the height-map projection consumed by the 2D CNN.}}{21}{figure.caption.28}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces Stage 5 VisibleSim results. Left to right: Sphere, Cube, Cylinder (upright), and the same Cylinder rotated 90\textdegree {} about the Y axis (lying on its side).}}{23}{figure.caption.34}%
+\contentsline {figure}{\numberline {4.6}{\ignorespaces Stage 6 (Deep Embedded 3D CNN) distributed architecture}}{25}{figure.caption.36}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {5.1}{\ignorespaces VisibleSim classification results for all six shape classes, Stage 6 model. Top row, left to right: Cube, Sphere, Cylinder. Bottom row: Chair, Bridge, Humanoid.}}{32}{figure.caption.40}%
+\contentsline {figure}{\numberline {5.2}{\ignorespaces Per-class classification accuracy of the quantized Stage 6 model on real BlinkyBlocks hardware.}}{33}{figure.caption.42}%
+\contentsline {figure}{\numberline {5.3}{\ignorespaces Real BlinkyBlocks hardware running the Stage 6 distributed 3D CNN shape classifier. Left to right: Cube (green), Sphere (blue), Cylinder (yellow), Chair (magenta).}}{33}{figure.caption.43}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
