@@ -242,6 +242,25 @@ target_link_libraries(metaModuleGen Catoms3D)
 set_target_properties(metaModuleGen PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/metaModuleGen)
 
 
+# Restored apps
+add_executable(catoms3DRotate applicationsSrc/catoms3DRotate/catoms3DRotate.cpp applicationsSrc/catoms3DRotate/catoms3DRotateCode.cpp)
+target_link_libraries(catoms3DRotate Catoms3D)
+set_target_properties(catoms3DRotate PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/catoms3DRotate)
+
+add_executable(datomMotions applicationsSrc/datomMotions/datomMotions.cpp applicationsSrc/datomMotions/datomMotionsCode.cpp)
+target_link_libraries(datomMotions Datoms)
+set_target_properties(datomMotions PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/datomMotions)
+
+set(CSG_DIR applicationsSrc/csgCatoms3D)
+add_executable(csgCatoms3D
+    ${CSG_DIR}/csgCatoms3D.cpp ${CSG_DIR}/csgCatoms3DBlockCode.cpp ${CSG_DIR}/stoyUtils.cpp
+    ${CSG_DIR}/meshUtils.cpp ${CSG_DIR}/bitmapUtils.cpp
+    ${CSG_DIR}/mesh/geometrics.cpp ${CSG_DIR}/mesh/obj_file.cpp ${CSG_DIR}/mesh/polygon.cpp
+    ${CSG_DIR}/mesh/triangle.cpp ${CSG_DIR}/mesh/world.cpp)
+target_include_directories(csgCatoms3D PRIVATE ${CMAKE_SOURCE_DIR}/${CSG_DIR})
+target_link_libraries(csgCatoms3D Catoms3D)
+set_target_properties(csgCatoms3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/csgCatoms3D)
+
 add_executable(gnnLocomotion
     applicationsSrc/gnnLocomotion/gnnLocomotion.cpp
     applicationsSrc/gnnLocomotion/gnnLocomotionBlockCode.cpp
