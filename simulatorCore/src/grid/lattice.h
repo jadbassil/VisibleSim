@@ -934,6 +934,9 @@ namespace BaseSimulator {
     public:
         static inline const string directionName[] = { "South", "East", "North","West", "Bottom", "Top" };
         enum Direction { South=0, East, North, West, Bottom, Top, MAX_NB_NEIGHBORS}; //!< @copydoc Lattice::Direction
+        static inline const string myDirectionName[] = { "Bottom", "Back", "Right","Front", "Left", "Top", "None" };
+        enum myDirection { Right=0, Back, Left, Front, mBottom, mTop, NO_DIRECTION}; //!< @copydoc Lattice::Direction
+
         //!< @copydoc Lattice::getOppositeDirection
         virtual short getOppositeDirection(short d) const override;
         //!< @copydoc Lattice::getDirectionString

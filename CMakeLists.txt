@@ -226,7 +226,23 @@ set_target_properties(VisibleSimLocomotion PROPERTIES RUNTIME_OUTPUT_DIRECTORY $
 add_executable(TEN-MaxFlow-Reconfiguration applicationsSrc/bfsMotionReachability/bfsMotionReachabilityCode.cpp applicationsSrc/bfsMotionReachability/bfsMotionReachability.cpp)
 target_link_libraries(TEN-MaxFlow-Reconfiguration Catoms3D)
 set_target_properties(TEN-MaxFlow-Reconfiguration PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/bfsMotionReachbility)
+add_executable(shapeDecomposition applicationsSrc/shapeDecomposition/shapeDecomposition.cpp applicationsSrc/shapeDecomposition/shapeDecompositionBlockCode.cpp applicationsSrc/shapeDecomposition/polygon.cpp)
+target_link_libraries(shapeDecomposition BlinkyBlocks)
+set_target_properties(shapeDecomposition PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/shapeDecomposition)
+
+
+add_executable(demoReconfC3D applicationsSrc/demoReconfC3D/demoReconfC3D.cpp applicationsSrc/demoReconfC3D/demoReconfC3DCode.cpp)
+target_link_libraries(demoReconfC3D Catoms3D)
+set_target_properties(demoReconfC3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/demoReconfC3D)
 
 # add_executable(slidingCubesExample applicationsSrc/slidingCubesExample/slidingCubesExample.cpp applicationsSrc/slidingCubesExample/slidingCubesExampleBlockCode.cpp)
 # target_link_libraries(slidingCubesExample SlidingCubes)
 # set_target_properties(slidingCubesExample PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/slidingCubesExample)
+
+add_executable(gnnLocomotion
+    applicationsSrc/gnnLocomotion/gnnLocomotion.cpp
+    applicationsSrc/gnnLocomotion/gnnLocomotionBlockCode.cpp
+    applicationsSrc/gnnLocomotion/gymServer.cpp)
+target_link_libraries(gnnLocomotion SlidingCubes)
+set_target_properties(gnnLocomotion PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/gnnLocomotion)

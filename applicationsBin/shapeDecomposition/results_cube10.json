@@ -1,0 +1,2603 @@
+{
+  "borders": [
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 1], [10, 1, 1], [10, 10, 1], [1, 10, 1], [1, 1, 1]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 6], [10, 1, 6], [10, 10, 6], [1, 10, 6], [1, 1, 6]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 3], [10, 1, 3], [10, 10, 3], [1, 10, 3], [1, 1, 3]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 8], [10, 1, 8], [10, 10, 8], [1, 10, 8], [1, 1, 8]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 5], [10, 1, 5], [10, 10, 5], [1, 10, 5], [1, 1, 5]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 9], [10, 1, 9], [10, 10, 9], [1, 10, 9], [1, 1, 9]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 2], [10, 1, 2], [10, 10, 2], [1, 10, 2], [1, 1, 2]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 7], [10, 1, 7], [10, 10, 7], [1, 10, 7], [1, 1, 7]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 4], [10, 1, 4], [10, 10, 4], [1, 10, 4], [1, 1, 4]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 10], [10, 1, 10], [10, 10, 10], [1, 10, 10], [1, 1, 10]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 7], [10, 1, 7], [10, 10, 7], [1, 10, 7], [1, 1, 7]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 4], [10, 1, 4], [10, 10, 4], [1, 10, 4], [1, 1, 4]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 6], [10, 1, 6], [10, 10, 6], [1, 10, 6], [1, 1, 6]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 1], [10, 1, 1], [10, 10, 1], [1, 10, 1], [1, 1, 1]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 5], [10, 1, 5], [10, 10, 5], [1, 10, 5], [1, 1, 5]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 8], [10, 1, 8], [10, 10, 8], [1, 10, 8], [1, 1, 8]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 9], [10, 1, 9], [10, 10, 9], [1, 10, 9], [1, 1, 9]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 10], [10, 1, 10], [10, 10, 10], [1, 10, 10], [1, 1, 10]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 3], [10, 1, 3], [10, 10, 3], [1, 10, 3], [1, 1, 3]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 2], [10, 1, 2], [10, 10, 2], [1, 10, 2], [1, 1, 2]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 7], [10, 1, 7], [10, 10, 7], [1, 10, 7], [1, 1, 7]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 4], [10, 1, 4], [10, 10, 4], [1, 10, 4], [1, 1, 4]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 1], [10, 1, 1], [10, 10, 1], [1, 10, 1], [1, 1, 1]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 10], [10, 1, 10], [10, 10, 10], [1, 10, 10], [1, 1, 10]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 3], [10, 1, 3], [10, 10, 3], [1, 10, 3], [1, 1, 3]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 6], [10, 1, 6], [10, 10, 6], [1, 10, 6], [1, 1, 6]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 5], [10, 1, 5], [10, 10, 5], [1, 10, 5], [1, 1, 5]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 8], [10, 1, 8], [10, 10, 8], [1, 10, 8], [1, 1, 8]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 9], [10, 1, 9], [10, 10, 9], [1, 10, 9], [1, 1, 9]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 2], [10, 1, 2], [10, 10, 2], [1, 10, 2], [1, 1, 2]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 10], [10, 1, 10], [10, 10, 10], [1, 10, 10], [1, 1, 10]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 3], [10, 1, 3], [10, 10, 3], [1, 10, 3], [1, 1, 3]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 5], [10, 1, 5], [10, 10, 5], [1, 10, 5], [1, 1, 5]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 2], [10, 1, 2], [10, 10, 2], [1, 10, 2], [1, 1, 2]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 7], [10, 1, 7], [10, 10, 7], [1, 10, 7], [1, 1, 7]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 6], [10, 1, 6], [10, 10, 6], [1, 10, 6], [1, 1, 6]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 9], [10, 1, 9], [10, 10, 9], [1, 10, 9], [1, 1, 9]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 8], [10, 1, 8], [10, 10, 8], [1, 10, 8], [1, 1, 8]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 1], [10, 1, 1], [10, 10, 1], [1, 10, 1], [1, 1, 1]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 4], [10, 1, 4], [10, 10, 4], [1, 10, 4], [1, 1, 4]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 6], [10, 1, 6], [10, 10, 6], [1, 10, 6], [1, 1, 6]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 2], [10, 1, 2], [10, 10, 2], [1, 10, 2], [1, 1, 2]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 3], [10, 1, 3], [10, 10, 3], [1, 10, 3], [1, 1, 3]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 5], [10, 1, 5], [10, 10, 5], [1, 10, 5], [1, 1, 5]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 10], [10, 1, 10], [10, 10, 10], [1, 10, 10], [1, 1, 10]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 8], [10, 1, 8], [10, 10, 8], [1, 10, 8], [1, 1, 8]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 7], [10, 1, 7], [10, 10, 7], [1, 10, 7], [1, 1, 7]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 1], [10, 1, 1], [10, 10, 1], [1, 10, 1], [1, 1, 1]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 9], [10, 1, 9], [10, 10, 9], [1, 10, 9], [1, 1, 9]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 4], [10, 1, 4], [10, 10, 4], [1, 10, 4], [1, 1, 4]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 8], [10, 1, 8], [10, 10, 8], [1, 10, 8], [1, 1, 8]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 4], [10, 1, 4], [10, 10, 4], [1, 10, 4], [1, 1, 4]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 1], [10, 1, 1], [10, 10, 1], [1, 10, 1], [1, 1, 1]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 10], [10, 1, 10], [10, 10, 10], [1, 10, 10], [1, 1, 10]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 3], [10, 1, 3], [10, 10, 3], [1, 10, 3], [1, 1, 3]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 9], [10, 1, 9], [10, 10, 9], [1, 10, 9], [1, 1, 9]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 5], [10, 1, 5], [10, 10, 5], [1, 10, 5], [1, 1, 5]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 6], [10, 1, 6], [10, 10, 6], [1, 10, 6], [1, 1, 6]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 7], [10, 1, 7], [10, 10, 7], [1, 10, 7], [1, 1, 7]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 2], [10, 1, 2], [10, 10, 2], [1, 10, 2], [1, 1, 2]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 4], [10, 1, 4], [10, 10, 4], [1, 10, 4], [1, 1, 4]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 10], [10, 1, 10], [10, 10, 10], [1, 10, 10], [1, 1, 10]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 5], [10, 1, 5], [10, 10, 5], [1, 10, 5], [1, 1, 5]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 3], [10, 1, 3], [10, 10, 3], [1, 10, 3], [1, 1, 3]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 8], [10, 1, 8], [10, 10, 8], [1, 10, 8], [1, 1, 8]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 2], [10, 1, 2], [10, 10, 2], [1, 10, 2], [1, 1, 2]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 6], [10, 1, 6], [10, 10, 6], [1, 10, 6], [1, 1, 6]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 9], [10, 1, 9], [10, 10, 9], [1, 10, 9], [1, 1, 9]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 7], [10, 1, 7], [10, 10, 7], [1, 10, 7], [1, 1, 7]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 1], [10, 1, 1], [10, 10, 1], [1, 10, 1], [1, 1, 1]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 4], [10, 1, 4], [10, 10, 4], [1, 10, 4], [1, 1, 4]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 9], [10, 1, 9], [10, 10, 9], [1, 10, 9], [1, 1, 9]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 1], [10, 1, 1], [10, 10, 1], [1, 10, 1], [1, 1, 1]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 3], [10, 1, 3], [10, 10, 3], [1, 10, 3], [1, 1, 3]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 8], [10, 1, 8], [10, 10, 8], [1, 10, 8], [1, 1, 8]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 5], [10, 1, 5], [10, 10, 5], [1, 10, 5], [1, 1, 5]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 6], [10, 1, 6], [10, 10, 6], [1, 10, 6], [1, 1, 6]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 10], [10, 1, 10], [10, 10, 10], [1, 10, 10], [1, 1, 10]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 7], [10, 1, 7], [10, 10, 7], [1, 10, 7], [1, 1, 7]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 2], [10, 1, 2], [10, 10, 2], [1, 10, 2], [1, 1, 2]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 10], [10, 1, 10], [10, 10, 10], [1, 10, 10], [1, 1, 10]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 7], [10, 1, 7], [10, 10, 7], [1, 10, 7], [1, 1, 7]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 2], [10, 1, 2], [10, 10, 2], [1, 10, 2], [1, 1, 2]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 4], [10, 1, 4], [10, 10, 4], [1, 10, 4], [1, 1, 4]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 9], [10, 1, 9], [10, 10, 9], [1, 10, 9], [1, 1, 9]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 6], [10, 1, 6], [10, 10, 6], [1, 10, 6], [1, 1, 6]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 5], [10, 1, 5], [10, 10, 5], [1, 10, 5], [1, 1, 5]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 1], [10, 1, 1], [10, 10, 1], [1, 10, 1], [1, 1, 1]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 3], [10, 1, 3], [10, 10, 3], [1, 10, 3], [1, 1, 3]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 8], [10, 1, 8], [10, 10, 8], [1, 10, 8], [1, 1, 8]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 4], [10, 1, 4], [10, 10, 4], [1, 10, 4], [1, 1, 4]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 3], [10, 1, 3], [10, 10, 3], [1, 10, 3], [1, 1, 3]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 6], [10, 1, 6], [10, 10, 6], [1, 10, 6], [1, 1, 6]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 8], [10, 1, 8], [10, 10, 8], [1, 10, 8], [1, 1, 8]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 2], [10, 1, 2], [10, 10, 2], [1, 10, 2], [1, 1, 2]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 7], [10, 1, 7], [10, 10, 7], [1, 10, 7], [1, 1, 7]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 5], [10, 1, 5], [10, 10, 5], [1, 10, 5], [1, 1, 5]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 9], [10, 1, 9], [10, 10, 9], [1, 10, 9], [1, 1, 9]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 1], [10, 1, 1], [10, 10, 1], [1, 10, 1], [1, 1, 1]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+    ,
+    {
+      "receivedDirections": {
+        "directions": [1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RLEcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 8,
+          "compressedDataBytes": [9, 1, 9, 2, 9, 3, 8, 0]
+        },
+        "LZWcompression": {
+          "originalSizeBytes": 35,
+          "compressedSizeBytes": 15,
+          "nbBitsCompressed": 43,
+          "compressedData": [1, 4, 5, 5, 2, 8, 9, 9, 3, 12, 13, 13, 0, 16, 17]
+        }
+      },
+      "receivedCorners": {
+        "corners": [[1, 1, 10], [10, 1, 10], [10, 10, 10], [1, 10, 10], [1, 1, 10]],
+        "compressedBitsetBorder": {
+          "originalSizeBytes": 10,
+          "compressedSizeBytes": 7,
+          "nbBitsCompressed": 30,
+          "compressedData": [1, 1, 10, 257, 258, 258, 1]
+        }
+      }
+    }
+  ]
+}
