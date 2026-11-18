@@ -205,6 +205,16 @@ set_target_properties(millionModuleMarch PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${C
 add_executable(lightWalk3D applicationsSrc/lightWalk3D/lightWalkCatoms3D.cpp applicationsSrc/lightWalk3D/lightWalkCatoms3DBlockCode.cpp applicationsSrc/lightWalk3D/lightWalkCatoms3DMessages.cpp)
 target_link_libraries(lightWalk3D Catoms3D)
 set_target_properties(lightWalk3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/lightWalk3D)
+# AI4PM3D: three BlinkyBlocks variants (CNN, embedded MLP, deep embedded MLP)
+foreach(AI4PM_VARIANT CNN_3D Embedded3D DeepEmb3D)
+    set(AI4PM_TARGET AI4PM_${AI4PM_VARIANT})
+    add_executable(${AI4PM_TARGET}
+        applicationsSrc/AI4PM3D/AI4PM_${AI4PM_VARIANT}.cpp
+        applicationsSrc/AI4PM3D/AI4PMCode_${AI4PM_VARIANT}.cpp)
+    target_include_directories(${AI4PM_TARGET} PRIVATE ${CMAKE_SOURCE_DIR}/applicationsSrc/AI4PM3D)
+    target_link_libraries(${AI4PM_TARGET} BlinkyBlocks)
+    set_target_properties(${AI4PM_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/AI4PM3D)
+endforeach()
 
 # add_executable(slidingCubesExample applicationsSrc/slidingCubesExample/slidingCubesExample.cpp applicationsSrc/slidingCubesExample/slidingCubesExampleBlockCode.cpp)
 # target_link_libraries(slidingCubesExample SlidingCubes)
