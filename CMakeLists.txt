@@ -219,13 +219,17 @@ add_executable(diameterMonitoring applicationsSrc/diameterMonitoring/diameterMon
 target_link_libraries(diameterMonitoring BlinkyBlocks )
 set_target_properties(diameterMonitoring PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/diameterMonitoring)
 
-add_executable(VisibleSimLocomotion applicationsSrc/visibleSimLocomotion/joseph1.cpp applicationsSrc/visibleSimLocomotion/joseph1BlockCode.cpp)
-target_link_libraries(VisibleSimLocomotion Catoms3D)
-set_target_properties(VisibleSimLocomotion PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/VisibleSimLocomotion)
+if(EXISTS ${CMAKE_SOURCE_DIR}/applicationsSrc/visibleSimLocomotion/joseph1.cpp)  # optional submodule
+    add_executable(VisibleSimLocomotion applicationsSrc/visibleSimLocomotion/joseph1.cpp applicationsSrc/visibleSimLocomotion/joseph1BlockCode.cpp)
+    target_link_libraries(VisibleSimLocomotion Catoms3D)
+    set_target_properties(VisibleSimLocomotion PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/VisibleSimLocomotion)
+endif()
 
-add_executable(TEN-MaxFlow-Reconfiguration applicationsSrc/bfsMotionReachability/bfsMotionReachabilityCode.cpp applicationsSrc/bfsMotionReachability/bfsMotionReachability.cpp)
-target_link_libraries(TEN-MaxFlow-Reconfiguration Catoms3D)
-set_target_properties(TEN-MaxFlow-Reconfiguration PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/bfsMotionReachbility)
+if(EXISTS ${CMAKE_SOURCE_DIR}/applicationsSrc/bfsMotionReachability/bfsMotionReachability.cpp)  # optional submodule
+    add_executable(TEN-MaxFlow-Reconfiguration applicationsSrc/bfsMotionReachability/bfsMotionReachabilityCode.cpp applicationsSrc/bfsMotionReachability/bfsMotionReachability.cpp)
+    target_link_libraries(TEN-MaxFlow-Reconfiguration Catoms3D)
+    set_target_properties(TEN-MaxFlow-Reconfiguration PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/bfsMotionReachbility)
+endif()
 add_executable(shapeDecomposition applicationsSrc/shapeDecomposition/shapeDecomposition.cpp applicationsSrc/shapeDecomposition/shapeDecompositionBlockCode.cpp applicationsSrc/shapeDecomposition/polygon.cpp)
 target_link_libraries(shapeDecomposition BlinkyBlocks)
 set_target_properties(shapeDecomposition PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/applicationsBin/shapeDecomposition)

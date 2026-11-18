@@ -27,6 +27,8 @@ class BlinkyBlocksBlockCode : public BaseSimulator::BlockCode {
     int sendMessage(const char* msgString, Message* msg, P2PNetworkInterface* dest, int nbBytes);
 
     int sendMessage(Message* msg, P2PNetworkInterface* dest, int nbBytes);
+    // Keep the base (msg, dest, t0, dt) overloads visible alongside the nbBytes ones
+    using BaseSimulator::BlockCode::sendMessage;
     int sendMessage(const char* msgString, Message* msg,
                                        P2PNetworkInterface* dest, int t, int dt);
     int sendMessage(HandleableMessage* msg, P2PNetworkInterface* dest, int nbBytes);
